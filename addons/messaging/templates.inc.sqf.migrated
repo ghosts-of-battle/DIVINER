@@ -1,0 +1,590 @@
+// The Ghost smart-card deck, carried over one for one from the cTab templates,
+// plus SITREP and CALL FOR FIRE which were never in the deck.
+//
+// Two things here are contracts rather than presentation:
+//
+//  - LINE TITLES ARE FIELD KEYS. registerTemplate builds each key from the line
+//    title, so the ALiVE forwarder can find a CONTACTREP's S/A/L/U/T/E/R and a
+//    SITREP's Callsign/Location/Enemy/Friendly/Civ/Status/Remarks without
+//    counting lines. Rename a line title and you have renamed a field.
+//  - THE ROUTING LINE. DEFREP carries a tick that also mails the command
+//    group. It is named by the template's routing option, not found by
+//    searching for the word, so it can be moved.
+//
+// Every root report ends with a REMARKS textarea - before ROUTING where one
+// exists. The handoff carries it as a rule, so no card leaves the sender with
+// something to say and nowhere to put it.
+//
+// Field types: text textarea number time callsign freq grid bool choice
+// Field options: required exclusive choices min max autoFill source noCur
+
+// What a root report can be answered with. One list, so a template cannot
+// quietly offer a reply the engine does not have.
+private _replies = ["roger", "wilco", "inprogress", "cantco", "freetext", "close"];
+
+// ---------------------------------------------------------------- reports ---
+
+// 6-LINE CASEVAC (deck). The medical request the rest of the deck pairs with.
+[
+    "casevac", "6-LINE CASEVAC", "CASEVAC",
+    [
+        ["Line 1", "PICK-UP SITE LOCATION", [
+            ["", "Grid / map position of the pick-up site", "grid", [["required", true], ["source", "mapClick"]]]
+        ]],
+        ["Line 2", "NUMBER OF PATIENTS", [
+            ["", "Number of patients", "number", [["required", true], ["min", 1], ["max", 99]]]
+        ]],
+        ["Line 3", "PRIORITY OF PATIENTS", [
+            ["URGENT ", "Urgent", "number", [["min", 0], ["max", 99]]],
+            ["PRIORITY ", "Priority", "number", [["min", 0], ["max", 99]]],
+            ["ROUTINE ", "Routine", "number", [["min", 0], ["max", 99]]]
+        ]],
+        ["Line 4", "LZ SECURITY", [
+            ["GREEN", "LZ secure, no threat", "bool", [["exclusive", "lz"]]],
+            ["YELLOW", "LZ secure but threatened", "bool", [["exclusive", "lz"]]],
+            ["RED", "LZ under fire", "bool", [["exclusive", "lz"]]]
+        ]],
+        ["Line 5", "MARKING METHOD", [
+            ["", "How the LZ is marked", "choice", [["choices", ["SMOKE", "IR STROBE", "PANEL", "CHEM-LIGHT", "OTHER"]]]],
+            ["", "Colour / code / location from the LZ", "text"]
+        ]],
+        ["Remarks", "REMARKS", [
+            ["", "Remarks", "textarea"]
+        ]]
+    ],
+    [
+        ["priority", "high"],
+        ["anchor", "Line1.A"],
+        ["transitionsTo", "ISSUED"],
+        ["replyableWith", _replies],
+        ["subject", "CASEVAC {Line2.A} pax - {Line1.A}"]
+    ]
+] call FUNC(registerTemplate);
+
+// MIST (deck). Medical handover - pairs with a CASEVAC rather than replacing it.
+[
+    "mist", "MIST", "MIST",
+    [
+        ["M", "MECHANISM OF INJURY & TIME", [
+            ["", "What caused it and when", "text", [["required", true]]]
+        ]],
+        ["I", "INJURIES SUSTAINED", [
+            ["", "Injuries sustained", "textarea"]
+        ]],
+        ["S", "SYMPTOMS AND VITALS", [
+            ["", "A-Airway B-Breathing C-Pulse D-Responsive E-Everything else", "textarea"]
+        ]],
+        ["T", "TREATMENT GIVEN", [
+            ["", "Treatment given", "textarea"]
+        ]],
+        ["Remarks", "REMARKS", [
+            ["", "Remarks", "textarea"]
+        ]]
+    ],
+    [
+        ["replyableWith", _replies],
+        ["subject", "MIST - {M.A}"]
+    ]
+] call FUNC(registerTemplate);
+
+// CONTACT REPORT (TIC) (deck). The one report that reaches people it was not
+// addressed to - see the broadcast option and fnc_srvTic.
+[
+    "tic", "CONTACT REPORT (TIC)", "TIC",
+    [
+        ["Location", "LOCATION", [
+            ["", "Grid / map position of the contact", "grid", [["required", true], ["source", "mapClick"]]]
+        ]],
+        ["Enemy", "ENEMY", [
+            ["", "What is shooting at you", "text", [["required", true]]]
+        ]],
+        ["Casualties", "FRIENDLY CASUALTIES", [
+            ["", "Friendly casualties", "text"]
+        ]],
+        ["Intentions", "INTENTIONS", [
+            ["", "What you intend to do", "text"]
+        ]],
+        ["Assistance", "ASSISTANCE REQUIRED", [
+            ["", "Any assistance required", "text"]
+        ]],
+        ["Remarks", "REMARKS", [
+            ["", "Remarks", "textarea"]
+        ]]
+    ],
+    [
+        ["priority", "high"],
+        ["anchor", "Location.A"],
+        ["broadcast", "tic"],
+        ["replyableWith", _replies],
+        ["subject", "TIC {Location.A} - {Enemy.A}"]
+    ]
+] call FUNC(registerTemplate);
+
+// SALUTE / CONTACTREP (deck, 7 lines including Remarks). The S/A/L/U/T/E/R line
+// titles are the field keys the ALiVE spotrep forwarder reads.
+[
+    "contactrep", "CONTACTREP", "CONTACT",
+    [
+        ["S", "SIZE", [
+            ["", "Size of the element", "text", [["required", true]]]
+        ]],
+        ["A", "ACTIVITY", [
+            ["", "Activity the element is performing", "text"]
+        ]],
+        ["L", "LOCATION", [
+            ["", "Grid of contact", "grid", [["required", true], ["source", "mapClick"]]]
+        ]],
+        ["U", "UNIT", [
+            ["", "Type of unit you believe the element to be", "text"]
+        ]],
+        ["T", "TIME", [
+            ["", "Time the unit was at this location", "time", [["autoFill", "missionTime"]]]
+        ]],
+        ["E", "EQUIPMENT", [
+            ["", "Equipment the unit has", "textarea"]
+        ]],
+        ["R", "REMARKS", [
+            ["", "Remarks", "textarea"]
+        ]]
+    ],
+    [
+        ["anchor", "L.A"],
+        ["reportable", "spotrep"],
+        ["replyableWith", _replies],
+        ["subject", "CONTACT {S.A} {U.A} - {L.A}"]
+    ]
+] call FUNC(registerTemplate);
+
+// SITREP (not in the deck). Line titles are the field keys the ALiVE sitrep
+// forwarder reads. Registered as "both" so it can also be sent as an update
+// inside somebody else's thread.
+[
+    "sitrep", "SITREP", "SITREP",
+    [
+        ["Callsign", "CALL SIGN", [
+            ["", "Call sign", "callsign", [["autoFill", "ownCallsign"]]]
+        ]],
+        ["Location", "LOCATION", [
+            ["", "Grid", "grid", [["source", "mapClick"]]]
+        ]],
+        ["Enemy", "ENEMY SITUATION", [
+            ["", "Enemy strength / activity", "text"],
+            ["EKIA ", "Enemy KIA", "number", [["min", 0], ["max", 999]]]
+        ]],
+        ["Friendly", "FRIENDLY SITUATION", [
+            ["", "Friendly forces / posture", "text"],
+            ["FKIA ", "Friendly KIA", "number", [["min", 0], ["max", 999]]],
+            ["FWIA ", "Friendly WIA", "number", [["min", 0], ["max", 999]]]
+        ]],
+        ["Civ", "CIVILIAN SITUATION", [
+            ["", "Civilian presence / casualties", "text"]
+        ]],
+        ["Status", "STATUS (GREEN/AMBER/RED/BLACK)", [
+            ["AMMO ", "Ammo state", "choice", [["choices", ["GREEN", "AMBER", "RED", "BLACK"]]]],
+            ["CAS ", "Medical / casevac state", "choice", [["choices", ["GREEN", "AMBER", "RED", "BLACK"]]]],
+            ["VEH ", "Vehicle state", "choice", [["choices", ["GREEN", "AMBER", "RED", "BLACK"]]]],
+            ["CE ", "Combat effectiveness", "choice", [["choices", ["GREEN", "AMBER", "RED", "BLACK"]]]]
+        ]],
+        ["Remarks", "REMARKS", [
+            ["", "Remarks", "textarea"]
+        ]]
+    ],
+    [
+        ["kind", "both"],
+        ["anchor", "Location.A"],
+        ["reportable", "sitrep"],
+        ["replyableWith", _replies],
+        ["subject", "SITREP {Callsign.A} - {Location.A}"]
+    ]
+] call FUNC(registerTemplate);
+
+// CALL FOR FIRE (RE Factor card, not in the deck). The artillery counterpart of
+// the 6-line CAS request. cTab left five of these lines unnamed; they are named
+// here so their field keys do not depend on line order.
+[
+    "callforfire", "CALL FOR FIRE", "CFF",
+    [
+        ["Observer", "OBSERVER ID/CALL SIGN", [
+            ["", "Observer call sign", "callsign", [["required", true], ["autoFill", "ownCallsign"]]]
+        ]],
+        ["Warno 1", "TYPE OF MISSION", [
+            ["A", "Adjust fire", "bool", [["exclusive", "mission"]]],
+            ["B", "Fire for effect", "bool", [["exclusive", "mission"]]],
+            ["C", "Suppress", "bool", [["exclusive", "mission"]]],
+            ["D", "Immediate suppression", "bool", [["exclusive", "mission"]]]
+        ]],
+        ["Warno 2", "SIZE OF ELEMENT TO FIRE", [
+            ["", "Size of element", "text"]
+        ]],
+        ["Warno 3A", "TARGET LOCATION: GRID", [
+            ["", "Target grid (6-digit) or map position", "grid", [["source", "mapClick"]]]
+        ]],
+        ["Warno 3B", "TARGET LOCATION: POLAR", [
+            ["Polar", "Tick if using polar - fill Target 2", "bool", [["exclusive", "locmethod"]]]
+        ]],
+        ["Warno 3C", "TARGET LOCATION: SHIFT", [
+            ["Shift", "Tick if shifting - fill Target 3", "bool", [["exclusive", "locmethod"]]]
+        ]],
+        ["Target 2", "POLAR (FROM OBSERVER)", [
+            ["", "Direction to TGT (deg)", "number", [["min", 0], ["max", 360]]],
+            ["", "Distance to TGT (m)", "number", [["min", 0], ["max", 30000]]]
+        ]],
+        ["Target 3", "SHIFT FROM A KNOWN POINT", [
+            ["A", "Lateral shift", "text"],
+            ["B", "Range shift", "text"],
+            ["C", "Vertical shift", "text"]
+        ]],
+        ["Description", "TARGET DESCRIPTION", [
+            ["", "Target description", "textarea", [["required", true]]]
+        ]],
+        ["Engagement", "METHOD OF ENGAGEMENT", [
+            ["A", "HE", "bool", [["exclusive", "shell"]]],
+            ["B", "Smoke", "bool", [["exclusive", "shell"]]],
+            ["C", "Illumination", "bool", [["exclusive", "shell"]]],
+            ["D", "Cluster", "bool", [["exclusive", "shell"]]],
+            ["E", "Laser-guided", "bool", [["exclusive", "shell"]]],
+            ["F", "Airburst", "bool", [["exclusive", "shell"]]],
+            ["", "Number of rounds", "number", [["min", 1], ["max", 200]]]
+        ]],
+        ["Danger Close", "DANGER CLOSE", [
+            ["DC", "Danger close", "bool"],
+            ["", "Distance to friendlies (m)", "number", [["min", 0], ["max", 5000]]]
+        ]],
+        ["Control", "METHOD OF FIRE CONTROL", [
+            ["A", "Fire when ready", "bool", [["exclusive", "control"]]],
+            ["B", "At my command", "bool", [["exclusive", "control"]]],
+            ["C", "Time on target", "bool", [["exclusive", "control"]]],
+            ["D", "Cannot observe", "bool", [["exclusive", "control"]]],
+            ["E", "Check fire", "bool", [["exclusive", "control"]]],
+            ["F", "Fire again", "bool", [["exclusive", "control"]]]
+        ]],
+        ["TOT", "TIME ON TARGET (IF C)", [
+            ["", "TOT", "time"]
+        ]],
+        ["Remarks", "REMARKS", [
+            ["", "Remarks", "textarea"]
+        ]]
+    ],
+    [
+        ["priority", "high"],
+        ["anchor", "Warno3A.A"],
+        ["transitionsTo", "ISSUED"],
+        ["replyableWith", _replies],
+        ["subject", "CFF {Warno3A.A} - {Description.A}"]
+    ]
+] call FUNC(registerTemplate);
+
+// CAS REQUEST (deck; outgrew its "6-LINE" name when the handoff redrew it).
+// The run-in is two fixes on the map now, not a heading in prose - a pilot
+// flies between points, and the egress is the half nobody wrote down when the
+// approach was one text line. Neither fix offers CURRENT LOC: an ingress is
+// never where the sender is standing.
+[
+    "cas", "CAS REQUEST", "CAS",
+    [
+        ["Line 1", "GRID REFERENCE", [
+            ["", "Target grid / map position", "grid", [["required", true], ["source", "mapClick"]]]
+        ]],
+        ["Line 2", "MAP REFERENCE", [
+            ["", "Map marker / reference point", "text"]
+        ]],
+        ["Line 3", "INGRESS LOCATION", [
+            ["", "Ingress point / run-in start", "grid", [["source", "mapClick"], ["noCur", true]]]
+        ]],
+        ["Line 4", "EGRESS LOCATION", [
+            ["", "Egress point / off-target turn", "grid", [["source", "mapClick"], ["noCur", true]]]
+        ]],
+        ["Line 5", "TARGET DESCRIPTION", [
+            ["", "Target description", "textarea", [["required", true]]]
+        ]],
+        ["Line 6", "RANGE FROM FRIENDLIES", [
+            ["", "Meters - under 300m is DANGER CLOSE!", "number", [["min", 0], ["max", 10000]]],
+            ["DANGER CLOSE", "Under 300 m", "bool"]
+        ]],
+        ["Line 7", "MARKED BY", [
+            ["", "How the target is marked", "choice", [["choices", ["SMOKE", "LASER", "IR", "TRACER", "NONE"]]]],
+            ["", "Colour / code", "text"]
+        ]],
+        ["Optional", "PREFERRED MUNITIONS", [
+            ["", "Preferred munitions", "text"]
+        ]],
+        ["Remarks", "REMARKS", [
+            ["", "Remarks", "textarea"]
+        ]]
+    ],
+    [
+        ["priority", "high"],
+        ["anchor", "Line1.A"],
+        ["transitionsTo", "ISSUED"],
+        ["replyableWith", _replies],
+        ["subject", "CAS {Line1.A} - {Line5.A}"]
+    ]
+] call FUNC(registerTemplate);
+
+// AIRFRAME CHECK-IN (deck). Informational - it opens no task.
+[
+    "checkin", "AIRFRAME CHECK-IN", "CHECK-IN",
+    [
+        ["Line 1", "AIRFRAME CALL SIGN", [
+            ["", "Call sign", "callsign", [["required", true], ["autoFill", "ownCallsign"]]]
+        ]],
+        ["Line 2", "NUMBER AND TYPE OF AIRCRAFT", [
+            ["", "e.g. 2x AH-99", "text"]
+        ]],
+        ["Line 3", "POSITION AND ALTITUDE", [
+            ["", "Grid / marker / battle position", "grid", [["source", "mapClick"]]],
+            ["ALT ", "Altitude (m)", "number", [["min", 0], ["max", 20000]]]
+        ]],
+        ["Line 4", "ORDNANCE", [
+            ["", "Quantity of each munition", "textarea"]
+        ]],
+        ["Line 5", "TIME ON STATION", [
+            ["", "Time available for tasking", "text"]
+        ]],
+        ["Line 6", "ABORT CODE", [
+            ["", "Provided by flight lead", "text"]
+        ]],
+        ["Line 7", "REMARKS", [
+            ["", "Optional", "text"]
+        ]]
+    ],
+    [
+        ["anchor", "Line3.A"],
+        ["replyableWith", _replies],
+        ["subject", "CHECK-IN {Line1.A} - {Line2.A}"]
+    ]
+] call FUNC(registerTemplate);
+
+// HELICOPTER LANDING ZONE BRIEF (deck)
+[
+    "hlz", "HLZ BRIEF", "HLZ",
+    [
+        ["Line 1", "HLZ LOCATION", [
+            ["", "Grid / map position", "grid", [["required", true], ["source", "mapClick"]]]
+        ]],
+        ["Line 2", "LZ/DZ NAME / MAP MARKING", [
+            ["", "Name, or a marker already on the map", "text", [["source", "marker"]]]
+        ]],
+        ["Line 3", "EXTRACT CONTENTS", [
+            ["", "Who / what is being extracted", "text"]
+        ]],
+        ["Line 4", "SECURITY", [
+            ["GREEN", "Secure, no threat", "bool", [["exclusive", "lz"]]],
+            ["YELLOW", "Secure but threatened", "bool", [["exclusive", "lz"]]],
+            ["RED", "Under fire", "bool", [["exclusive", "lz"]]]
+        ]],
+        ["Line 5", "MARKING METHOD", [
+            ["", "How the HLZ is marked", "choice", [["choices", ["SMOKE", "IR STROBE", "PANEL", "CHEM-LIGHT", "OTHER"]]]],
+            ["", "Colour / code / location from the HLZ", "text"]
+        ]],
+        ["Line 6", "INGRESS LOCATION", [
+            ["", "Ingress point / approach start", "grid", [["source", "mapClick"], ["noCur", true]]]
+        ]],
+        ["Line 7", "EGRESS LOCATION", [
+            ["", "Egress point / departure turn", "grid", [["source", "mapClick"], ["noCur", true]]]
+        ]],
+        ["Remarks", "REMARKS", [
+            ["", "Remarks", "textarea"]
+        ]]
+    ],
+    [
+        ["anchor", "Line1.A"],
+        ["transitionsTo", "ISSUED"],
+        ["replyableWith", _replies],
+        ["subject", "HLZ {Line2.A} - {Line1.A}"]
+    ]
+] call FUNC(registerTemplate);
+
+// AIRDROP BRIEF (deck). RUN-IN HEADING became the ingress/egress pair when
+// the handoff redrew it: two fixes on the map say more than a bearing, and
+// they carry the departure a heading never did.
+[
+    "airdrop", "AIRDROP BRIEF", "AIRDROP",
+    [
+        ["Line 1", "POINT OF IMPACT LOCATION", [
+            ["", "Grid / map position", "grid", [["required", true], ["source", "mapClick"]]]
+        ]],
+        ["Line 2", "POINT OF IMPACT ALTITUDE", [
+            ["", "Altitude (m)", "number", [["min", 0], ["max", 5000]]]
+        ]],
+        ["Line 3", "DZ DESCRIPTION / MARK", [
+            ["", "Description, or a marker already on the map", "text", [["source", "marker"]]]
+        ]],
+        ["Line 4", "FRIENDLIES LOCATION / MARK", [
+            ["", "Where the friendlies are, or a marker", "text", [["source", "marker"]]]
+        ]],
+        ["Line 5", "SURFACE WINDS", [
+            ["", "Surface winds", "text"]
+        ]],
+        ["Line 6", "INGRESS LOCATION", [
+            ["", "Ingress point / run-in start", "grid", [["source", "mapClick"], ["noCur", true]]]
+        ]],
+        ["Line 7", "EGRESS LOCATION", [
+            ["", "Egress point / off-target turn", "grid", [["source", "mapClick"], ["noCur", true]]]
+        ]],
+        ["Remarks", "REMARKS", [
+            ["", "Remarks", "textarea"]
+        ]]
+    ],
+    [
+        ["anchor", "Line1.A"],
+        ["transitionsTo", "ISSUED"],
+        ["replyableWith", _replies],
+        ["subject", "AIRDROP {Line1.A}"]
+    ]
+] call FUNC(registerTemplate);
+
+// VEHICLE REPORT / DEFREP (deck). One colour per line. The ROUTING line is the
+// carryover from ctab_groups - ticked, it also reaches the command group.
+[
+    "defrep", "VEHICLE REPORT (DEFREP)", "DEFREP",
+    [
+        ["Vehicle", "VEHICLE", [
+            ["", "Vehicle callsign / type", "text", [["required", true]]]
+        ]],
+        ["Line 1", "DAMAGE", [
+            ["GREEN", "No damage", "bool", [["exclusive", "damage"]]],
+            ["YELLOW", "Slight damage, still combat effective", "bool", [["exclusive", "damage"]]],
+            ["RED", "Not combat effective", "bool", [["exclusive", "damage"]]],
+            ["BLACK", "Destroyed", "bool", [["exclusive", "damage"]]]
+        ]],
+        ["Line 2", "EQUIPMENT", [
+            ["GREEN", "No damage", "bool", [["exclusive", "equipment"]]],
+            ["YELLOW", "Slight damage, can carry on with mission", "bool", [["exclusive", "equipment"]]],
+            ["RED", "Major damage to equipment", "bool", [["exclusive", "equipment"]]],
+            ["BLACK", "No longer mission capable", "bool", [["exclusive", "equipment"]]]
+        ]],
+        ["Line 3", "FUEL", [
+            ["GREEN", "More than 1/2", "bool", [["exclusive", "fuel"]]],
+            ["YELLOW", "Less than 1/2", "bool", [["exclusive", "fuel"]]],
+            ["RED", "Less than 1/4", "bool", [["exclusive", "fuel"]]],
+            ["BLACK", "EMPTY!", "bool", [["exclusive", "fuel"]]]
+        ]],
+        ["Remarks", "REMARKS", [
+            ["", "Remarks", "textarea"]
+        ]],
+        ["Command", "ROUTING", [
+            ["CMD", "Also send to the command group", "bool"]
+        ]]
+    ],
+    [
+        ["routing", "Command.A"],
+        ["replyableWith", _replies],
+        ["subject", "DEFREP {Vehicle.A}"]
+    ]
+] call FUNC(registerTemplate);
+
+// NO ACE REPORT. It was in the deck and it is deliberately not here: a man's
+// A/C/E letters are published onto his unit the moment he presses them in the
+// Squad Status app, and the platoon view reads every squad's at once - a filed
+// report was a second, staler copy of a state the screens already carry live.
+// The design handoff's twelve root reports do not include it.
+
+// REACT/QRF LINK-UP PLAN (deck)
+[
+    "qrf", "REACT/QRF LINK-UP", "QRF",
+    [
+        ["Line 1", "WHO LINKS WITH WHO", [
+            ["", "Elements linking up", "text", [["required", true]]]
+        ]],
+        ["Line 2", "LINK-UP LOCATION", [
+            ["", "Grid or map marker", "grid", [["required", true], ["source", "mapClick"]]]
+        ]],
+        ["Line 3", "SUGGESTED ROUTE", [
+            ["", "Route to the link-up site", "text"]
+        ]],
+        ["Line 4", "SPECIAL ATTACHMENTS NEEDED", [
+            ["", "Any special attachments needed", "text"]
+        ]],
+        ["Line 5", "ACTION ON ARRIVAL", [
+            ["", "Cordon area, block route, set up CCP, etc.", "text"]
+        ]],
+        ["Remarks", "REMARKS", [
+            ["", "Remarks", "textarea"]
+        ]]
+    ],
+    [
+        ["anchor", "Line2.A"],
+        ["transitionsTo", "ISSUED"],
+        ["replyableWith", _replies],
+        ["subject", "QRF LINK-UP {Line2.A} - {Line1.A}"]
+    ]
+] call FUNC(registerTemplate);
+
+// ---------------------------------------------------------------- replies ---
+// Not from the deck. cTab had no threading, so it needed none of these; a
+// threaded system that cannot answer a report is a noticeboard.
+
+[
+    "roger", "ROGER", "ROGER", [],
+    [
+        ["kind", "reply"],
+        ["transitionsTo", "RECEIPT"],
+        ["allowedFrom", ["ISSUED"]]
+    ]
+] call FUNC(registerTemplate);
+
+[
+    "wilco", "WILCO", "WILCO", [],
+    [
+        ["kind", "reply"],
+        ["transitionsTo", "ACCEPTED"],
+        ["allowedFrom", ["ISSUED", "RECEIPT"]],
+        ["senderMustBe", "assignee"]
+    ]
+] call FUNC(registerTemplate);
+
+[
+    "inprogress", "ON TASK", "ON TASK", [],
+    [
+        ["kind", "reply"],
+        ["transitionsTo", "IN_PROGRESS"],
+        ["allowedFrom", ["ACCEPTED", "RECEIPT"]],
+        ["senderMustBe", "assignee"]
+    ]
+] call FUNC(registerTemplate);
+
+[
+    "cantco", "CANTCO", "CANTCO",
+    [
+        ["Reason", "REASON UNABLE TO COMPLY", [
+            ["", "Why not", "textarea", [["required", true]]]
+        ]]
+    ],
+    [
+        ["kind", "reply"],
+        ["priority", "high"],
+        ["transitionsTo", "DECLINED"],
+        ["allowedFrom", ["ISSUED", "RECEIPT", "ACCEPTED", "IN_PROGRESS"]],
+        ["senderMustBe", "assignee"],
+        ["subject", "CANTCO - {Reason.A}"]
+    ]
+] call FUNC(registerTemplate);
+
+[
+    "freetext", "MESSAGE", "MSG",
+    [
+        ["Text", "MESSAGE", [
+            ["", "Anything the templates do not cover", "textarea", [["required", true]]]
+        ]]
+    ],
+    [
+        ["kind", "both"],
+        ["replyableWith", _replies],
+        ["subject", "{Text.A}"]
+    ]
+] call FUNC(registerTemplate);
+
+[
+    "close", "CLOSE THREAD", "CLOSE",
+    [
+        ["Outcome", "OUTCOME", [
+            ["", "How it ended", "text"]
+        ]]
+    ],
+    [
+        ["kind", "reply"],
+        ["transitionsTo", "CLOSED"],
+        ["senderMustBe", "issuer"]
+    ]
+] call FUNC(registerTemplate);

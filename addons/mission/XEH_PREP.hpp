@@ -1,0 +1,10 @@
+PREP(addBaseCrate);
+PREP(addEscapeWreck);
+PREP(addGetOutHelo);
+PREP(addHaloJump);
+PREP(addLineJump);
+PREP(addStagingZone);
+PREP(doStarterCrate);
+PREP(makeAgent);
+PREP(removeStagingZone);
+PREP(setVehicleLable);

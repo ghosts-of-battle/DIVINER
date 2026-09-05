@@ -1,0 +1,11 @@
+PREP(addCargo);
+PREP(checkItemValidity);
+PREP(createCargoCrate);
+PREP(doEmptyCrate);
+PREP(doFieldHospital);
+PREP(doStarterCrateSupplies);
+PREP(doSupplyCrate);
+PREP(getAllContainerItems);
+PREP(getContainer);
+PREP(setCargo);
+PREP(setCargoAttributes);

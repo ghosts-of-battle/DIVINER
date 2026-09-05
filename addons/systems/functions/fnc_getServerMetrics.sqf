@@ -1,0 +1,48 @@
+#include "script_component.hpp"
+/*
+ * Author: Liber.N
+ * This function allow you to get statistics from the server.
+ *
+ * Arguments:
+ * 0: Client ID <NUMBER>
+ *
+ * Return Value:
+ * Nothing
+ *
+ * Example:
+ * [owner player] call ghostD_systems_fnc_getServerMetrics
+ *
+ * Public: No
+ */
+ 
+params ["_clientID"];
+
+private _countUnits = ({ local _x } count allUnits);
+private _countGroups = ({ local _x } count allGroups);
+private _countVehicles = ({ local _x } count vehicles);
+
+private _countGlobalUnits = (count allUnits);
+private _countGlobalGroups = (count allGroups);
+private _countGlobalVehicles = (count vehicles);
+
+private _fps = (round diag_fps);
+private _fpsMin = (round diag_fpsMin);
+private _upTime = (round diag_tickTime);
+private _missionTime = (round time);
+
+private _activeScripts = diag_activeScripts;
+private _spawn = _activeScripts select 0;
+private _execVM = _activeScripts select 1;
+private _exec = _activeScripts select 2;
+private _execFSM = _activeScripts select 3;
+
+// One line per group rather than the old four-block hint - the notification panel is wide, not tall.
+private _report = format [
+    "Server %1u/%2g/%3v - Global %4u/%5g/%6v - Scripts %7/%8/%9/%10 - FPS %11 (min %12), up %13s, mission %14s",
+    _countUnits, _countGroups, _countVehicles,
+    _countGlobalUnits, _countGlobalGroups, _countGlobalVehicles,
+    _spawn, _execVM, _exec, _execFSM,
+    _fps, _fpsMin, _upTime, _missionTime
+];
+
+[QGHOSTGVAR(notify,post), ["Server Metrics", _report, NOTE_INFO, sideUnknown], _clientID] call CBA_fnc_targetEvent;

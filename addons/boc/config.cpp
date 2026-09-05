@@ -1,0 +1,25 @@
+#include "script_component.hpp"
+
+class CfgPatches {
+    class ADDON {
+        name = COMPONENT_NAME;
+        units[] = {
+            QGVAR(ModuleAdd),
+            QGVAR(ModuleOnChest)
+        };
+        weapons[] = {};
+        requiredVersion = REQUIRED_VERSION;
+        requiredAddons[] = {"ghostD_main", "ace_common"};
+        author = QAUTHOR;
+        authors[] = {"DerZade", "mjc4wilton"};
+        authorUrl = "https://github.com/mjc4wilton/BackpackOnChestRedux";
+        VERSION_CONFIG;
+    };
+};
+
+#include "CfgEventHandlers.hpp"
+#include "CfgModuleCategories.hpp"
+#include "CfgVehicles.hpp"
+#include "CfgFunctions.hpp"
+
+#include "ACE_Arsenal_Actions.hpp"

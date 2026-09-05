@@ -1,0 +1,46 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Arma 3 extension: a native library exporting RVExtension* via NativeAOT,
+       for the WINDOWS and the LINUX server from one source, WITH THE MONGODB
+       DRIVER BUILT IN so a game server that can run nothing else still reaches
+       Atlas (a mongodb+srv:// address), or the pacdb service (an http:// one).
+         Windows:  dotnet publish -c Release -r win-x64    (needs the VC++ build tools;
+                   run from a shell with the Visual Studio Installer folder on PATH)
+                   -> bin/Release/net8.0/win-x64/publish/ghostd_pacdb.dll -> ghostd_pacdb_x64.dll
+         Linux:    build-linux.sh (Docker), or on any Linux box with the .NET 8 SDK,
+                   clang and zlib1g-dev:  dotnet publish -c Release -r linux-x64
+                   -> bin/Release/net8.0/linux-x64/publish/ghostd_pacdb.so -> ghostd_pacdb_x64.so
+       NativeAOT cannot cross-compile: each file is built on its own platform.
+       The driver and its BSON library are kept whole (TrimmerRootAssembly): they
+       lean on reflection the trimmer cannot see through. -->
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <OutputType>Library</OutputType>
+    <AssemblyName>ghostd_pacdb</AssemblyName>
+    <RootNamespace>GhostD.PacDb</RootNamespace>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <PublishAot>true</PublishAot>
+    <NativeLib>Shared</NativeLib>
+    <SelfContained>true</SelfContained>
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <StripSymbols>true</StripSymbols>
+    <RuntimeIdentifiers>win-x64;linux-x64</RuntimeIdentifiers>
+    <SuppressTrimAnalysisWarnings>true</SuppressTrimAnalysisWarnings>
+    <JsonSerializerIsReflectionEnabledByDefault>false</JsonSerializerIsReflectionEnabledByDefault>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="MongoDB.Driver" Version="2.28.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <TrimmerRootAssembly Include="MongoDB.Driver" />
+    <TrimmerRootAssembly Include="MongoDB.Driver.Core" />
+    <TrimmerRootAssembly Include="MongoDB.Bson" />
+    <TrimmerRootAssembly Include="DnsClient" />
+  </ItemGroup>
+
+</Project>

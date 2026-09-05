@@ -1,0 +1,32 @@
+name = "DIVINER"
+mainprefix = "z"
+prefix = "ghostD"
+
+[files]
+include = [
+    "mod.cpp",
+    "README.md",
+    "LICENSE",
+    "logo_256.paa",
+    "logo_256_g.paa",
+    "newlogo.png",
+    # The pacdb extension (tools/pacdb): server-side only, one file per server
+    # platform. Nothing in them points at any server - the URL and key come
+    # from the server machine's environment (or a pacdb.json in its root).
+    "ghostd_pacdb_x64.dll",
+    "ghostd_pacdb_x64.so"
+]
+
+# Source material that must never reach a PBO. The image formats are the working
+# files the .paa are made from; the Python is the art and sync generators, which
+# have no business in a released addon at all.
+exclude = ["*.psd", "*.png", "*.tga", "*.py", "*.pyc", "__pycache__"]
+
+[version]
+path = "addons/main/script_version.hpp"
+# No commits in this repo yet. Drop this line once it has one and HEMTT will
+# stamp the build with the real hash.
+git_hash = 0
+
+[properties]
+author = "Ghosts of Battle"

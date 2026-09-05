@@ -1,0 +1,97 @@
+#include "script_component.hpp"
+/*
+ * Author: CPL.Brostrom.A -- Tinkered with by YonV tinkered with by YonV
+ * This function add eventhandlers.
+ *
+ * Example:
+ * call ghostD_init_fnc_eventHandlers
+ *
+ * Public: No
+ */
+
+INFO("InitEventHandlers","Creating Global EventHandlers");
+
+[QGVAR(getAttendance), {
+    call EFUNC(systems,getAttendance);
+}] call CBA_fnc_addEventHandler;
+
+// Player Events
+if (GVAR(isPlayer)) then {
+    INFO("InitEventHandlers","Creating Client EventHandlers");
+
+    // Map drawing restriction (cTab required, admins exempt)
+    call EFUNC(init,mapDrawing);
+
+    // ACM Events
+    INFO("InitEventHandlers","Creating ACM Server EventHandlers");
+
+    ["ACM_casualtyEvacuated", {
+        params ["_unit", "_originalUnit"];
+        ["YMF_casualtyEvacuatedserver", [_unit, _originalUnit]] call CBA_fnc_serverEvent;
+        [_originalUnit] call EFUNC(groups,removeFromGroup);
+        call EFUNC(init,playerpost);
+        call EFUNC(groups,initGroupMenu);
+    }] call CBA_fnc_addEventHandler;
+};
+
+// Server Events
+if (!isServer) exitWith {};
+INFO("InitEventHandlers","Creating Server EventHandlers");
+
+[QEGVAR(log,text), {
+    diag_log text _this;
+}] call CBA_fnc_addEventHandler;
+
+[QEGVAR(log,player), {
+    params ["_guid","_name"];
+    private _unit = [_guid] call BIS_fnc_getUnitByUID;
+    private _playerLog = missionNamespace getVariable [QEGVAR(log,players), createHashMap];
+    INFO_3("PlayerLog","Connected %1 [%2] (GUID: %3)",_name,_unit,_guid);
+
+    // HOISTED. This was computed inside the "existing entry" branch and read
+    // inside the "new entry" one, so every player logging in for the first time
+    // got a nil loadout written to their record.
+    private _loadout = [_unit getVariable [QEGVAR(Gear,LoadoutClass), typeOf _unit], "Trooper"] select (isNull _unit);
+    
+    if (!isNil{_playerLog get _guid}) then {
+        INFO_1("PlayerLog","Updating Log Entry [%1]",isNil{_playerLog get _guid});
+        private _data = _playerLog get _guid;
+        
+        private _connections = _data get "connections";
+        _connections pushBack systemTimeUTC;
+        _data set ["connections", _connections];
+
+        _data set ["loadout", _loadout];
+        
+        _playerLog set [_guid,_data];
+    } else {
+        INFO_1("PlayerLog","Creating Log Entry [%1]",isNil{_playerLog get _guid});
+        private _entry = createHashMapFromArray [
+            ['name', _name],
+            ['loadout', _loadout],
+            ['connectTime', systemTimeUTC],
+            ['connections', [systemTimeUTC]]
+        ];
+        _playerLog set [_guid,_entry];
+    };
+    missionNamespace setVariable [QEGVAR(log,players), _playerLog];
+}] call CBA_fnc_addEventHandler;
+
+addMissionEventHandler ["PlayerConnected", {
+    params ["_id", "_uid", "_name", "_jip", "_owner", "_idstr"];
+    [QEGVAR(log,player), [_uid, _name]] call CBA_fnc_serverEvent;
+}];
+
+// ACM Events
+INFO("InitEventHandlers","Creating ACM Server EventHandlers");
+
+["YMF_casualtyEvacuatedserver", {
+    params ["_unit", "_originalUnit"];
+    // Server side, so this was never a message anyone could read - it is a log line, and now says so.
+    SHOW_SERVER_INFO("CasualtyEvac",FORMAT_2("Unit %1 has been evacuated. Original unit: %2",_unit,_originalUnit));
+    [_originalUnit] call EFUNC(groups,removeFromGroup);
+}] call CBA_fnc_addEventHandler;
+
+
+
+

@@ -1,0 +1,78 @@
+#include "script_component.hpp"
+/* ----------------------------------------------------------------------------
+Function: ghostD_pac_fnc_structureAdopt
+
+Description:
+    Makes a structure document - {structure: {ranks, skills, awards,
+    statuses, roles, opords, ...}} as the service assembles it, pac_sync.py
+    pull writes it and STRUCTURE OUT exports it - THE structure, on the
+    server, in place of whatever the mission's config compiled. Called by
+    the boot (service) and FUNC(structureImport) (clipboard).
+
+    THE DATABASE WINS, THE MISSION IS THE SEED. A mission whose CfgGFA_PAC
+    carries only settings gets everything from here; a mission that still
+    carries the sections is what pushes a first document up when the
+    database has none (FUNC(boot)). The six sections every database has
+    are required; the ORBAT, the nets, the radio plan, the report deck and
+    the schemes ride along when the document has them and the mission's
+    stay otherwise. Roles the mission still declares in Dynamic_Roles are
+    merged back in after adoption, fields the document lacks filled from
+    the class (FUNC(rolesFromMission)).
+
+    The hash is recomputed so the tile and the delta tool describe what is
+    actually loaded.
+
+Parameters:
+    0: The document <HASHMAP>
+
+Returns:
+    Whether it was adopted <BOOL>
+
+Author:
+    YonV
+---------------------------------------------------------------------------- */
+
+params [["_doc", createHashMap, [createHashMap]]];
+
+if (!isServer) exitWith {false};
+
+private _s = _doc getOrDefault ["structure", createHashMap];
+if !(_s isEqualType createHashMap) exitWith {false};
+
+private _out = createHashMap;
+{
+    private _v = _s getOrDefault [_x, createHashMap];
+    if !(_v isEqualType createHashMap) exitWith {_out = createHashMap};
+    _out set [_x, _v];
+} forEach ["ranks", "skills", "awards", "statuses", "roles", "opords"];
+if (count _out isNotEqualTo 6) exitWith {false};
+
+// the ORBAT rides along when the document has one; else the mission's stays
+private _orbat = _s getOrDefault ["orbat", createHashMap];
+_out set ["orbat", [GVAR(structure) getOrDefault ["orbat", createHashMap], _orbat] select (_orbat isEqualType createHashMap && {(_orbat getOrDefault ["groups", []]) isNotEqualTo []})];
+
+// the same for the sections a database may not hold yet
+{
+    private _v = _s getOrDefault [_x, createHashMap];
+    _out set [_x, [GVAR(structure) getOrDefault [_x, createHashMap], _v] select (_v isEqualType createHashMap && {count _v > 0})];
+} forEach ["templates", "schemes", "nets", "radio", "promotion"];
+
+GVAR(structure) = _out;
+
+// ALL THE CONFIG MOVES, bar three: the settings in the document override the
+// mission's, except unitId, serverId and sync - those say where to look and
+// which server this is, and a database cannot tell a server that.
+private _settings = _doc getOrDefault ["settings", createHashMap];
+if (_settings isEqualType createHashMap) then {
+    {
+        if (_x in ["unitId", "serverId", "sync"]) then {continue};
+        GVAR(settings) set [_x, _y];
+    } forEach _settings;
+};
+
+[] call FUNC(rolesFromMission);
+GVAR(structureHash) = [] call FUNC(structureHash);
+
+INFO_4("structure adopted from the service: %1 rank(s), %2 skill(s), %3 role(s), %4 OPORD(s)",count (_out get "ranks"),count (_out get "skills"),count (_out get "roles"),count (_out get "opords"));
+
+true

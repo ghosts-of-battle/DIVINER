@@ -1,0 +1,11 @@
+name = "DIVINER";
+picture = "newlogo.png";
+description = "DIVINER - the Ghosts of Battle mission framework";
+logo = "logo_256.paa";
+logoOver = "logo_256_g.paa";
+tooltip = "Herding cats since 2034";
+tooltipOwned = "DIVINER";
+overview = "DIVINER - the UI and mission framework. Pairs with the framework mission.";
+author = "YonV";
+overviewPicture = "logo_256.paa";
+dir = "@DIVINER";

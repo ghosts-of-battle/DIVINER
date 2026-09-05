@@ -1,0 +1,11 @@
+# Builds the LINUX extension (ghostd_pacdb_x64.so) - NativeAOT has to run on
+# Linux to make a Linux library, so this is the Linux. See build-linux.sh.
+#
+# BULLSEYE ON PURPOSE (glibc 2.31): a native library binds to the glibc it
+# was built against and will not load on an older one. Built here it runs on
+# Debian 11 and 12, Ubuntu 20.04 and later - most game servers.
+FROM mcr.microsoft.com/dotnet/sdk:8.0-bullseye-slim
+RUN apt-get update && apt-get install -y --no-install-recommends clang zlib1g-dev && rm -rf /var/lib/apt/lists/*
+WORKDIR /src
+COPY ghostd_pacdb.csproj Extension.cs ./
+RUN dotnet publish -c Release -r linux-x64 -o /out && cp /out/ghostd_pacdb.so /out/ghostd_pacdb_x64.so

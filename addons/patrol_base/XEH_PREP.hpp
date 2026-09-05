@@ -1,0 +1,12 @@
+PREP(countKits);
+PREP(establishPatrolBase);
+PREP(serverBuild);
+PREP(serverUnbuild);
+PREP(addUnbuildAction);
+PREP(spawnKits);
+PREP(canPickupKit);
+PREP(kitPickup);
+PREP(promptName);
+PREP(runHook);
+PREP(initPlayer);
+PREP(addZeusModule);

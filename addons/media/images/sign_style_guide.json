@@ -1,0 +1,104 @@
+{
+  "name": "ghostb-training-area-sign",
+  "version": 1,
+  "description": "Design guide for Ghosts of Battle training-area ammo boards. Reproduce exactly to match fa_sign_*.png in /art. Reference blank: 'art/ghostb Training Area.png'.",
+  "canvas": {
+    "width_px": 2048,
+    "height_px": 1024,
+    "aspect": "2:1",
+    "format_master": "PNG RGB",
+    "format_engine": "PAA DXT1 via `hemtt utils paa convert <png> <paa>`",
+    "engine_path": "z\\ghostfa\\addons\\main\\data\\fa_sign_<topic>.paa",
+    "file_naming": "fa_sign_<topic>.png lowercase snake_case"
+  },
+  "palette": {
+    "brown_outer_margin": "#422414",
+    "brown_board_face": "#482918",
+    "frame_pale": "#E6E6E9",
+    "accent_ember": "#DE5C30",
+    "designation_amber": "#E9A63C",
+    "body_bone": "#EEE8DC",
+    "footnote_slate": "#9CAABA",
+    "rule_dark_wood": "#785A3C",
+    "note": "ember/amber/slate mirror the in-game diary colours; do not substitute"
+  },
+  "board_construction": {
+    "background": "fill canvas brown_outer_margin",
+    "frame": {"shape": "rounded_rectangle", "bounds": [14, 14, 2034, 1010], "radius": 26, "fill": "frame_pale"},
+    "face": {"shape": "rounded_rectangle", "bounds": [30, 30, 2018, 994], "radius": 18, "fill": "brown_board_face"},
+    "wood_grain": {
+      "type": "vertical strokes over the face, under the text",
+      "count": 260, "seed": 7,
+      "stroke": {"length_px": [60, 320], "width_px": [1, 3], "x_wander_px": 6},
+      "colors_rgba": [[0, 0, 0, 10], [0, 0, 0, 14], [255, 220, 180, 8]],
+      "note": "keep alpha <= 14; the grain must be barely visible"
+    }
+  },
+  "badge": {
+    "asset": "addons/main/data/logo_256.paa (colored skeleton) — convert to PNG, keep alpha",
+    "size_px": 252,
+    "position": "top-right: x = width - 96 - 252, y = 62",
+    "rule": "always present, never scaled above 256 source size"
+  },
+  "typography": {
+    "fonts": {
+      "eyebrow": {"file": "arialbd.ttf", "size": 40, "color": "accent_ember", "case": "UPPER"},
+      "title": {"file": "ariblk.ttf", "size": 96, "color": "body_bone", "case": "UPPER",
+                "autofit": "shrink in steps of 4 down to min 56 until width <= width - 96(left) - 96(right) - 252(badge) - 48(gap); vertically recentre by (96 - size)/2"},
+      "subline": {"file": "arialbd.ttf", "size": 44, "color": "footnote_slate", "case": "lower/mixed",
+                  "separator": " · "},
+      "designation": {"file": "ariblk.ttf", "size": 52, "size_compact": 40, "color": "designation_amber"},
+      "row_description": {"file": "arial.ttf", "size": 46, "size_compact": 36, "color": "body_bone",
+                          "prefix": "— ", "y_offset_from_designation": 8, "x_gap_after_designation": 36},
+      "column_header": {"file": "ariblk.ttf", "size": 44, "color": "accent_ember"},
+      "footer": {"file": "arialbd.ttf", "size": 38, "size_2col": 36, "color": "footnote_slate"}
+    }
+  },
+  "layout": {
+    "margin_left_right": 96,
+    "eyebrow_y": 88,
+    "title_y": 140,
+    "subline_y": 262,
+    "header_divider": {"y": 336, "x": [96, 1952], "width": 4, "color": "frame_pale"},
+    "rows_start_y": 382,
+    "row_step": {"normal_max": 118, "compact_max": 64,
+                 "compact_when": "rows >= 7",
+                 "formula": "min(max_step, (1024 - 170 - rows_start_y) / row_count)",
+                 "few_rows": "if block is short, centre it: y += (1024 - 190 - rows_start_y - step*rows)/2"},
+    "footer_divider": {"y": 872, "x": [96, 1952], "width": 3, "color": "rule_dark_wood"},
+    "footer_text_y": 896,
+    "two_column": {
+      "use_when": "more than ~9 rows or two weapon systems",
+      "column_width": "(2048 - 2*96 - 64) / 2",
+      "column_gap": 64,
+      "column_header_y": 378,
+      "rows_start_y": 450,
+      "row_step": "min(64, (1024 - 180 - rows_start_y) / rows_in_column)",
+      "designation_size": 36, "description_size": 31, "description_gap": 22,
+      "middle_divider": {"x": "left_margin + column_width + 32", "y": [384, 844], "width": 3, "color": "rule_dark_wood"}
+    }
+  },
+  "tracer_dots": {
+    "use_when": "the calibre's loads come in tracer colours; omit for 40mm/rockets",
+    "position": "footer right: first dot centre x = 2048 - 96 - 6*46 - 16, y = 928",
+    "radius": 16, "spacing_centres": 46,
+    "colors_in_order": ["#D0453A red", "#F0D23C yellow", "#5CB85C green", "#F0F0F0 white", "#4678E6 blue", "#F08228 orange"],
+    "ir_dot": {"style": "outline only, width 4, no fill", "color": "#78DC82", "label": "IR centred, arialbd 18, same color"},
+    "outline": {"color": "#1E120A", "width": 3, "applies": "filled dots only"}
+  },
+  "content_conventions": {
+    "eyebrow": "GHOSTS OF BATTLE — TRAINING AREA (constant)",
+    "title": "<CALIBRE or SYSTEM> — <WEAPONS>, em-dash separated, UPPERCASE",
+    "subline": "weapon/mag-body scope, dot-separated, sentence case",
+    "rows": "designation in amber exactly as the arsenal shows it (Mk327 HV, XM891 CTEP, AF-556C CT, Type 42 CT, DBP-39 CT); description starts with an em-dash, lowercase, <= ~55 chars, optional (year) or range at the end",
+    "row_order": "ball/standard first, then CT, then AP, then specialty (PAB last for rifles); rockets: AT first, then HE/utility, then C-UAS, then AA",
+    "footer": "one practical usage line, dot-separated; mention the [Ghost] arsenal tag on rifle-calibre boards",
+    "designation_sides": "NATO = Mk/XM/M · Russian = GRAU 7N/7U · CSAT = Type ## / DBP · AAF = AF-##"
+  },
+  "output_checklist": [
+    "save PNG master to art/fa_sign_<topic>.png",
+    "convert: hemtt utils paa convert art/fa_sign_<topic>.png addons/main/data/fa_sign_<topic>.paa (delete stale paa first; converter refuses to overwrite)",
+    "verify DXT1 and 2048x1024 with: hemtt utils paa inspect",
+    "usage: this setObjectTextureGlobal [0, \"z\\ghostfa\\addons\\main\\data\\fa_sign_<topic>.paa\"]"
+  ]
+}

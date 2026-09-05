@@ -1,0 +1,18 @@
+.hemttout/
+releases/
+*.pbo
+*.biprivatekey
+.hemttprivatekey
+__pycache__/
+*.pyc
+
+# pacdb: secrets, data and build output
+tools/pacdb/service/appsettings.Local.json
+tools/pacdb/service/data/
+tools/pacdb/**/bin/
+tools/pacdb/**/obj/
+tools/pacdb/service/out/
+pacdb.json
+ghostd_pacdb_x64.dll
+ghostd_pacdb_x64.so
+tools/pacdb/extension/out-linux/

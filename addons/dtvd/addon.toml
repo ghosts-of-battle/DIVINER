@@ -1,0 +1,5 @@
+[rapify]
+# The view distance menu dialog uses safezone math expressions
+# (e.g. `x = 0 * GUI_GRID_CENTER_W + GUI_GRID_CENTER_X;`) that the
+# engine evaluates at load but HEMTT's rapifier cannot parse.
+enabled = false

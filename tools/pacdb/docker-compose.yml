@@ -1,0 +1,33 @@
+# MongoDB and the pacdb service together. `docker compose up -d` here.
+#
+# The Arma server's ghostd_pacdb extension and the tools on an admin's PC
+# talk to the service on 8085; nothing but the service talks to Mongo. Set the
+# API key here and GHOSTD_PACDB_KEY on the server to match (README.md).
+
+services:
+  mongo:
+    image: mongo:7
+    restart: unless-stopped
+    volumes:
+      - pacdb-mongo:/data/db
+    # Not published: only the service needs it. Uncomment to reach it with a client.
+    # ports:
+    #   - "27017:27017"
+
+  pacdb:
+    build: ./service
+    restart: unless-stopped
+    depends_on:
+      - mongo
+    ports:
+      - "127.0.0.1:8085:8085"
+    environment:
+      Urls: "http://0.0.0.0:8085"
+      ApiKey: "change-me"
+      Store: "mongo"
+      Mongo__ConnectionString: "mongodb://mongo:27017"
+      Mongo__Database: "ghostd"
+      Mongo__Collection: "pac"
+
+volumes:
+  pacdb-mongo:

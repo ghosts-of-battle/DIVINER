@@ -1,0 +1,43 @@
+/*
+    Author: TheTimidShade
+
+    Description:
+        Fully heals the selected unit
+
+    Parameters:
+        NONE
+        
+    Returns:
+        NONE
+*/
+
+#include "\z\ghostD\addons\adminpanel\script_component.hpp"
+
+disableSerialization;
+
+
+private _admp_display = uiNamespace getVariable ['admp_displayVar', displayNull];
+if (isNull _admp_display) exitWith {}; // check display exists
+
+private _admp_playerlist_listbox = _admp_display displayCtrl IDC_ADMINPANEL_PLAYERLIST_LISTBOX;
+private _player = [_admp_playerlist_listbox] call admp_fnc_playerFromSelection; // get selected player
+
+if (isNull _player) exitWith {["Admin Panel", "No target found!", [0.831, 0.267, 0.267, 1]] call EFUNC(notify,notify); playSound "addItemFailed";}; // if there is no selected target exit
+
+
+[_player] remoteExec ["ace_medical_treatment_fnc_fullHealLocal", _player, false];
+[_player] call ACM_core_fnc_resetVariables;
+[_player] call ACM_airway_fnc_resetVariables;
+[_player] call ACM_breathing_fnc_resetVariables;
+[_player] call ACM_circulation_fnc_resetVariables;
+[_player] call ACM_damage_fnc_resetVariables;
+[_player] call ACM_disability_fnc_resetVariables;
+
+
+["Admin Panel", format ["Healed %1!", name _player], [0.4, 0.702, 0.4, 1]] call EFUNC(notify,notify);
+playSound "3DEN_notificationDefault";
+
+if (_player != player) then { // show healed player a message
+    private _message = format ["%1 healed you!", name player];
+    [QEGVAR(notify,post), ["Admin Panel", _message, [0.871, 0.361, 0.188, 1], sideUnknown], _player] call CBA_fnc_targetEvent;
+};
