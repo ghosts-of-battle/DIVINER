@@ -73,8 +73,10 @@ Whitespace is stripped and a letter appended per field:
 | `"S"` | `S.A` |
 | `"Callsign"` | `Callsign.A` |
 
-The ALiVE forwarder finds a CONTACTREP's S/A/L/U/T/E/R and a SITREP's
-Callsign/Location/Enemy/Friendly/Civ/Status/Remarks **by those keys**.
+Everything that reads a filed report — the reader card, the OPORD and
+METT-TC autofill, the CASEVAC anchor — finds a CONTACTREP's S/A/L/U/T/E/R
+and a SITREP's Callsign/Location/Enemy/Friendly/Civ/Status/Remarks **by
+those keys**.
 
 > **Rename a line's `name` and you have renamed a field.** Renaming its `label`
 > or a field's `prefix` is safe — those are only what the player reads.
@@ -99,7 +101,8 @@ classes appear. **A line missing from `lineOrder[]` is not shown.**
 `lineOrder[]`. Forget the second step and the line exists, validates, and is
 never drawn.
 
-**Forwarding to ALiVE:** use the field keys the forwarder expects — copy the
-existing CONTACTREP and SITREP rather than inventing keys.
+**Copy an existing card's keys** rather than inventing new ones — the
+reader and the autofills look a field up by name, and a new name is a field
+nothing reads.
 
 Related: [Messaging Deck](Messaging-Deck) &middot; [config_nets](config_nets)

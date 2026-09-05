@@ -1,1 +1,1 @@
-[Ghost](https://github.com/ghosts-of-battle/ghost) &middot; mission framework for Ghosts of Battle &middot; [report an issue](https://github.com/ghosts-of-battle/ghost/issues)
+[DIVINER](https://github.com/ghosts-of-battle/DIVINER) &middot; mission framework for Ghosts of Battle &middot; a two-part system: this mod and a [mission from the 2040 repository](https://github.com/ghosts-of-battle/2040) &middot; [report an issue](https://github.com/ghosts-of-battle/DIVINER/issues)

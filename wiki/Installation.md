@@ -4,7 +4,8 @@
 
 | | |
 |---|---|
-| **Ghost** | This mod — build it with `hemtt build`, or take a [release](https://github.com/ghosts-of-battle/ghost/releases) |
+| **DIVINER** | This mod — the Steam Workshop item, a [release](https://github.com/ghosts-of-battle/DIVINER/releases), or build it yourself with `hemtt release` |
+| **A framework mission** | Required — the other half of a two-part system. The mod does nothing without one. Take a mission from the [2040 repository](https://github.com/ghosts-of-battle/2040) and edit its `config` folder |
 | **CBA_A3** | Required. [Releases](https://github.com/CBATeam/CBA_A3/releases) |
 | **ACE3** | Required. [Releases](https://github.com/acemod/ACE3/releases) |
 | **DUI - Squad Radar** | Required. [Workshop](https://steamcommunity.com/sharedfiles/filedetails/?id=1638341685) |

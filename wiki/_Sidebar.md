@@ -1,4 +1,4 @@
-### [Ghost Wiki](Home)
+### [DIVINER Wiki](Home)
 
 **Start here**
 - [Installation](Installation)

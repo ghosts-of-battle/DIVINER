@@ -22,8 +22,10 @@ The engine strips whitespace from it and appends a letter per field:
 | `"S"` | `S.A` |
 | `"Callsign"` | `Callsign.A` |
 
-The ALiVE forwarder finds a CONTACTREP's S/A/L/U/T/E/R and a SITREP's
-Callsign/Location/Enemy/Friendly/Civ/Status/Remarks **by those keys**.
+Everything that reads a filed report — the reader card, the OPORD and
+METT-TC autofill, the CASEVAC anchor — finds a CONTACTREP's S/A/L/U/T/E/R
+and a SITREP's Callsign/Location/Enemy/Friendly/Civ/Status/Remarks **by
+those keys**.
 
 > **Rename a line's `name` and you have renamed a field.** Renaming its `prefix`
 > is safe — that is only what the player reads on screen.
@@ -74,8 +76,8 @@ class GHOST_Templates {
 2. Give it `displayName` and `short`.
 3. Write its `class Lines`, one class per line.
 4. **List every line class name in `lineOrder[]`.**
-5. If the report is meant to forward to ALiVE, use the field keys the forwarder
-   expects — see the existing CONTACTREP and SITREP.
+5. Copy the field keys of an existing card (CONTACTREP, SITREP) rather than
+   inventing new ones — the reader and the autofills look fields up by name.
 
 ## Adding a line to an existing card
 

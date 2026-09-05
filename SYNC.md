@@ -94,6 +94,15 @@ rather than break, but they name addons that did not come over:
 | `ghost_reaction_*` | `hacking` | no reaction roll on a hack |
 | `ghost_vs17_vs17` | `equipment` | one arsenal item silently absent |
 
+**The wiki no longer points at `ghost` at all** (2026-09-05, before its first
+publish to GitHub): `_Sidebar` says DIVINER Wiki, `_Footer`, `Home` and
+`Installation` link the DIVINER and 2040 repositories, and the ALiVE-forwarder
+passages (`Messaging-Deck`, `config_messaging`, `Cross-File-Contracts`,
+`Intel-Packages`) and the cTab-whitelist wording (`description-ext`) are
+rewritten to what DIVINER actually does. **Do not port those wiki edits back**:
+`ghost` still has ALiVE and its wiki still describes the forwarder. The wiki is
+published with `tools/wiki/publish_wiki.sh`.
+
 
 ## The prefix
 

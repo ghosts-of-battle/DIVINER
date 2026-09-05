@@ -65,7 +65,7 @@ class Extended_PreInit_EventHandlers {
 | `loadScreen`, `overviewPicture` | Loading and browser art |
 | `corpseManagerMode`, `corpseLimit`, `corpseRemovalMinTime` | Garbage collection |
 | `forceRotorLibSimulation` | `0` player's option, `1` advanced, `2` basic |
-| `class CfgCommands { allowedHTMLLoadURIs[] += {...}; }` | The cTab web tablet whitelist. Server config wins on a dedicated server |
+| `class CfgCommands { allowedHTMLLoadURIs[] += {...}; }` | URL whitelist for in-game HTML controls. DIVINER ships nothing that loads web pages, so it is only needed if you add something that does; harmless to keep. Server config wins on a dedicated server |
 | `class CfgDebriefingSections` | ACE killtracker, behind `__has_include` so it is optional |
 
 Related: [How Config Loads](How-Config-Loads) &middot; [loadConfigs](loadConfigs)

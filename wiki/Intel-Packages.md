@@ -3,8 +3,8 @@
 What a hack tells you is something you wrote.
 
 There used to be six products — LOCATE AA, ARTILLERY, CAMP, LOGISTICS, RADAR,
-INSTALLATION — and each one asked ALiVE where it had put something and drew a
-shrinking circle round the answer. That meant the intelligence in your mission
+INSTALLATION — and each one asked the simulation where it had put something
+and drew a shrinking circle round the answer. That meant the intelligence in your mission
 was whatever the simulation happened to contain. You could not write a document,
 hand over a photograph, or decide that breaking into *this* terminal tells the
 players about *that* dockyard.

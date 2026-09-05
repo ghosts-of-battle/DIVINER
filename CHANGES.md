@@ -129,6 +129,39 @@ Off the TAC//ADMIN screenshot (2026-09-05):
 
 **Checked:** `hemtt check`; see the build note at the end of this batch.
 
+### Wiki made DIVINER's own before its first publish; publish script added
+**Sync:** `no` - wiki and tools only, and the removals are DIVINER's divergence (`ghost` keeps ALiVE and its forwarder docs).
+
+Asked 2026-09-05: "can you publish the wiki to github". Before pushing 46
+pages to a public wiki under DIVINER's name, the pages that still described
+the sibling repo or the dropped systems were fixed:
+
+- `wiki/_Sidebar.md` heading `Ghost Wiki` to `DIVINER Wiki`; `wiki/_Footer.md`
+  links DIVINER, the 2040 mission repository and DIVINER's issues;
+  `wiki/Home.md` "Mod documentation" no longer links a `docs/` folder DIVINER
+  does not have (points at Addon Options, the DIVINER and 2040 repositories);
+  `wiki/Installation.md` row `Ghost` to `DIVINER` with DIVINER's releases, plus
+  a new required row for the framework mission (two-part system).
+- ALiVE forwarder wording removed and replaced with what reads the keys in
+  DIVINER (the reader card, the OPORD / METT-TC autofill, the CASEVAC anchor):
+  `wiki/config_messaging.md` (two passages), `wiki/Messaging-Deck.md` (two),
+  `wiki/Cross-File-Contracts.md` (one table row), `wiki/Intel-Packages.md`
+  (one word). `wiki/description-ext.md` `CfgCommands` row no longer calls it
+  the cTab whitelist.
+- **New `tools/wiki/publish_wiki.sh`**: clones `DIVINER.wiki.git`, replaces
+  every page with `wiki/*.md` (deletions propagate), commits, pushes; `--dry-run`
+  shows the diff. Plain git over HTTPS through the credential manager; `gh` is
+  not installed on this box. Explains the one thing it cannot do: create the
+  wiki - GitHub only creates `.wiki.git` after the first page is made in the
+  web UI (`has_wiki` is true on the repo; the wiki repo did not exist at
+  17:40).
+- `SYNC.md` "References left pointing at ghost" notes the wiki repoint and
+  says not to port the removals back.
+
+**Checked:** every internal wiki link resolves (one false positive in a code
+sample); no secrets in `wiki/` (grepped for the Atlas password, user, cluster
+and API key). Not yet published - waiting on the wiki's first page.
+
 ### Lint: L-S26 braces off two cheap comparisons
 **Sync:** `yes` - style only; rewrite `ghostD_` to `ghost_`.
 
