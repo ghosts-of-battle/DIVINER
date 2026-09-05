@@ -37,9 +37,12 @@ switch (_section) do {
         ["armaRank", "t", "ARMA RANK", "PRIVATE CORPORAL SERGEANT LIEUTENANT CAPTAIN MAJOR COLONEL"],
         ["insignia", "t", "", ""]
     ]};
+    // colour: the squad panel draws a man's skill letters in it, so MED and
+    // CLS read green down the whole section at a glance (user, 2026-09-05).
     case "skills": {[
         ["abbrev", "t", "ABBREV", "2-4 letters for the squad panel, e.g. MED; empty = the id in capitals"],
-        ["effects", "a", "EFFECTS", "comma-separated: medic:2, engineer:1, eod:1, trait:isJFO, var:name=value"]
+        ["effects", "a", "EFFECTS", "comma-separated: medic:2, engineer:1, eod:1, trait:isJFO, var:name=value"],
+        ["color", "t", "COLOUR", "R,G,B 0-255 for the skill letters on the squad panel, e.g. 76,175,80; empty = the ink colour"]
     ]};
     case "awards": {[
         ["type", "t", "TYPE", "badge / ribbon / medal - free text"],

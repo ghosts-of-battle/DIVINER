@@ -140,6 +140,13 @@ respawn.
 
 ## Slots and loadouts
 
+**The record drives the slot, never the other way.** A player's ROLE and
+GROUP on the roster are their billet and squad, set on the PAC page (or by a
+CSV import) and nowhere else. The slot they pick in the role picker is what
+they are doing this op; it does not fill an empty ROLE or GROUP on the
+record, so a new player shows both empty until an admin sets them. The one
+thing a first slot still seeds is skills, once (see above).
+
 With `autoSlot = 1`, a player whose record has a role is put into a free slot
 of that role's `slotTag` on first spawn - the same path the group menu takes,
 Role_Access included. `slotMatch = slot` also requires the group the record's

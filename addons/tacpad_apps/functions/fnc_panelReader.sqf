@@ -90,9 +90,13 @@ if (GVAR(readerThread) != "") exitWith {
         {
             if (_x != "") then {
                 [_body, _row, _x, "", [], false] call FUNC(row);
-                _row = _row + 1;
+                // AIR BETWEEN THE LINES. A report read as one dense slab was
+                // "hard to read" (user, 2026-09-05); a third of a row between
+                // lines keeps the sections apart without doubling the height.
+                _row = _row + 1.35;
             };
         } forEach ([_message get "templateId", _message get "payload", false] call EFUNC(messaging,render) splitString endl);
+        _row = _row + 0.5;      // and half a row between messages
     } forEach _messages;
 
     // A long thread runs past the foot of the rail and scrolls, which is what

@@ -86,6 +86,7 @@ GVAR(structureSvc) = GVAR(structure);
 GVAR(settingsSvc) = GVAR(settings);
 publicVariable QGVAR(structureSvc);
 publicVariable QGVAR(settingsSvc);
+["structure"] call FUNC(hostRefresh);     // the host does not hear its own publicVariable
 
 INFO_2("%1 imported a structure: %2",name _caller,_summary);
 [format ["Structure imported and kept: %1.", _summary], _green] call _fnc_tell;

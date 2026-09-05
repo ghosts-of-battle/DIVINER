@@ -186,13 +186,18 @@ private _myUid = getPlayerUID player;
         _dim, 0.58, false, ["left", "right"] select _mine
     ] call FUNC(drawText);
 
-    // --- the words ---------------------------------------------------------
-    private _body = [_msg getOrDefault ["templateId", ""], _msg getOrDefault ["payload", []], false] call EFUNC(messaging,render);
-    _body = (_body splitString endl) select {_x != ""} joinString " - ";
+    // --- the subject, not the words ---------------------------------------
+    // The whole report flattened into one line was a preview nobody could
+    // read (user, 2026-09-05: "again remove this preview"). Under the tags
+    // goes the thread's subject; the words are one click away in the thread.
+    private _subject = _thread getOrDefault ["subject", ""];
+    if !(_subject isEqualType "" && _subject isNotEqualTo "") then {
+        _subject = ([_msg getOrDefault ["templateId", ""]] call EFUNC(messaging,template)) getOrDefault ["title", "MESSAGE"];
+    };
 
     [
         _root, [_tx, _y + _rowH * 0.8, _tw, _rowH],
-        _body, ([_ink, _accent] select _urgent), 0.8, false, _align
+        _subject, ([_ink, _accent] select _urgent), 0.85, true, _align
     ] call FUNC(drawText);
 
     _y = _y + _lineH;

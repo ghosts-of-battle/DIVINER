@@ -213,6 +213,7 @@ GVAR(settingsSvc) = GVAR(settings);
 publicVariable QGVAR(structureSvc);
 publicVariable QGVAR(settingsSvc);
 publicVariable QGVAR(bootLog);
+["structure"] call FUNC(hostRefresh);     // the host does not hear its own publicVariable
 
 GVAR(ready) = true;
 publicVariable QGVAR(ready);

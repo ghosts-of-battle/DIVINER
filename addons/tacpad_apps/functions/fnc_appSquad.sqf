@@ -123,10 +123,11 @@ private _skillsOf = createHashMap;
 if (!isNil "ghostD_pac_fnc_lookup") then {
     {
         _x params ["_uid", "", "", "", "", "", "_skillIds"];
-        _skillsOf set [_uid, (_skillIds apply {
+        // [abbrev, id] pairs - the id is what the colour is looked up by
+        _skillsOf set [_uid, _skillIds apply {
             private _ab = ["skills", _x, "abbrev"] call ghostD_pac_fnc_lookup;
-            [toUpper _x, _ab] select (_ab isNotEqualTo "" && {_ab isNotEqualTo "(" + _x + "?)"})
-        }) joinString " "];
+            [[toUpper _x, _ab] select (_ab isNotEqualTo "" && {_ab isNotEqualTo "(" + _x + "?)"}), _x]
+        }];
     } forEach (missionNamespace getVariable ["ghostD_pac_roster", []]);
 };
 
@@ -206,15 +207,18 @@ if (!isNil "ghostD_pac_fnc_lookup") then {
 // The seven that are left get the width it was using: a table that has to be
 // read at a glance off a map screen wants air between its columns more than it
 // wants another of them.
+// SKILLS IS THE WIDE ONE (user, 2026-09-05: "make wider so all these skills
+// show") - nine three-letter codes on one line. ROLE is two letters and gives
+// up the width; STATUS keeps enough for "WIA - 85% remaining".
 private _cols = [
     ["CALLSIGN", 0.000, "left"],
-    ["ROLE", 0.170, "left"],
-    ["SKILLS", 0.245, "left"],
-    ["STATUS", 0.365, "left"],
-    ["ACE", 0.525, "left"],
-    ["GRID", 0.685, "left"],
-    ["RADIO", 0.800, "left"],
-    ["RANGE", 0.915, "right"]
+    ["ROLE", 0.150, "left"],
+    ["SKILLS", 0.205, "left"],
+    ["STATUS", 0.420, "left"],
+    ["ACE", 0.560, "left"],
+    ["GRID", 0.710, "left"],
+    ["RADIO", 0.815, "left"],
+    ["RANGE", 0.925, "right"]
 ];
 private _aceCol = _cols findIf {(_x # 0) isEqualTo "ACE"};
 
@@ -350,7 +354,21 @@ private _hidden = 0;
 
         [0, format ["%1 %2", [rank _unit] call EFUNC(tacpad,rankShort), name _unit], _rowInk, _y, 0.9] call _fnc_cell;
         [1, [_unit] call EFUNC(tacpad,roleShort), ([_mute, _ground] select (_state == "out")), _y, 0.7] call _fnc_cell;
-        [2, _skillsOf getOrDefault [getPlayerUID _unit, ""], ([_mute, _ground] select (_state == "out")), _y, 0.62] call _fnc_cell;
+        // SKILLS, EACH IN ITS OWN COLOUR - medical green, leadership yellow,
+        // the rest as the unit's skills config says (user, 2026-09-05). Drawn
+        // one code at a time, stepping by the measured width, stopping at the
+        // column's edge. On an accent-filled row the colours would not read,
+        // so those stay ground.
+        private _skillX = _pad + (_cols # 2 # 1) * _tw;
+        private _skillEnd = (_cols # 3 # 1) * _tw;
+        private _skillInk = [_mute, _ground] select (_state == "out");
+        {
+            _x params ["_ab", "_sid"];
+            if (_skillX >= _skillEnd) exitWith {};
+            private _c = if (_state == "out" || {isNil "ghostD_pac_fnc_skillColor"}) then {_skillInk} else {[_sid, _skillInk] call ghostD_pac_fnc_skillColor};
+            private _t = [_body, [_skillX, _y, _skillEnd - _skillX, _rowH], _ab, _c, 0.62, false] call EFUNC(tacpad,drawText);
+            _skillX = _skillX + (ctrlTextWidth _t) + _pad * 0.5;
+        } forEach (_skillsOf getOrDefault [getPlayerUID _unit, []]);
         [3, _status, _statusInk, _y, 0.85] call _fnc_cell;
 
         // ACE, three letters each with the swatch that man last reported. Drawn
@@ -390,9 +408,11 @@ private _hidden = 0;
 
         [5, [mapGridPosition _unit, "-"] select (!alive _unit), _rowInk, _y, 0.85] call _fnc_cell;
 
+        // Column 6 - RADIO. It was 5, the GRID column, so the channel was drawn
+        // through the grid ("text seems to be overlapping", user, 2026-09-05).
         private _radio = _unit getVariable [QGVAR(radio), ""];
         [
-            5,
+            6,
             [_radio, "NO SET"] select (_radio == ""),
             ([_mute, _ground] select (_state == "out")),
             _y, 0.72
@@ -402,21 +422,16 @@ private _hidden = 0;
 
         [_body, [0, _y + _rowH - RULE_THIN * pixelH, _tw, RULE_THIN * pixelH], _line] call EFUNC(tacpad,drawFill);
 
-        // Pressing a man selects him AND centres the map on him. The rail hands off
-        // to here, and a table of grids that will not take you to one of them is a
-        // table you have to read twice.
+        // Pressing a man SELECTS him - for MESSAGE and TUNE in the foot. It used
+        // to try to centre the map on him as well, which never worked under the
+        // app frame and was never wanted (user, 2026-09-05: "does not centre
+        // the map, had never planned for it to centre, so remove").
         private _hit = [_body, [0, _y, _tw, _rowH], {
             params ["_ctrl"];
             private _unit = _ctrl getVariable [QGVAR(unit), objNull];
             if (isNull _unit) exitWith {};
 
             GVAR(squadSelected) = _unit;
-
-            private _map = (ctrlParent _ctrl) displayCtrl 51;
-            if (!isNull _map) then {
-                _map ctrlMapAnimAdd [0.25, ctrlMapScale _map, getPosATL _unit];
-                ctrlMapAnimCommit _map;
-            };
 
             {["squad"] call EFUNC(tacpad,openApp)} call CBA_fnc_execNextFrame;
         }] call EFUNC(tacpad,drawHit);
@@ -504,7 +519,7 @@ if (!isNull _selected && {_selected in _units} && {isPlayer _selected}) then {
 // The hint gives its slot to the overflow count when there is one - a screen
 // that has run out of room should say so, and what to do about it, rather than
 // leaving the leader to notice a squad is short a man.
-private _hint = ["TAP A ROW TO SELECT AND CENTRE THE MAP", "SELECT A PLAYER TO MESSAGE THEM"] select (isNull _selected);
+private _hint = ["TAP ANOTHER ROW TO CHANGE THE SELECTION", "TAP A ROW TO SELECT A PLAYER"] select (isNull _selected);
 if (_hidden > 0) then {
     _hint = format ["%1 ROWS OFF SCREEN - FOLD A SQUAD", _hidden];
 };
@@ -531,8 +546,12 @@ _ry = _ry + _padY;
 // anatomy the rest of the suite is built on. In the platoon view they roll up
 // the whole roster, folded squads included - that is what the measuring pass
 // is for.
+// TALLER TILES. At 1.9 rows the 1.4-size number sat on the kicker and the
+// frame clipped it (user, 2026-09-05: "make the row taller so the text fits
+// better, it's ok to move ACE down"). 2.4 rows, the number under the kicker
+// with air; everything below the tiles moves down with them.
 private _statW = _rw / 2;
-private _statH = _rowH * 1.9;
+private _statH = _rowH * 2.4;
 {
     _x params ["_label", "_value", "_hot"];
     private _sx = _rx + (_forEachIndex mod 2) * _statW;
@@ -540,7 +559,7 @@ private _statH = _rowH * 1.9;
 
     [_body, [_sx, _sy, _statW - _pad, _statH - _padY], _line, RULE_THIN] call EFUNC(tacpad,drawFrame);
     [_body, [_sx + _pad, _sy + _padY, _statW - 2 * _pad, _rowH * 0.6], _label, _mute, 0.6, true, "left", true] call EFUNC(tacpad,drawText);
-    [_body, [_sx + _pad, _sy + _rowH * 0.7, _statW - 2 * _pad, _rowH], ([str _value, _value] select (_value isEqualType "")), ([_ink, _accent] select _hot), 1.4, true] call EFUNC(tacpad,drawText);
+    [_body, [_sx + _pad, _sy + _rowH * 0.95, _statW - 2 * _pad, _rowH * 1.3], ([str _value, _value] select (_value isEqualType "")), ([_ink, _accent] select _hot), 1.4, true] call EFUNC(tacpad,drawText);
 } forEach [
     ["WIA", _wia, _wia > 0],
     ["UNRESPONSIVE", _uncon, _uncon > 0],

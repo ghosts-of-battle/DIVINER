@@ -114,14 +114,20 @@ path for later use; empty is fine.
 A skill is a name for a set of effects. Assigning it in the panel applies every
 effect; removing it removes every one (everything PAC set is cleared before the
 new set goes on). `abbrev` is what the squad panel shows beside each man
-(empty = the id in capitals). Skills applied from the admin console's own
+(empty = the id in capitals). `color` is the colour those letters are drawn
+in on the squad panel, `"R,G,B"` in 0-255 (empty = the panel's ink); the
+framework's defaults are green for CLS and Medic, yellow for Leader, and one
+colour each for the rest, so a leader reads who the medics are at a glance.
+It is editable in game under EDIT STRUCTURE > SKILLS, and lives in the
+`<unitId>.skills` document. Skills applied from the admin console's own
 PLAYER SKILLS block are session-only and end at respawn; only PAC's are kept.
 
 ```cpp
 class skills {
-    class medic { name = "Medic";     abbrev = "MED"; effects[] = {"medic:2"}; };
-    class jfo   { name = "JFO";       abbrev = "JFO"; effects[] = {"trait:isJFO"}; };
-    class pilot { name = "Pilot";     abbrev = "PLT"; effects[] = {"trait:isPilot"}; };
+    class medic { name = "Medic";     abbrev = "MED"; effects[] = {"medic:2"};        color = "76,175,80";  };
+    class jfo   { name = "JFO";       abbrev = "JFO"; effects[] = {"trait:isJFO"};    color = "255,152,0";  };
+    class pilot { name = "Pilot";     abbrev = "PLT"; effects[] = {"trait:isPilot"};  color = "77,182,172"; };
+    class lead  { name = "Leader";    abbrev = "LDR"; effects[] = {"trait:isLeader"}; color = "255,193,7";  };
     class rto   { name = "RTO";       abbrev = "RTO"; effects[] = {"var:acre_radioLevel=2", "trait:isRTO"}; };
 };
 ```

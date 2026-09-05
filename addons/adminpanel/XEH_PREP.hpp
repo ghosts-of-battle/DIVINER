@@ -20,6 +20,7 @@ PREP(execTarget);
 PREP(execTabs);
 PREP(execRun);
 PREP(execClear);
+PREP(execCopy);
 PREP(execLog);
 PREP(confirmEnd);
 PREP(infoRow);

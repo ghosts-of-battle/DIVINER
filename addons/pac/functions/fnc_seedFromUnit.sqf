@@ -3,24 +3,28 @@
 Function: ghostD_pac_fnc_seedFromUnit
 
 Description:
-    Fills an EMPTY rank or role on a player's record from what the mission
-    already gave them: the Arma rank their role set, and the Dynamic_Roles
-    slot they took. Server only; the player's machine sends both on spawn,
-    because rank is local to where setRank ran.
+    Fills an EMPTY rank on a player's record from the Arma rank the mission
+    gave them, and seeds their skills once from the slot they took. Server
+    only; the player's machine sends the rank on spawn, because rank is
+    local to where setRank ran.
 
-    THE ROSTER SHOULD NEVER BE BLANK FOR A MAN WITH A SLOT. It was: a record
-    is seeded empty on connect (skills stay empty on purpose - that is the
-    handoff's DECIDED), and until an admin opened the panel every row read
-    as nothing. The rank column shows the first structure rank that maps to
-    the same Arma rank; the role column shows the structure role whose
-    slotTag is the slot. An admin's later edit wins, because this only ever
-    writes into an empty field.
+    THE SLOT IS NOT THE BILLET. The role a player picks in the role picker
+    and the squad it puts them in are what they are doing THIS op; the
+    record's roleId and groupId are the billet and squad the unit assigned
+    them, set on the PAC page and nowhere else. This function used to copy
+    the picked slot into an empty roleId / groupId, and the picker became
+    the roster (user, 2026-09-05: "the role I select in the role picker
+    should not become my role in PAC and in the db"). It no longer writes
+    either. The rank floor stays: a record with no rank shows the structure
+    rank that maps to the Arma rank, and an admin's edit wins because this
+    only ever writes into an empty field.
 
 Parameters:
     0: The unit <OBJECT>
     1: Arma rank, as `rank` returns it <STRING>
-    2: Dynamic_Roles class the unit is slotted as, "" for none <STRING>
-    3: The group's name (groupId group), "" for none <STRING>
+    2: Dynamic_Roles class the unit is slotted as, "" for none <STRING> -
+       used for the one-time skills seed only, never written as roleId
+    3: The group's name (groupId group) <STRING> - accepted, no longer used
 
 Returns:
     Whether anything was written <BOOL>
@@ -52,16 +56,8 @@ if ((_rec getOrDefault ["rankId", ""]) isEqualTo "" && _armaRank isNotEqualTo ""
     };
 };
 
-if ((_rec getOrDefault ["roleId", ""]) isEqualTo "" && _slot isNotEqualTo "") then {
-    private _roles = GVAR(structure) getOrDefault ["roles", createHashMap];
-    private _ids = keys _roles;
-    _ids sort true;
-    private _hit = _ids findIf {((_roles get _x) getOrDefault ["slotTag", ""]) isEqualTo _slot};
-    if (_hit >= 0) then {
-        _rec set ["roleId", _ids # _hit];
-        _changed = true;
-    };
-};
+// roleId is NOT seeded from the slot - see the header. The billet is the
+// PAC page's to set.
 
 // SKILLS, ONCE, FROM THE ROLE. PAC is the source of truth for skills and the
 // roles no longer apply them; the day that switches on, every man would
@@ -112,10 +108,7 @@ if (!(_rec getOrDefault ["skillsSeeded", false]) && _slot isNotEqualTo "") then 
     INFO_3("%1: skills seeded from role %2: %3",name _unit,_slot,_granted);
 };
 
-if ((_rec getOrDefault ["groupId", ""]) isEqualTo "" && _groupName isNotEqualTo "") then {
-    _rec set ["groupId", _groupName];
-    _changed = true;
-};
+// groupId is NOT seeded from the slot's squad either - same reason.
 
 if (!_changed) exitWith {false};
 

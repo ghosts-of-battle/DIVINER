@@ -26,6 +26,8 @@ PREP(panelUnassigned);
 PREP(panelAward);
 PREP(panelNote);
 PREP(panelTraining);
+PREP(hostRefresh);
+PREP(skillColor);
 PREP(panelDate);
 PREP(panelLog);
 PREP(panelReapply);

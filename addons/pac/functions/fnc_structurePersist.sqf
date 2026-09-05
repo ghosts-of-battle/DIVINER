@@ -119,3 +119,4 @@ GVAR(structureSvc) = GVAR(structure);
 GVAR(settingsSvc) = GVAR(settings);
 publicVariable QGVAR(structureSvc);
 publicVariable QGVAR(settingsSvc);
+["structure"] call FUNC(hostRefresh);     // the host does not hear its own publicVariable

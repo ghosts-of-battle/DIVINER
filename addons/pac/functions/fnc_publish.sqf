@@ -96,6 +96,9 @@ GVAR(summary) = createHashMapFromArray [
 publicVariable QGVAR(summary);
 publicVariable QGVAR(opordArchive);
 
+// The host does not hear its own publicVariable - run its handlers by hand.
+["roster"] call FUNC(hostRefresh);
+
 TRACE_1("roster published",count _out);
 
 nil

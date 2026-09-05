@@ -32,7 +32,11 @@ params [["_display", displayNull, [displayNull]]];
 
 if (isNull _display) exitWith {};
 
-([_display, "PAC", 0.62, 0.58] call ghostD_tacpad_fnc_appFrame) params ["", "_body"];
+// AN OPEN ORDER GETS A TALLER FRAME. An OPORD is nine blocks of prose, and the
+// record's height cut it off after FRIENDLY (user, 2026-09-05: "this is
+// missing information and rows").
+private _tall = GVAR(view) isEqualTo "opord" && GVAR(openOpord) isNotEqualTo "";
+([_display, "PAC", 0.62, [0.58, 0.88] select _tall] call ghostD_tacpad_fnc_appFrame) params ["", "_body"];
 if (isNull _body) exitWith {};
 
 ([] call ghostD_tacpad_fnc_theme) params ["_ground", "_ink", "_accent", "_line"];
@@ -112,11 +116,14 @@ switch (_view) do {
         if (_skillIds isEqualTo []) then {
             [_body, [_pad * 2, _y, _w - 3 * _pad, _rowH], "NONE ASSIGNED", _dim, 0.75, false] call ghostD_tacpad_fnc_drawText;
             _y = _y + _rowH;
+        } else {
+            // ONE LINE, WRAPPED - not a column a screen tall (user, 2026-09-05:
+            // "line these up horizontally"). Nine skills is one row of text.
+            private _line = (_skillIds apply {["skills", _x] call FUNC(lookup)}) joinString "   ·   ";
+            private _lines = (ceil ((count _line) / 150)) max 1;
+            [_body, [_pad * 2, _y, _w - 3 * _pad, _rowH * _lines], _line, _ink, 0.8, false] call ghostD_tacpad_fnc_drawText;
+            _y = _y + _rowH * _lines;
         };
-        {
-            [_body, [_pad * 2, _y, _w - 3 * _pad, _rowH], ["skills", _x] call FUNC(lookup), _ink, 0.8, false] call ghostD_tacpad_fnc_drawText;
-            _y = _y + _rowH;
-        } forEach _skillIds;
         _y = _y + _padY;
 
         [_body, [_pad, _y, _w - 2 * _pad, _rowH], "AWARDS", _mute, 0.65, true, "left", true] call ghostD_tacpad_fnc_drawText;
@@ -247,11 +254,14 @@ switch (_view) do {
             if (_text isEqualTo "" || {_y > _h - _rowH * 2}) exitWith {};
             [_body, [_pad, _y, _w - 2 * _pad, _rowH], _label, _mute, 0.65, true, "left", true] call ghostD_tacpad_fnc_drawText;
             _y = _y + _rowH;
-            // Roughly a line per eighty characters at this width; a block that
-            // ran off the panel would be worse than one that was cut.
-            private _lines = (ceil ((count _text) / 80)) max 1;
+            // A line holds about 170 characters at this width and scale
+            // (measured off the screen, 2026-09-05). The old eighty made every
+            // block three times taller than its text ("bit too much space") and
+            // pushed the later sections off the panel. 150 leaves slack so a
+            // wrapped word never runs into the next label.
+            private _lines = (ceil ((count _text) / 150)) max 1;
             [_body, [_pad * 2, _y, _w - 3 * _pad, _rowH * _lines], _text, _ink, 0.75, false] call ghostD_tacpad_fnc_drawText;
-            _y = _y + _rowH * _lines + _padY;
+            _y = _y + _rowH * _lines + _padY * 0.5;
         };
 
         private _sit = _o get "situation";

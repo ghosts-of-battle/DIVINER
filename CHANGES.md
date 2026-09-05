@@ -18,6 +18,221 @@ contract and are spelled the same in both repos. Never rewrite them.
 
 ## Unreleased
 
+### Skill colours: a `color` on each skill, drawn on the squad panel
+**Sync:** `careful` - `addons/pac` + `addons/tacpad_apps`; the Atlas `.skills` document rides the service layer.
+
+Asked 2026-09-05 off the PLATOON STATUS screenshot: "colour them if you can
+- medic, cls green, tl and atl yellow, pick a colour for each of the rest;
+needs to be a config doc in the storage". The colour is a field on the skill
+in the structure - config, editor and database alike - not a table in code.
+
+- `addons/pac/functions/fnc_structFields.sqf` - skills gain
+  `["color", "t", "COLOUR", ...]` (`"R,G,B"` in 0-255; the third editor row).
+  Read from `CfgGFA_PAC >> skills` by `fnc_loadStructure`, coerced by
+  `fnc_adminStructure`, persisted to `<unitId>.skills` by `fnc_structurePersist`.
+- **New `addons/pac/functions/fnc_skillColor.sqf`** (PREP'd after
+  `PREP(hostRefresh)`): `[id, default]` returns `[r, g, b, a]` in 0-1 from the
+  skill's `color`; unknown id, empty or unparsable colour returns the default.
+- `addons/tacpad_apps/functions/fnc_appSquad.sqf` - `_skillsOf` now holds
+  `[abbrev, id]` pairs; the SKILLS cell draws each code in its own colour via
+  `ghostD_pac_fnc_skillColor` (guarded `isNil`), stepping by `ctrlTextWidth`,
+  stopping at the STATUS column; on an accent-filled ("out") row the codes stay
+  ground.
+- **Mission:** `framework.Stratis/config/config_pac.hpp` skills got
+  `color` (cls, medic 76,175,80; lead 255,193,7; eng 66,133,244; eod
+  229,57,53; jfo 255,152,0; isr 171,71,188; uav 38,198,218; pilot 77,182,172).
+- **Database:** `framework.skills` in Atlas re-PUT with the same colours
+  added to every item, every other field kept (HTTP 204, read back).
+- **Wiki:** `wiki/config_pac.md` `## skills` documents `color`.
+
+**Checked:** `hemtt check`; see the build note at the end of this batch.
+
+### Platoon status: SKILLS wide enough for nine codes, RADIO in its own column, taller rail tiles, no map centring
+**Sync:** `yes` - `addons/tacpad_apps/functions/fnc_appSquad.sqf`; rewrite `ghostD_` to `ghost_`.
+
+Four things off one screenshot (2026-09-05):
+- "make wider so all these skills show" - `_cols` re-cut: ROLE 0.150,
+  SKILLS 0.205, STATUS 0.420, ACE 0.560, GRID 0.710, RADIO 0.815, RANGE
+  0.925 (SKILLS from 0.12 to 0.215 of the table; ROLE, two letters, gives it
+  up).
+- "text seems to be overlapping" - the RADIO value was drawn into column
+  **5**, the GRID column, so the channel sat on top of the grid. It is column
+  **6** now.
+- "make the row taller so the text fits, ok to move ACE down" - the four
+  rail tiles (WIA, UNRESPONSIVE, AMMO AVG, KIA) are `_rowH * 2.4` tall (was
+  1.9) with the 1.4-size number at `+0.95 rowH`, h `1.3 rowH`; DISPERSION
+  and MY ACE REPORT move down with them.
+- "does not centre the map, had never planned for it, so remove" - the row
+  hit no longer calls `ctrlMapAnimAdd`; it only selects. The foot hint reads
+  `TAP A ROW TO SELECT A PLAYER` / `TAP ANOTHER ROW TO CHANGE THE SELECTION`.
+
+**Checked:** `hemtt check`; see the build note at the end of this batch.
+
+### TAC//MSG reader: one label column on the card, the subject instead of the flattened preview, air between lines
+**Sync:** `yes` - `addons/tacpad`, `addons/tacpad_apps`; rewrite `ghostD_` to `ghost_`.
+
+- `addons/tacpad/functions/fnc_readerThreadView.sqf` - the card drew a short
+  key column (HEADER, SITUATION) and a full title column (1. SITUATION) and
+  started the answer at 40% of the card ("do not need both, use only the
+  opord column; expand left to the line"). The key column is gone; the title
+  sits at `_cx + _pad`, width `0.23 cardW`; the answer starts at `0.25 cardW`
+  with width `0.73 cardW - pad`. `_lineTitle` is no longer destructured.
+- `addons/tacpad/functions/fnc_readerNetView.sqf` - the line under the tags
+  was the whole report flattened with " - " ("again remove this preview").
+  It is now the thread's `subject` (falling back to the template title),
+  bold, 0.85.
+- `addons/tacpad_apps/functions/fnc_panelReader.sqf` - the map-side thread
+  view steps `1.35` rows per rendered line (was 1) and `0.5` between
+  messages ("hard to read, add space between sections or lines").
+
+**Checked:** `hemtt check`; see the build note at the end of this batch.
+
+### PAC app: skills on one line, order blocks sized to their text, a taller frame for an open order
+**Sync:** `yes` - `addons/pac/functions/fnc_app.sqf`; rewrite `ghostD_` to `ghost_`.
+
+- MY RECORD listed skills one per row, a column a screen tall ("line these
+  up horizontally"): they are one wrapped line joined with `   ·   `.
+- OPORD sized every block at a line per **80** characters; the column holds
+  about 170 at this width and scale, so each block was three times taller
+  than its text ("bit too much space") and the later sections fell off the
+  fixed-height frame ("missing information and rows"). Now a line per **150**
+  characters, half the gap, and the frame is `0.88` tall while an order is
+  open (`0.58` otherwise) - `_tall` decides at `appFrame`.
+
+**Checked:** `hemtt check`; see the build note at the end of this batch.
+
+### Admin panel: ADMIN chip centred, CLOSE top-right, execute targets fit the code column, COPY for the return
+**Sync:** `yes` - `addons/adminpanel`; rewrite `ghostD_` to `ghost_`.
+
+Off the TAC//ADMIN screenshot (2026-09-05):
+- `addons/adminpanel/ui/dialog.inc.hpp` - `HEADER_ADMINCHIP` x 0.914 to
+  **0.461** (centred in the title bar); new `HEADER_CLOSE` (RscADMPButton,
+  `closeDialog 2`) at the chip's old place, 0.914 / 0.012 / 0.078 / 0.028.
+- Same file - the three execute targets fit inside the code column's right
+  edge (0.417): `REMOTEEXEC_SERVEREXEC(_BACK)` w 0.056 to **0.048**;
+  `REMOTEEXEC_LOCALEXEC(_BACK)` x 0.316 to **0.308**, w to **0.048**;
+  `REMOTEEXEC_EXECBUTTON(_BACK)` x 0.374 to **0.358**, w 0.090 to **0.058**.
+  REMOTE used to run to 0.464, into the RETURN column, which is why RETURN
+  sat a row lower. `REMOTEEXEC_RETURN_HEAD` y 0.750 to **0.716** (level with
+  EXECUTE), h 0.026; `REMOTEEXEC_RETURN` y 0.776 to **0.750**, h 0.198 to
+  **0.184** (level with the code box, top and bottom).
+- Same file - new `REMOTEEXEC_COPY` (RscADMPButton) on the RUN/CLEAR row at
+  0.425 / 0.942 / 0.062 / 0.032, `onButtonClick` `FUNC(execCopy)`.
+- `addons/adminpanel/ui/idcs.inc.hpp` - `IDC_ADMINPANEL_HEADER_CLOSE 26236`,
+  `IDC_ADMINPANEL_REMOTEEXEC_COPY 26237`.
+- **New `addons/adminpanel/functions/fnc_execCopy.sqf`** (PREP'd after
+  `PREP(execClear)`): reads every row of the RETURN listbox
+  (`IDC_ADMINPANEL_REMOTEEXEC_RETURN`), `copyToClipboard` joined with `endl`,
+  notifies through `ghostD_notify_fnc_notify` (guarded).
+- `fnc_style.sqf` only re-texts the chip and scales all controls uniformly,
+  so the new positions hold.
+
+**Checked:** `hemtt check`; see the build note at the end of this batch.
+
+### Lint: L-S26 braces off two cheap comparisons
+**Sync:** `yes` - style only; rewrite `ghostD_` to `ghost_`.
+
+Two `help[L-S26]` hits the user pasted from `hemtt check`, both in lines
+written 2026-09-05: `addons/pac/functions/fnc_app.sqf` (`_tall = ... &&
+{GVAR(openOpord) isNotEqualTo ""}`) and
+`addons/tacpad/functions/fnc_readerNetView.sqf` (`_subject isEqualType "" &&
+{_subject isNotEqualTo ""}`). The `{ }` are removed; a comparison is cheaper
+than the short circuit. No behaviour change - a comparison binds tighter than
+`&&` in SQF, so the meaning is identical.
+
+**Checked:** `hemtt check` clean with every help/warning line shown (1050
+sqf, none). **Not re-released**: 0.1.0.1045 already has the identical
+behaviour; this ships with the next release.
+
+### Build note - 0.1.0.1045
+The five entries above, and the two below (host refresh, slot seeding),
+ship in **0.1.0.1045**: `hemtt check` clean (1050 sqf), `hemtt release`
+clean with Arma closed, BUILD bumped to 1046. Verified from the staged
+artifacts, not the log - the pac PBO header carries `fnc_hostRefresh`,
+`fnc_seedFromUnit`, `fnc_skillColor`, `fnc_panelTraining`,
+`fnc_promotionPoints`; the adminpanel PBO carries `fnc_execCopy`; signature
+`ghostD_0.1.0.1045`, `releases/ghostD-0.1.0.1045.zip` and `ghostD-latest.zip`
+at 17:13. `releases/ghostD-0.1.0.1044.zip` remains the mislabeled stale
+archive described below and should be deleted. Nothing in this batch is
+verified in game yet.
+
+### The host now sees its own publishes - roster, summary and structure refresh on a hosted game
+**Sync:** `yes` - `addons/pac`; rewrite `ghostD_` to `ghost_`. Matters for every player-hosted game in `ghost` too.
+
+**The failure, in its own terms.** Reported 2026-09-05: "the admin panel is
+not showing my rank change after it's made in PAC, and it is showing in
+game." On a player-hosted game the host is server and client in one
+namespace, and `publicVariable` never fires the sender's own
+`addPublicVariableEventHandler`. So after an edit the server published the
+roster and summary, every remote client refreshed, and the host - the one
+machine playing - did not: the middle column came back through the direct
+`FUNC(adminRecv)` reply, but the roster list (`FUNC(panelFillRoster)`), the
+summary block, the structure editor (`FUNC(structSection)`) and the
+management window (`FUNC(manageSection)`) stayed as they were. The unit
+carried the new rank on panel close (`FUNC(panelReapply)`), so the change
+"showed in game" and not on the page.
+
+- **New `addons/pac/functions/fnc_hostRefresh.sqf`** (PREP'd in
+  `addons/pac/XEH_PREP.hpp` after `PREP(panelTraining)`): `["roster"]` runs
+  `FUNC(panelReapply)`, `FUNC(panelFillRoster)`, `FUNC(manageSection)`;
+  `["structure"]` runs `FUNC(takeServer)`, `FUNC(structSection)`,
+  `FUNC(panelOpened)`, `FUNC(manageSection)` - the host's copy of the
+  handlers `XEH_postInit.sqf` registers for remote clients. Exits at once
+  unless `isServer && hasInterface`. `panelReapply` rather than
+  `applyOnClient` on purpose: the latter's server round trips would run
+  `FUNC(seedFromUnit)` and publish again, and this again.
+- `addons/pac/functions/fnc_publish.sqf` - `["roster"] call FUNC(hostRefresh)`
+  after `publicVariable QGVAR(opordArchive)`.
+- `addons/pac/functions/fnc_boot.sqf` (step 6),
+  `addons/pac/functions/fnc_structurePersist.sqf`,
+  `addons/pac/functions/fnc_structureImport.sqf` -
+  `["structure"] call FUNC(hostRefresh)` after their
+  `publicVariable QGVAR(structureSvc)` / `QGVAR(settingsSvc)` pair.
+
+**Behaviour:** on a hosted game the host's own rank and skills now update
+the moment an admin edits them, not on panel close; the roster list, the
+summary and the management window redraw on every publish. Dedicated servers
+and remote clients are unchanged.
+
+**Checked:** `hemtt check` clean. **Shipped in 0.1.0.1045** (verified:
+`fnc_hostRefresh` in the pac PBO header). It was NOT in 0.1.0.1044: that
+release errored removing `.hemttout\release` (a file in it held by another
+process) and re-staged the previous build's PBOs under the 1044 signature
+and `releases/ghostD-0.1.0.1044.zip` - a mislabeled 1043; that zip should be
+deleted. Not yet verified in game.
+
+### The slot a player picks no longer becomes their PAC role or squad
+**Sync:** `yes` - `addons/pac/functions/fnc_seedFromUnit.sqf`; rewrite `ghostD_` to `ghost_`.
+
+Reported 2026-09-05: "the role I select in the role picker should not
+become my role in PAC and in the db." `FUNC(seedFromUnit)` - called from
+`FUNC(applyOnClient)` on every spawn - copied the Dynamic_Roles slot the
+player took into an empty `roleId` (matched on the role's `slotTag`) and the
+slot's squad into an empty `groupId`. A player who picked JTAC for one op
+had JTAC as their billet on the roster and in the database from then on.
+
+- `addons/pac/functions/fnc_seedFromUnit.sqf` - the `roleId` block (matched
+  on `slotTag`) and the `groupId` block are removed; the record's billet and
+  squad are now written only by the admin paths (`FUNC(adminSet)`,
+  `FUNC(csvImport)`, `FUNC(import)`, `FUNC(seedSample)`, the management
+  window). Kept: the rank floor (an empty `rankId` takes the structure rank
+  whose `armaRank` matches the unit's) and the one-time skills seed from the
+  slot's role (`skillsSeeded`). The signature is unchanged; parameter 3
+  (group name) is accepted and unused. Header rewritten.
+
+**Behaviour change:** a new player's roster row shows an empty ROLE and
+GROUP until an admin sets them, instead of whatever slot they first took.
+The skills seed from the first slot is unchanged - a separate decision if
+the unit wants that gone too.
+
+**Wiki:** `wiki/TAC-PAC.md` "Slots and loadouts" opens with the rule: the
+record drives the slot, never the other way; a new player shows ROLE and
+GROUP empty until an admin sets them.
+
+**Checked:** `hemtt check` clean. **Shipped in 0.1.0.1045**; absent from the
+mislabeled 0.1.0.1044 for the reason in the entry above. Not yet verified in
+game.
+
 ### Play time goes to the database on logon and logoff; no database write before READY
 **Sync:** `careful` - `addons/pac`; rides the service layer (`svcSave`), which `ghost` may not have.
 

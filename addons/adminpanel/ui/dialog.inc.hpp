@@ -101,14 +101,27 @@ class GVAR(console) {
 
         // Who you are on this screen, said in the accent. An admin console that
         // does not name its admin is how the wrong person presses BAN.
+        // Centred in the title bar; the top-right corner is where a CLOSE
+        // belongs (user, 2026-09-05: "move the admin box to the centre and put
+        // a close button in its place").
         class HEADER_ADMINCHIP: RscADMPStructuredText {
             idc = IDC_ADMINPANEL_HEADER_ADMINCHIP;
             text = "<t font='RobotoCondensedBold' size='0.8' align='center'>ADMIN</t>";
-            x = "0.914 * safezoneW + safezoneX";
+            x = "0.461 * safezoneW + safezoneX";
             y = "0.012 * safezoneH + safezoneY";
             w = "0.078 * safezoneW";
             h = "0.028 * safezoneH";
             colorBackground[] = {0.85, 0.28, 0.20, 1};
+        };
+
+        class HEADER_CLOSE: RscADMPButton {
+            idc = IDC_ADMINPANEL_HEADER_CLOSE;
+            text = "CLOSE";
+            x = "0.914 * safezoneW + safezoneX";
+            y = "0.012 * safezoneH + safezoneY";
+            w = "0.078 * safezoneW";
+            h = "0.028 * safezoneH";
+            onButtonClick = "closeDialog 2;";
         };
 
         // ------------------------------------------------------- player list --
@@ -543,7 +556,7 @@ class GVAR(console) {
             text = "";
             x = "0.258 * safezoneW + safezoneX";
             y = "0.714 * safezoneH + safezoneY";
-            w = "0.056 * safezoneW";
+            w = "0.048 * safezoneW";
             h = "0.030 * safezoneH";
             colorBackground[] = {0.10, 0.10, 0.10, 1};
         };
@@ -553,7 +566,7 @@ class GVAR(console) {
             text = "SERVER";
             x = "0.258 * safezoneW + safezoneX";
             y = "0.714 * safezoneH + safezoneY";
-            w = "0.056 * safezoneW";
+            w = "0.048 * safezoneW";
             h = "0.030 * safezoneH";
             colorBackground[] = {0, 0, 0, 0};
             onButtonClick = QUOTE([1] call FUNC(execTarget););
@@ -562,9 +575,9 @@ class GVAR(console) {
         class REMOTEEXEC_LOCALEXEC_BACK: RscADMPText {
             idc = IDC_ADMINPANEL_REMOTEEXEC_LOCALEXEC_BACK;
             text = "";
-            x = "0.316 * safezoneW + safezoneX";
+            x = "0.308 * safezoneW + safezoneX";
             y = "0.714 * safezoneH + safezoneY";
-            w = "0.056 * safezoneW";
+            w = "0.048 * safezoneW";
             h = "0.030 * safezoneH";
             colorBackground[] = {0.10, 0.10, 0.10, 1};
         };
@@ -572,9 +585,9 @@ class GVAR(console) {
         class REMOTEEXEC_LOCALEXEC: RscADMPButton {
             idc = IDC_ADMINPANEL_REMOTEEXEC_LOCALEXEC;
             text = "LOCAL";
-            x = "0.316 * safezoneW + safezoneX";
+            x = "0.308 * safezoneW + safezoneX";
             y = "0.714 * safezoneH + safezoneY";
-            w = "0.056 * safezoneW";
+            w = "0.048 * safezoneW";
             h = "0.030 * safezoneH";
             colorBackground[] = {0, 0, 0, 0};
             onButtonClick = QUOTE([2] call FUNC(execTarget););
@@ -583,21 +596,26 @@ class GVAR(console) {
         class REMOTEEXEC_EXECBUTTON_BACK: RscADMPText {
             idc = IDC_ADMINPANEL_REMOTEEXEC_EXECBUTTON_BACK;
             text = "";
-            x = "0.374 * safezoneW + safezoneX";
+            x = "0.358 * safezoneW + safezoneX";
             y = "0.714 * safezoneH + safezoneY";
-            w = "0.090 * safezoneW";
+            w = "0.058 * safezoneW";
             h = "0.030 * safezoneH";
             colorBackground[] = {0.10, 0.10, 0.10, 1};
         };
 
         // REMOTE names its target, because "remote" on its own is how code ends
         // up running on the wrong man's machine.
+        //
+        // THE THREE FIT THE CODE COLUMN (0.258 to 0.416, inside the edit box's
+        // 0.417 right edge). REMOTE used to run to 0.464, into the RETURN column,
+        // which is why RETURN sat a row lower than EXECUTE (user, 2026-09-05:
+        // "make the 3 buttons fit so the return can be on the same level").
         class REMOTEEXEC_EXECBUTTON: RscADMPButton {
             idc = IDC_ADMINPANEL_REMOTEEXEC_EXECBUTTON;
             text = "REMOTE";
-            x = "0.374 * safezoneW + safezoneX";
+            x = "0.358 * safezoneW + safezoneX";
             y = "0.714 * safezoneH + safezoneY";
-            w = "0.090 * safezoneW";
+            w = "0.058 * safezoneW";
             h = "0.030 * safezoneH";
             colorBackground[] = {0, 0, 0, 0};
             onButtonClick = QUOTE([0] call FUNC(execTarget););
@@ -677,13 +695,15 @@ class GVAR(console) {
             h = "0.032 * safezoneH";
         };
 
+        // Level with EXECUTE, and the box level with the code box - see the
+        // note on REMOTEEXEC_EXECBUTTON.
         class REMOTEEXEC_RETURN_HEAD: RscADMPStructuredText {
             idc = IDC_ADMINPANEL_REMOTEEXEC_RETURN_HEAD;
             text = "<t font='RobotoCondensedBold' size='0.7'>R E T U R N</t>";
             x = "0.425 * safezoneW + safezoneX";
-            y = "0.750 * safezoneH + safezoneY";
+            y = "0.716 * safezoneH + safezoneY";
             w = "0.100 * safezoneW";
-            h = "0.024 * safezoneH";
+            h = "0.026 * safezoneH";
         };
 
         // THE ANSWER, WHICH THE PANEL NEVER SHOWED. Code ran and whatever it
@@ -693,9 +713,22 @@ class GVAR(console) {
         class REMOTEEXEC_RETURN: RscADMPListbox {
             idc = IDC_ADMINPANEL_REMOTEEXEC_RETURN;
             x = "0.425 * safezoneW + safezoneX";
-            y = "0.776 * safezoneH + safezoneY";
+            y = "0.750 * safezoneH + safezoneY";
             w = "0.272 * safezoneW";
-            h = "0.198 * safezoneH";
+            h = "0.184 * safezoneH";
+        };
+
+        // COPY puts the whole return on the clipboard - a value you can only
+        // read off a listbox is a value you retype (user, 2026-09-05).
+        class REMOTEEXEC_COPY: RscADMPButton {
+            idc = IDC_ADMINPANEL_REMOTEEXEC_COPY;
+            text = "COPY";
+            tooltip = "Copies the return value to the clipboard";
+            x = "0.425 * safezoneW + safezoneX";
+            y = "0.942 * safezoneH + safezoneY";
+            w = "0.062 * safezoneW";
+            h = "0.032 * safezoneH";
+            onButtonClick = QUOTE([] call FUNC(execCopy););
         };
 
         // --------------------------------------------------------- the rail --

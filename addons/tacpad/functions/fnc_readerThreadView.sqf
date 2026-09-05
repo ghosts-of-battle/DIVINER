@@ -202,12 +202,16 @@ if (_lines isNotEqualTo []) then {
     // is placed. The frame goes on last, once the height is known.
     private _cy = _y + _rowH;
     {
-        _x params ["", "_lineTitle", "_lineLabel", "_fields", "_lineIndex"];
+        _x params ["", "", "_lineLabel", "_fields", "_lineIndex"];
 
         private _cx = _dx + _pad;
 
-        [_root, [_cx + _pad, _cy, _cardW * 0.06, _rowH], toUpper _lineTitle, _mute, 0.6, true, "left"] call FUNC(drawText);
-        [_root, [_cx + _cardW * 0.08, _cy, _cardW * 0.3, _rowH], _lineLabel, _mute, 0.6, true, "left", true] call FUNC(drawText);
+        // ONE LABEL COLUMN. The short key (HEADER, SITUATION) and the full
+        // title (1. SITUATION) said the same thing twice, and the answer only
+        // started at 40% of the card (user, 2026-09-05: "do not need both, use
+        // only the opord column; expand left to the line"). The title alone,
+        // and the answer from a quarter of the way in.
+        [_root, [_cx + _pad, _cy, _cardW * 0.23, _rowH], _lineLabel, _mute, 0.6, true, "left", true] call FUNC(drawText);
 
         // Every field on the line, joined - a line with three boxes ticked reads
         // as one answer, which is what it is. A grid field holds a position
@@ -230,8 +234,8 @@ if (_lines isNotEqualTo []) then {
             };
         } forEach _fields;
 
-        private _valueX = _cx + _cardW * 0.4;
-        private _valueW = _cardW * 0.58 - _pad;
+        private _valueX = _cx + _cardW * 0.25;
+        private _valueW = _cardW * 0.73 - _pad;
         private _value = [
             _root, [_valueX, _cy, _valueW, _rowH],
             [_parts joinString " - ", "-"] select (_parts isEqualTo []),
