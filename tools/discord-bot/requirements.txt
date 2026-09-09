@@ -1,0 +1,9 @@
+# discord.py 2.4+ for app commands, persistent views and tasks.
+discord.py>=2.4,<3
+
+# pymongo 4.13+ for AsyncMongoClient - the NATIVE async driver. motor is
+# deprecated in its favour, and a blocking driver call on the event loop stalls
+# discord.py's gateway heartbeat until Discord drops the connection, so the
+# async client is a correctness requirement rather than a preference.
+# The [srv] extra pulls dnspython, which mongodb+srv:// addresses need.
+pymongo[srv]>=4.13,<5

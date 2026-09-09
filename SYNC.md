@@ -82,6 +82,15 @@ Every entry above is written up in `CHANGES.md` with a sync verdict.
 - **cTab, entirely.** `include/cTab`, the `/tacmap` marker exemption and the
   "use a cTab" wording in `initnc_mapDrawing.sqf`, `ItemcTab` from the
   framework arsenal, and the `htmlLoad` whitelist from `description.ext`.
+- **`difficulty`, the whole addon.** It set the game's default difficulty preset
+  (`Difficulty_GHOST`), the global `CfgAISkill` coefficients and a `CfgSurfaces`
+  `Default` override - a `ghost` addon doing `ghost` things, and outside
+  DIVINER's scope, which is TAC//PAC, messaging and UI. `ghost` keeps it. No
+  addon here named `ghostD_difficulty` in `requiredAddons`, so nothing broke
+  with it gone. The one consequence: DIVINER ships no `defaultPreset` any more,
+  so `difficultyOption "mapContent"` is whatever the host runs rather than a
+  forced `0` - which `addons/bft/functions/fnc_draw.sqf` already asks about at
+  runtime rather than assuming. See CHANGES.md.
 
 ## References left pointing at ghost
 
@@ -102,6 +111,16 @@ passages (`Messaging-Deck`, `config_messaging`, `Cross-File-Contracts`,
 rewritten to what DIVINER actually does. **Do not port those wiki edits back**:
 `ghost` still has ALiVE and its wiki still describes the forwarder. The wiki is
 published with `tools/wiki/publish_wiki.sh`.
+
+A second pass the same day, after the first publish, renamed every mod name the
+pages cite to the DIVINER prefix: the 23 `ghost_<addon>_fnc_*` functions (all
+verified to exist under `addons/`), the `init` addon (`ghostD_init`) and the
+CBA setting `ghostD_Settings_setAiSystemDifficulty`, plus the product name on
+`Home`, `Installation` and `Roles`. Left as they are on purpose: the vehicle
+class names `ghost_US_JTF_tna_*` and the callsign `ghost_6` (not mod
+identifiers), and the Eden module name **Ghost - Intel Package**, because that
+is what `addons/hacking/CfgVehicles.hpp` still declares - rename the module and
+the wiki together if that changes.
 
 
 ## The prefix

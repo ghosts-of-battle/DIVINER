@@ -157,8 +157,14 @@ _rows sort true;
 // list so REMOVE takes out exactly the entry shown ------------------------------
 private _training = _rec getOrDefault ["training", []];
 for "_i" from (count _training) - 1 to 0 step -1 do {
-    (_training # _i) params [["_when", ""], ["_by", ""], ["_text", ""]];
-    private _idx = _ctrlTraining lbAdd format ["%1  %2  (%3)", _when select [0, 16], _text, _by];
+    (_training # _i) params [["_when", ""], ["_by", ""], ["_text", ""], ["_course", ""]];
+    // the course by name off the catalogue, the note after it; an old entry
+    // with no course id is just its text
+    private _what = if (_course isEqualTo "") then {_text} else {
+        private _cn = ["trainings", _course] call FUNC(lookup);
+        [_cn, format ["%1 - %2", _cn, _text]] select (_text isNotEqualTo "")
+    };
+    private _idx = _ctrlTraining lbAdd format ["%1  %2  (%3)", _when select [0, 16], _what, _by];
     _ctrlTraining lbSetData [_idx, str _i];
 };
 

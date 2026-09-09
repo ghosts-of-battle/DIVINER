@@ -5,7 +5,7 @@ and TAC//ADMIN.
 
 **Loads:** `#include`d **first** in [description.ext](description-ext).
 **Declares:** `CfgGhostAdmins`, plus the `ADMINS` macro.
-**Read by:** `description.ext` macro expansion, and `ghost_adminpanel_fnc_adminList`.
+**Read by:** `description.ext` macro expansion, and `ghostD_adminpanel_fnc_adminList`.
 
 ---
 

@@ -48,7 +48,15 @@ if (!isNull _existing) then {ctrlDelete _existing};
 private _bx = RULE_THICK * pixelW;
 private _by = RULE_THICK * pixelH;
 private _pad = PAD * safeZoneW;
-private _headerH = HEADER_H * GVAR(textScale) * GVAR(uiScale) * safeZoneH;
+// THE BAND IS AS TALL AS ITS TEXT LINE, so the body starts BELOW the whole
+// CLOSE hit. The band was the constant alone while the CLOSE hit (created
+// after the body, on top of it - see below) was sized `_headerH max _lineH`:
+// past the text size where the line outgrows the constant, the hit spilled
+// into the body's first row - the app's tab row - by the difference. A press
+// that started on that spill and released a few pixels lower fired neither
+// the close nor the tab: "the my record button is hard to click / nothing
+// happens" (user, 2026-09-05). FUNC(appIdle) already sizes the band this way.
+private _headerH = (HEADER_H * GVAR(textScale) * GVAR(uiScale) * safeZoneH) max ([0.9] call FUNC(textH));
 
 // CLAMPED TO THE SCREEN. An app that asks for more height than there is gets
 // centred at a NEGATIVE y - the frame runs off the top and the bottom at once,

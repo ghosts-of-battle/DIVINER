@@ -3,14 +3,14 @@
 > **In storage since 2026-09-05.** The list is the `<unitId>.nets` document
 > (`{section, items: {id: {id, name, order}}}` - `name` is the description,
 > `order` the place on the rail) when TAC//PAC holds it, editable in the structure
-> editor's NETS section. `ghost_messaging_fnc_netNames` reads it, then this file,
+> editor's NETS section. `ghostD_messaging_fnc_netNames` reads it, then this file,
 > then the setting, and the server opens a mailbox per name from the same list.
 
 Every named TAC//MSG mailbox in the mission, declared in one place.
 
 **Loads:** `#include`d in [description.ext](description-ext).
 **Declares:** `GHOST_Nets`.
-**Read by:** `ghost_messaging_fnc_roleNets`, `fnc_railNets`, and the server's
+**Read by:** `ghostD_messaging_fnc_roleNets`, `fnc_railNets`, and the server's
 mailbox store at startup.
 
 With this class present the addon's own "Shared mailboxes" **setting is

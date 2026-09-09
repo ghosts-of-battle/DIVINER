@@ -113,6 +113,10 @@ addMissionEventHandler ["ExtensionCallback", {
         case "put.end": {TRACE_1("service put",_data)};
         case "put.error": {WARNING_1("service put failed: %1",_data)};
         case "ping": {INFO_1("pacdb extension: %1",_data)};
+        // The answer to the boot's network check - the address Atlas will see,
+        // and whether TLS works from this machine. Asked only when the admin
+        // turned the setting on; see initSettings.inc.sqf.
+        case "netcheck": {INFO_1("network check: %1",_data)};
     };
 }];
 

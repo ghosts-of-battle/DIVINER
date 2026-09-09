@@ -6,6 +6,11 @@ releases/
 __pycache__/
 *.pyc
 
+# discord bot: its secrets and its virtualenv. The token and the Mongo URI
+# live in the Pelican egg's variables in production, and in .env locally.
+tools/discord-bot/.env
+tools/discord-bot/.venv/
+
 # pacdb: secrets, data and build output
 tools/pacdb/service/appsettings.Local.json
 tools/pacdb/service/data/

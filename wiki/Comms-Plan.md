@@ -4,7 +4,7 @@
 > the `<unitId>.radio` document (`items: {srRadios, srChannels, mrChannels,
 > lrChannels, srSquadChannel, ...}` - the name after the prefix, the value as
 > written). TAC//PAC writes the globals from it at boot and on every client
-> (`ghost_pac_fnc_radioApply`) and re-programs the ACRE presets when the plan
+> (`ghostD_pac_fnc_radioApply`) and re-programs the ACRE presets when the plan
 > changed. A mission that still ships this file seeds the document and keeps
 > working; `frameworkmongo.Stratis` does not ship it. The rules below still hold -
 > the names in `mrChannels` must match the ORBAT's platoon and radio nets.

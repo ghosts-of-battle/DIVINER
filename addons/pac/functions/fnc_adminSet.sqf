@@ -37,9 +37,10 @@ Parameters:
                         "milsimName" | "discordId" | "enlistedAt" | "clearance" |
                         "company" | "reportsTo" | "excuseAdd" | "excuseRemove"
     3: Value <ANY> - awardAdd takes an award id or [id, citation]; the
-       excuse fields take an op window id; trainingAdd takes the text
-       (optionally led by YYYY-MM-DD to back-date it), trainingRemove the
-       index into the record's training list
+       excuse fields take an op window id; trainingAdd takes [courseId, text]
+       (a course off the "trainings" section, and a note optionally led by
+       YYYY-MM-DD to back-date it) or plain text, trainingRemove the index
+       into the record's training list
 
     EVERY WRITE IS LOGGED (FUNC(logAction)) - dated, signed, on the record
     and in the store's log. A rank change stamps promotedAt; a skill granted
@@ -136,11 +137,22 @@ switch (_field) do {
         _notes pushBack [_now, _by, _value];
         _rec set ["notes", _notes];
     };
-    // TRAINING: a course held, dated. Text that starts with YYYY-MM-DD is
-    // back-dated to that day (the course was last month); otherwise stamped now.
+    // TRAINING: a course held, dated. The value is [courseId, text] - the course
+    // off the catalogue (structure section "trainings") and the box beside the
+    // list - or plain text on a unit that keeps no catalogue. Text that starts
+    // with YYYY-MM-DD is back-dated to that day; the rest is the note. The
+    // entry keeps the course ID, so a renamed course renames on every record.
     case "trainingAdd": {
-        if (!(_value isEqualType "") || _value isEqualTo "") exitWith { _ok = false };
-        private _text = trim _value;
+        private _course = "";
+        private _text = "";
+        if (_value isEqualType []) then {
+            _course = _value param [0, "", [""]];
+            _text = _value param [1, "", [""]];
+        } else {
+            if (_value isEqualType "") then {_text = _value};
+        };
+        _text = trim _text;
+        if (_course isNotEqualTo "" && {!(["trainings", _course] call _fnc_known)}) exitWith { _ok = false };
         private _when = _now;
         if (count _text >= 10) then {
             private _head = _text select [0, 10];
@@ -150,11 +162,12 @@ switch (_field) do {
                 _text = trim (_text select [10]);
             };
         };
-        if (_text isEqualTo "") exitWith { _ok = false };
+        if (_course isEqualTo "" && _text isEqualTo "") exitWith { _ok = false };
         private _training = _rec getOrDefault ["training", []];
-        _training pushBack [_when, _by, _text];
+        _training pushBack [_when, _by, _text, _course];
         _rec set ["training", _training];
-        _value = format ["%1 %2", _when, _text];
+        private _courseName = ["", ["trainings", _course] call FUNC(lookup)] select (_course isNotEqualTo "");
+        _value = format ["%1 %2%3", _when, _courseName, ["", " - " + _text] select (_text isNotEqualTo "")];
     };
     case "trainingRemove": {
         if !(_value isEqualType 0) exitWith { _ok = false };

@@ -69,13 +69,13 @@ rather than data**. Conditionals on difficulty setting, ambient light, whether
 the unit has a headset, and faction.
 
 ```sqf
-if (ghost_Settings_setAiSystemDifficulty == 1) then {
+if (ghostD_Settings_setAiSystemDifficulty == 1) then {
     _unit setSkill ["aimingspeed",    0.420];
     _unit setSkill ["aimingaccuracy", 0.500];
     _unit setSkill ["spottime",       0.800];
 };
 
-if (ghost_Settings_setAiSystemDifficulty == 2) then {
+if (ghostD_Settings_setAiSystemDifficulty == 2) then {
     if (getLighting select 1 <= 5) then {
         if (hmd _unit != "") then {
             _unit setSkill ["spottime", 0.015];   // he has night vision
@@ -149,7 +149,7 @@ class GHOST_Welcome {
 `title` and `subtitle` are the two halves of the title bar. Text is structured
 text, so `<br/>` works.
 
-Read by `initPlayerLocal.sqf` → `ghost_common_fnc_modal`. **Delete the whole
+Read by `initPlayerLocal.sqf` → `ghostD_common_fnc_modal`. **Delete the whole
 class and nothing is shown.**
 
 ---

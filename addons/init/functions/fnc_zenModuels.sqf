@@ -17,6 +17,13 @@
 
 if !(EGVAR(patches,usesZen)) exitWith {};
 
+// ZEN IS LOADED, BUT ITS REGISTER FUNCTION MAY NOT BE COMPILED YET - the same
+// guard `patrol_base` and `respawn` carry. Registering into nothing is exactly
+// how these twelve went missing from the Zeus module tree.
+if (isNil "zen_custom_modules_fnc_register") exitWith {
+    INFO("init","zen_custom_modules_fnc_register missing - GOB Zeus modules NOT registered.");
+};
+
 INFO("init","Initializing custom Zen Modules.");
 
 ["GOB AI", "Enable Unit Simulation",

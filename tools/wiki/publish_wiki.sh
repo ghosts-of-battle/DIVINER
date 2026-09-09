@@ -30,6 +30,14 @@ export GIT_TERMINAL_PROMPT=0
 echo "source : $SRC ($(ls "$SRC"/*.md | wc -l) pages)"
 echo "target : $REPO"
 
+# AN EXISTING CLONE IS PULLED, NEVER WIPED. Point WIKI_PUBLISH_WORKDIR at your
+# own checkout (D:/Git/DIVINER.wiki) and it is updated in place; only a
+# scratch directory that is not a clone of this wiki is removed and re-cloned.
+if [ -d "$WORK/.git" ] && [ "$(git -C "$WORK" remote get-url origin 2>/dev/null)" = "$REPO" ]; then
+    git -C "$WORK" pull --ff-only --quiet origin HEAD
+elif [ -e "$WORK" ] && [ -d "$WORK/.git" ]; then
+    echo "$WORK is a git repository that is not this wiki - refusing to touch it"; exit 1
+else
 rm -rf "$WORK"
 if ! git clone --quiet "$REPO" "$WORK" 2>/tmp/diviner-wiki-clone.err; then
     echo
@@ -39,6 +47,7 @@ if ! git clone --quiet "$REPO" "$WORK" 2>/tmp/diviner-wiki-clone.err; then
     echo "open https://github.com/ghosts-of-battle/DIVINER/wiki, press 'Create the"
     echo "first page', save it, and run this again."
     exit 1
+fi
 fi
 
 cd "$WORK"

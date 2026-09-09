@@ -25,7 +25,7 @@ SQF that runs once per unit.
 ## Shape
 
 ```sqf
-if (ghost_Settings_setAiSystemDifficulty == 1) then {
+if (ghostD_Settings_setAiSystemDifficulty == 1) then {
     _unit setSkill ["aimingspeed",     0.420];
     _unit setSkill ["aimingaccuracy",  0.500];
     _unit setSkill ["aimingshake",     0.360];
@@ -35,7 +35,7 @@ if (ghost_Settings_setAiSystemDifficulty == 1) then {
     _unit setSkill ["general",         1.0];
 };
 
-if (ghost_Settings_setAiSystemDifficulty == 2) then {
+if (ghostD_Settings_setAiSystemDifficulty == 2) then {
 
     // Light level, and whether he can see in it
     if (getLighting select 1 <= 5) then {
@@ -68,7 +68,7 @@ if (ghost_Settings_setAiSystemDifficulty == 2) then {
 
 | | |
 |---|---|
-| `ghost_Settings_setAiSystemDifficulty` | The CBA setting — the top-level switch |
+| `ghostD_Settings_setAiSystemDifficulty` | The CBA setting — the top-level switch |
 | `getLighting select 1` | Ambient light. `<= 5` is night |
 | `hmd _unit` | Whether he has night vision |
 | `faction _unit` | Who he fights for |

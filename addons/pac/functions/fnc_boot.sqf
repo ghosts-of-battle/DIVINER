@@ -124,6 +124,16 @@ if (_service) then {
         case "environment": {"database address: no CBA setting - the extension uses GHOSTD_PACDB_URL / GHOSTD_PACDB_KEY from the server's environment, or pacdb.json in its root"};
         default {"database address: the CBA setting could NOT be handed to the extension - is ghostd_pacdb_x64.dll / .so loaded?"};
     }] call FUNC(bootLog);
+    // THE ADDRESS THIS SERVER CALLS OUT FROM, when the admin asked for it -
+    // what goes in an Atlas access-list entry, and a verdict on TLS beside it.
+    // Off by default: a request to a third party is not something a boot should
+    // make on its own. The answer comes back through the ExtensionCallback
+    // handler (XEH_postInit) a moment later, as "network check: ...".
+    if (missionNamespace getVariable [QGVAR(netCheck), false]) then {
+        ["3/6", "network check on: asking what address this server calls out from, and whether TLS works here - the answer follows as a 'network check' line"] call FUNC(bootLog);
+        "ghostd_pacdb" callExtension ["netcheck", []];
+    };
+
     ["3/6", format ["service: reading the config, one document per file - '%1.settings' .ranks .skills .awards .statuses .admins .nets .radio .orbat .templates .schemes, every '%1.role.*' and every '%1.opord.*' (each up to %2 s)", _unit, PAC_SVC_TIMEOUT]] call FUNC(bootLog);
     ([] call FUNC(svcStructure)) params ["_doc", "_status"];
     switch (_status) do {

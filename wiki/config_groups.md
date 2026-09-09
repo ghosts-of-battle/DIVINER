@@ -3,7 +3,7 @@
 > **In storage since 2026-09-05.** `Dynamic_Groups` - `faction_name`, `group_setup`,
 > `Platoons`, `RadioNets` - is the `<unitId>.orbat` document
 > (`{section, faction, groups, platoons, radioNets}`) when TAC//PAC holds it;
-> `ghost_groups_fnc_orbat` answers `[groups, platoons, radioNets, faction]` from
+> `ghostD_groups_fnc_orbat` answers `[groups, platoons, radioNets, faction]` from
 > the document, else from this file, and every reader in the mod asks it. The
 > roles moved with it ([config_roles](config_roles)); `frameworkmongo.Stratis`
 > replaces this file with `config_arsenal.hpp` - the arsenal includes that used
@@ -15,8 +15,8 @@ it.
 **Loads:** `#include`d in [description.ext](description-ext).
 **Declares:** `Dynamic_Groups` — and includes `config_roles.hpp` and every
 arsenal at its foot.
-**Read by:** `ghost_groups_fnc_platoons`, `fnc_fillRoleTree`,
-`ghost_messaging_fnc_squadNets`, `ghost_players_fnc_platoonNet`.
+**Read by:** `ghostD_groups_fnc_platoons`, `fnc_fillRoleTree`,
+`ghostD_messaging_fnc_squadNets`, `ghostD_players_fnc_platoonNet`.
 
 ---
 

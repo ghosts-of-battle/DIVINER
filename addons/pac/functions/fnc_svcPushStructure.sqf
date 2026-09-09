@@ -41,7 +41,7 @@ private _settings = +GVAR(settings);
 
 {
     [_unit + "." + _x, createHashMapFromArray [["section", _x], ["items", GVAR(structure) getOrDefault [_x, createHashMap]]]] call _fnc_push;
-} forEach ["ranks", "skills", "awards", "statuses", "nets", "radio", "templates", "schemes", "promotion"];
+} forEach ["ranks", "skills", "awards", "statuses", "nets", "radio", "templates", "schemes", "promotion", "trainings"];
 
 {
     [_unit + ".role." + _x, createHashMapFromArray [["section", "role"], ["id", _x], ["role", _y]]] call _fnc_push;

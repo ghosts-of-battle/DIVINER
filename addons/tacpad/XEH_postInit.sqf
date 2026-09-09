@@ -48,13 +48,14 @@ addMissionEventHandler ["Map", {
     // half-written report to explain a refusal of the last one is worse than the
     // refusal.
     if (!GVAR(composeOn) && {GVAR(composePending) isNotEqualTo []}) then {
-        GVAR(composePending) params ["_thread", "_template", "_values", "_grids", "_to", ["_cc", ""]];
+        GVAR(composePending) params ["_thread", "_template", "_values", "_grids", "_to", ["_cc", ""], ["_pin", []]];
         GVAR(composeThread) = _thread;
         GVAR(composeTemplate) = _template;
         GVAR(composeValues) = _values;
         GVAR(composeGridText) = _grids;
         GVAR(composeTo) = _to;
         GVAR(composeCc) = _cc;
+        GVAR(composePin) = _pin;
         GVAR(composeOn) = true;
     };
 

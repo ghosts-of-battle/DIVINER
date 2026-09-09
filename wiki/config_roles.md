@@ -3,7 +3,7 @@
 > **In storage since 2026-09-05.** With TAC//PAC the *whole* role - every property
 > below - is a record of the unit's structure and, with Mongo, **one document per
 > role**, `<unitId>.role.<class>` (`{section: "role", id, role: {...}}`). The mod
-> reads roles through `ghost_groups_fnc_role`, which answers the structure's copy
+> reads roles through `ghostD_groups_fnc_role`, which answers the structure's copy
 > when there is one and this file's class otherwise. This file is the **seed**: a
 > mission that ships it pushes it up on a first boot and keeps working as before;
 > `frameworkmongo.Stratis` has no role files at all - only the arsenals
@@ -16,7 +16,7 @@ role files in the element folders.
 
 **Loads:** `#include`d by [config_groups](config_groups).
 **Declares:** `Dynamic_Roles`.
-**Read by:** `ghost_groups_fnc_setupPlayer`, via `Dynamic_Roles >> <class>`.
+**Read by:** `ghostD_groups_fnc_setupPlayer`, via `Dynamic_Roles >> <class>`.
 
 ---
 

@@ -28,8 +28,8 @@ call compile preprocessFileLineNumbers "config\config_radio.hpp";
 ghost_missionConfig_skillBlock = compile ("private _unit = _this; " + preprocessFileLineNumbers "config\config_skill.hpp");
 
 // AND TELL THE MOD.
-if (!isNil "ghost_init_fnc_missionConfigsReady") then {
-    call ghost_init_fnc_missionConfigsReady;
+if (!isNil "ghostD_init_fnc_missionConfigsReady") then {
+    call ghostD_init_fnc_missionConfigsReady;
 };
 ```
 
@@ -50,8 +50,9 @@ Having the **mod** do this broke three ways:
 
 ## Why the handover call exists
 
-CBA runs addon preInit handlers **before** the mission's, so `ghost_init` has
-already gone past the point where it wanted this data. It leaves the build to
+CBA runs addon preInit handlers **before** the mission's, so the mod's `init`
+addon (`ghostD_init`) has already gone past the point where it wanted this
+data. It leaves the build to
 whoever gets there with real data — which is that last line.
 
 ---

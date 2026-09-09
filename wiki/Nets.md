@@ -1,11 +1,17 @@
 # Nets
 
-> **In storage since 2026-09-05.** The same list is a TAC//PAC document,
-> `<unitId>.nets`, when the unit keeps its config in the database - see
-> [config_nets](config_nets). The roles' `nets[]` moved with the roles.
+**The nets live in storage.** The list of named mailboxes is a TAC//PAC
+structure section, `nets`: the `<unitId>.nets` document when the unit keeps
+its config in the database, editable in game under EDIT STRUCTURE > NETS, and
+read on every machine from the structure the server publishes
+(`ghostD_messaging_fnc_netNames`). The roles' `nets[]` moved with the roles.
 
-`config\config_nets.hpp` declares every named TAC//MSG mailbox in the mission,
-in one place.
+`config\config_nets.hpp` is the on-disk form of the same list — what a
+mission without the database uses, and what a mission with one pushes up as
+the first document when the database has none (see
+[config_nets](config_nets)). A mailbox is a net of TAC//MSG, the threaded
+messaging system, read as one conversation: every thread filed to it, in
+order, with its replies and its state under it.
 
 ```cpp
 class GHOST_Nets {
@@ -97,7 +103,7 @@ The rail in TAC//MSG shows, in order:
 2. **His own squad's net** — never gated, never listed in a role's `nets[]`
 3. `ALL`
 
-That is `ghost_messaging_fnc_railNets`, and the tacpad panel tab strip and the
+That is `ghostD_messaging_fnc_railNets`, and the tacpad panel tab strip and the
 compose target list ask the same function the same question.
 
 Example, for the reference mission:

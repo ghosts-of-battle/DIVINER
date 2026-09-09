@@ -177,14 +177,30 @@ fixed after the fact.
 window's, or all time - as text on the clipboard and in the .rpt: per player,
 hours and minutes, joins. The PAC app shows each player their own total.
 
+## What a player sees
+
+The PAC app on the tablet has three tabs. **MY RECORD** is the player's own:
+rank, role, group, status, skills, awards, time on. **ROSTER** is everybody,
+and tapping a name opens that man's record - the same fields, with a way back
+to the list. **OPORD** is the order list and the open order.
+
+**Notes are never on the tablet, on any tab.** The roster the server publishes
+to clients is name, rank, role, group, status, skills, awards and attendance
+and nothing else; notes and saved loadouts stay on the server. A note is
+written by an admin about a player, and it is read on the admin page only.
+
 ## Training and promotion points
 
 **Training** is a dated log on the record: the courses a player has held. On
-the player page, type the course into the TRAINING box and press ADD; the
-server stamps it with the time and your name. Lead with the day it was held -
-`2026-08-14 CLS course, passed` - to back-date it. REMOVE takes out the
-selected entry. Every add and remove is logged, and the entries appear in the
-operator file under `personnel_logs.training`.
+the player page, pick the course from the TRAINING dropdown - the unit's
+catalogue, kept as the `trainings` structure section (EDIT STRUCTURE >
+TRAINING in game, the `<unitId>.trainings` document in the database) - and
+press ADD; the server stamps it with the time and your name. The box beside
+the list is optional: lead with the day it was held, `2026-08-14 passed`, to
+back-date it, and the rest is the note. With no catalogue yet, the box alone
+works as free text. REMOVE takes out the selected entry. Every add and remove
+is logged, and the entries appear in the operator file under
+`personnel_logs.training` with the course id and name.
 
 **Promotion points** are computed by the server from a formula the unit keeps
 as data: the `promotion` section of the structure (EDIT STRUCTURE >

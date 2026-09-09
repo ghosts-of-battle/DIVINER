@@ -42,3 +42,24 @@ hemtt release    # staged release + archive in releases/
 ## Requires
 
 CBA_A3, ACE3, and ACRE2 or TFAR.
+
+## Credits
+
+Ghosts of Battle. Built on the shoulders of CBA, ACE3, ACRE2 and the YMF role
+framework.
+
+### Based on & inspired by
+
+Source projects are on GitHub — search the owner/repo path.
+
+| Project | Licence |
+|---|---|
+| `ArmaForces/Mods` | GPL |
+| `AXEmod/AXE` | GPLv3 |
+| `Theseus-Aegis/Mods` | GPLv2 |
+| `last-resort-gaming/LRG-Fundamentals` | MIT |
+| `Theseus-Aegis/TheseusServices` | APL-SA |
+| `BourbonWarfare/POTATO` | GPLv2 |
+
+DIVINER itself ships under the Arma Public License Share Alike (APL-SA); see
+[LICENSE](LICENSE).

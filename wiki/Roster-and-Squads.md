@@ -99,7 +99,7 @@ class RadioNets {
 };
 ```
 
-`ghost_players_fnc_platoonNet` asks `RadioNets` first and `Platoons` second, so
+`ghostD_players_fnc_platoonNet` asks `RadioNets` first and `Platoons` second, so
 a net that crosses a boundary lives here and a plain arm net does not have to be
 written twice.
 

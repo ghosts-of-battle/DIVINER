@@ -22,6 +22,8 @@
 #define IDC_TP_LIST         9602
 #define IDC_TP_OK           9603
 #define IDC_TP_CANCEL       9604
+#define IDC_TP_TITLE        9605
+#define IDC_TP_BG           9606
 
 // The list itself: [object, display name, side] per point, published to
 // everyone. Held in missionNamespace so a JIP client gets it with the rest of

@@ -145,8 +145,14 @@ createHashMapFromArray [
         }],
         // courses held - date, who logged it, what (2026-09-05)
         ["training", (_rec getOrDefault ["training", []]) apply {
-            _x params [["_when", ""], ["_by", ""], ["_text", ""]];
-            createHashMapFromArray [["date", [_when] call _fnc_date], ["logged_by", _by], ["notes", _text]]
+            _x params [["_when", ""], ["_by", ""], ["_text", ""], ["_course", ""]];
+            createHashMapFromArray [
+                ["course_id", _course],
+                ["course", ["", ["trainings", _course] call FUNC(lookup)] select (_course isNotEqualTo "")],
+                ["date", [_when] call _fnc_date],
+                ["logged_by", _by],
+                ["notes", _text]
+            ]
         }]
     ]],
     // PROMOTION POINTS from the unit's editable formula (structure section

@@ -59,6 +59,13 @@ switch (_section) do {
     case "promotion": {[
         ["value", "n", "VALUE", "points per unit for a weight (hour, op, serviceMonth, gradeMonth, training, award); points required for a rank_<rankId> rung"]
     ]};
+    // THE TRAINING CATALOGUE (2026-09-05): the courses a unit runs, one item
+    // each, keyed by course id. The player page's TRAINING dropdown lists them;
+    // a course held is logged on the record by its id, so a rename follows.
+    case "trainings": {[
+        ["category", "t", "CATEGORY", "free text that groups the list - Medical, Leadership, Fires, Aviation ..."],
+        ["description", "t", "DESCRIPTION", "one line - what the course covers"]
+    ]};
     // A net's id is its name on the rail and the radio; NAME is the
     // description. ORDER is its place on the rail, first = 0.
     case "nets": {[

@@ -65,7 +65,8 @@ EGVAR(gear,Radio) = false;
 call FUNC(missionConfigsReady);
 
 call FUNC(chatCommands);
-call FUNC(zenModuels);
+// THE ZEN MODULES USED TO REGISTER HERE. They are in XEH_postInit.sqf now, and
+// the file says why - preInit is too early for zen_custom_modules_fnc_register.
 
 call FUNC(eventHandlers);
 

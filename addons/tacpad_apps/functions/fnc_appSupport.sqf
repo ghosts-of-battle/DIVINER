@@ -98,11 +98,14 @@ private _any = false;
                 0.8, _ready, "right"
             ] call EFUNC(tacpad,drawText);
 
-            // OUR WINDOW WHERE WE HAVE ONE, THEIRS WHERE WE DO NOT. Artillery
-            // and CAS are the two missions a man asks for most and both have a
-            // window of ours - see FUNC(supportRequest). Transport and logistics
-            // open Simplex's own screen, which earns its complexity there:
-            // both are waypoint problems rather than a point on a map.
+            // SIMPLEX'S OWN PANEL FOR EVERYTHING BUT CAS. Artillery went to a
+            // window of ours (FUNC(supportRequest)) and now opens Simplex's
+            // request screen like transport and logistics do (user,
+            // 2026-09-05: "arty support call needs to open the simplex
+            // panel") - a fire mission is drawn on its map, with its
+            // dispersion, its rounds and its own rules about what the guns
+            // will take, and a second screen in front of that could only
+            // disagree with it. CAS keeps ours for now.
             //
             // The map goes first either way: both are dialogs, and a dialog over
             // the map display is one the map can sit on top of.
@@ -119,7 +122,7 @@ private _any = false;
                 // the sanctioned way, so M works after.
                 openMap false;
 
-                if (toUpper _s in [ARR_2("ARTILLERY","CAS")]) then {
+                if (toUpper _s isEqualTo "CAS") then {
                     [ARR_2(_e,_s)] call FUNC(supportRequest);
                 } else {
                     [ARR_3(_s,_e,false)] call sss_common_fnc_openGUI;

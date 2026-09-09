@@ -75,7 +75,9 @@ if (_flash) then {
 // is the only one that changes what anybody else sees.
 private _btnH = ([0.8] call FUNC(textH)) + 2 * _padY;
 private _btnW = _dw * 0.15;
-private _ackX = _dx + _dw - _btnW - _pad;
+// The last slot on the header row is CLOSE, drawn by FUNC(readerDraw) for
+// every view; ACK, PIN and NOTIFY sit to its left (user, 2026-09-05).
+private _ackX = _dx + _dw - 2 * _btnW - 2 * _pad;
 private _pinX = _ackX - _btnW - _pad;
 
 private _folX = _pinX - _btnW - _pad;

@@ -23,6 +23,8 @@
  * 3: Thread to reply in, "" to open a new one <STRING> (optional, default "")
  * 4: Message being replied to, "" for the thread root <STRING> (optional, default "")
  * 5: Audience tags <ARRAY> of <STRING> (optional, default [])
+ * 6: Map pin, [x, y, z] for a thread that should mark the map, [] for none
+ *    <ARRAY> (optional, default [])
  *
  * Return Value:
  * 0: Sent <BOOL>
@@ -40,7 +42,12 @@ params [
     ["_addressees", [], [[]]],
     ["_threadId", "", [""]],
     ["_parentId", "", [""]],
-    ["_tags", [], [[]]]
+    ["_tags", [], [[]]],
+    // THE PIN IS NOT A FIELD. A report anchors on a `grid` field named in the
+    // template's `anchor`; a plain message has no fields, and FUNC(validate)
+    // drops any payload key the template does not declare - so a pin sent as
+    // one would be thrown away here. It travels beside the payload instead.
+    ["_pin", [], [[]]]
 ];
 
 if (!GVAR(enabled)) exitWith {[false, "messaging is disabled"]};
@@ -81,7 +88,9 @@ private _nonce = format ["%1:%2:%3", getPlayerUID player, round diag_tickTime, f
 _tags = (_tags select {_x isEqualType ""}) apply {toUpper (trim _x)};
 _tags = _tags select {_x isNotEqualTo ""};
 
-private _event = [player, _nonce, _templateId, _payload, _addressees, _threadId, _parentId, "", _tags];
+if (count _pin < 2) then {_pin = []};
+
+private _event = [player, _nonce, _templateId, _payload, _addressees, _threadId, _parentId, "", _tags, _pin];
 
 if (_link isEqualTo 1) then {
     // DEGRADED TRANSMITS LATE, NOT NEVER. A message that silently vanishes is

@@ -5,7 +5,7 @@ Gear every player can draw regardless of role.
 **Loads:** `#include`d by [config_groups](config_groups), outside
 `Dynamic_Roles`.
 **Declares:** `Common_Arsenal`.
-**Read by:** `ghost_groups_fnc_setupPlayer`.
+**Read by:** `ghostD_groups_fnc_setupPlayer`.
 
 ---
 

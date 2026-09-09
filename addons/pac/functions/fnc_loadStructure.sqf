@@ -106,7 +106,7 @@ private _s = _cfg >> "settings";
     } forEach ("true" configClasses (_cfg >> _section));
 
     GVAR(structure) set [_section, _out];
-} forEach (["ranks", "skills", "awards", "statuses", "admins", "roles", "promotion"] apply {
+} forEach (["ranks", "skills", "awards", "statuses", "admins", "roles", "promotion", "trainings"] apply {
     // name first, then FUNC(structFields)'s [field, kind] - the one table
     [_x, [["name", "t"]] + (([_x] call FUNC(structFields)) apply {[_x # 0, _x # 1]})]
 });

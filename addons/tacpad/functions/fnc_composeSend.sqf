@@ -67,7 +67,7 @@ if (_threadId isEqualTo "") then {
 // FUNC(composePane) for why.
 private _tags = (GVAR(composeTags) splitString ",") apply {trim _x} select {_x isNotEqualTo ""};
 
-([_templateId, _payload, _addressees, _threadId, "", _tags] call EFUNC(messaging,submit)) params ["_ok", "_why"];
+([_templateId, _payload, _addressees, _threadId, "", _tags, +GVAR(composePin)] call EFUNC(messaging,submit)) params ["_ok", "_why"];
 
 // STAYS OPEN ON A REFUSAL. Everything typed is still in the answer map, so a
 // missing required field is one box to fill rather than a form to start again.
@@ -94,12 +94,14 @@ GVAR(composeError) = "";
 // THE CC IS IN THE TUPLE. It is an addressee like any other and a refusal that
 // put the card back without it would send the second attempt to fewer people
 // than the first - silently.
-GVAR(composePending) = [_threadId, GVAR(composeTemplate), +GVAR(composeValues), +GVAR(composeGridText), GVAR(composeTo), GVAR(composeCc)];
+GVAR(composePending) = [_threadId, GVAR(composeTemplate), +GVAR(composeValues), +GVAR(composeGridText), GVAR(composeTo), GVAR(composeCc), +GVAR(composePin)];
 
 GVAR(composeOn) = false;
 GVAR(composePick) = false;
 GVAR(composeToPick) = false;
-GVAR(composeMarker) = "";
+GVAR(composeMarker) = "";
+GVAR(composePin) = [];
+GVAR(composePinPick) = false;
 GVAR(composeValues) = createHashMap;
 GVAR(composeGridText) = createHashMap;
 GVAR(composeTemplate) = "";

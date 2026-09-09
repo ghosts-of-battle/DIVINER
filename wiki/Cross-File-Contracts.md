@@ -44,7 +44,7 @@ from that file, and it does not update itself.
 
 ### MR net names are matched as exact strings
 
-`ghost_players_fnc_platoonNet` returns the `net` value from `RadioNets` or
+`ghostD_players_fnc_platoonNet` returns the `net` value from `RadioNets` or
 `Platoons`; `fn_getRadioChannel` looks for a channel of that name in
 `ghost_radio_mrChannels`. A typo is not an error — the man lands on
 `ghost_radio_mrDefault` and nobody notices until two people cannot hear each

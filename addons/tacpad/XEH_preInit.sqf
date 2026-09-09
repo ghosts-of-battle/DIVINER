@@ -66,6 +66,13 @@ GVAR(composeGridText) = createHashMap;
 // list is drawn under the field it belongs to.
 GVAR(composeMarker) = "";
 
+// THE PIN ON A MESSAGE THAT IS NOT A REPORT. A template carries its map anchor
+// in a `grid` field; a plain message has no fields to carry one, so the pin is
+// thread-level state instead of a payload key - see FUNC(composeSend) and
+// EFUNC(messaging,srvThreadFor). [] is no pin.
+GVAR(composePin) = [];
+GVAR(composePinPick) = false;
+
 // The addressees of a new message, kept out of the edit so a redraw cannot lose
 // them.
 GVAR(composeTo) = "";

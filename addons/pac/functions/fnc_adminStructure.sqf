@@ -28,7 +28,7 @@ Description:
 
 Parameters:
     0: Caller <OBJECT>
-    1: Section <STRING> - "ranks" | "skills" | "awards" | "statuses" | "admins" | "roles" | "nets" | "promotion"
+    1: Section <STRING> - "ranks" | "skills" | "awards" | "statuses" | "admins" | "roles" | "nets" | "promotion" | "trainings"
     2: Op <STRING> - "set" | "remove"
     3: Id <STRING>
     4: Record <HASHMAP> (set only) - the section's fields
@@ -47,7 +47,7 @@ if (isNull _caller || {!([_caller] call ghostD_adminpanel_fnc_isAdmin)}) exitWit
     WARNING_2("adminStructure refused: %1 is not an admin (%2)",name _caller,_section);
     false
 };
-if !(_section in ["ranks", "skills", "awards", "statuses", "admins", "roles", "nets", "promotion"]) exitWith {false};
+if !(_section in ["ranks", "skills", "awards", "statuses", "admins", "roles", "nets", "promotion", "trainings"]) exitWith {false};
 
 private _fnc_tell = {
     params ["_msg", "_bad"];

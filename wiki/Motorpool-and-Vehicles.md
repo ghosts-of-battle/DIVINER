@@ -47,7 +47,7 @@ class MotorPool_Nomad {
 };
 ```
 
-> **A pool is per CALLSIGN, not per element.** `ghost_vehicle_fnc_motorpool_squadClass`
+> **A pool is per CALLSIGN, not per element.** `ghostD_vehicle_fnc_motorpool_squadClass`
 > resolves off the **first word** of a group id, so `MotorPool_Nomad` serves
 > `NOMAD 2-1` through `NOMAD 2-4`, and `MotorPool_Wraith` serves both `WRAITH 4-1`
 > and `WRAITH 4-2`. File it with the first element of its callsign.
@@ -66,7 +66,7 @@ having no class at all. Delete it rather than keeping it as a placeholder.
 under `class GHOST_Cosmetics`.
 
 **Two readers share one list** — the ACE self-interaction menu
-(`ghost_vehicle_fnc_addCosmeticSelection`) and the MOTORPOOL spawner screen
+(`ghostD_vehicle_fnc_addCosmeticSelection`) and the MOTORPOOL spawner screen
 (`fnc_motorpool_select`) — so a scheme added here appears in both without a
 second edit.
 

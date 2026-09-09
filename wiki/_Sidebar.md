@@ -28,6 +28,7 @@
 - [Intel Packages](Intel-Packages)
 - [TAC//PAC personnel](TAC-PAC)
 - [Other Systems](Other-Systems)
+- [Editor and Zeus modules](Editor-and-Zeus-Modules)
 
 **Reference**
 - [Cross-File Contracts](Cross-File-Contracts)

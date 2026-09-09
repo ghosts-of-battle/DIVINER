@@ -77,6 +77,13 @@
 #define PAC_IDC_TRAIN_EDIT      82
 #define PAC_IDC_TRAIN_ADD       83
 #define PAC_IDC_TRAIN_REMOVE    84
+#define PAC_IDC_TRAIN_COMBO     85
+
+// ADD OPERATOR on the roster column (2026-09-09) - somebody who has never
+// joined, put on the roster before they do.
+#define PAC_IDC_L_ADD_UID       86
+#define PAC_IDC_L_ADD_NAME      87
+#define PAC_IDC_L_ADD           88
 
 // The boot screen (ui/bootscreen.hpp) - RscTitles, its own idc space
 #define PAC_IDC_BS_LOGO         200

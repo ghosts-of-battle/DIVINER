@@ -12,7 +12,7 @@ Who holds what rank, and which roles need one.
 
 **Loads:** `#include`d in [description.ext](description-ext).
 **Declares:** `Dynamic_Ranks`, `Role_Access`.
-**Read by:** `ghost_groups_fnc_canTakeRole`, `ghost_players_fnc_getRank`.
+**Read by:** `ghostD_groups_fnc_canTakeRole`, `ghostD_players_fnc_getRank`.
 
 ---
 

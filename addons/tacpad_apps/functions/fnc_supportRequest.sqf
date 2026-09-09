@@ -3,11 +3,16 @@
  * Author: YonV
  * The request window: pick a point on the map and send the mission.
  *
- * TWO SERVICES SO FAR. Artillery asks for rounds per gun; CAS asks for nothing
- * beyond the point, because a strafe run and a loiter station are both "there,
- * please" and Simplex's own screen is where the sheaf and the stack live. The
- * window is one file per job - this opens it, FUNC(supportRequestDraw) draws
- * whichever service it is, FUNC(supportRequestSend) sends it.
+ * CAS ONLY, SINCE 2026-09-05. Artillery used to open this window too - it asks
+ * for rounds per gun, and the code for that is still here and still works if
+ * something calls it with ARTILLERY - but the board now hands a fire mission
+ * straight to Simplex's own request screen (user: "arty support call needs to
+ * open the simplex panel"), so the only service that reaches this window from
+ * TAC//SUPPORT is CAS. CAS asks for nothing beyond the point, because a strafe
+ * run and a loiter station are both "there, please" and Simplex's own screen is
+ * where the sheaf and the stack live. The window is one file per job - this
+ * opens it, FUNC(supportRequestDraw) draws whichever service it is,
+ * FUNC(supportRequestSend) sends it.
  *
  * OUR WINDOW, SIMPLEX'S GUNS. Every number on this screen is asked of Simplex
  * and every round is fired by it - EFUNC is not available across mods, so the

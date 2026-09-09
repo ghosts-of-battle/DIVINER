@@ -44,6 +44,25 @@
     true
 ] call CBA_fnc_addSetting;
 
+// WHERE THIS SERVER CALLS OUT FROM. An Atlas access-list entry is an IP, and a
+// rented box does not tell you which one it leaves by - a container's own
+// address is a private one and no use here (user, 2026-09-06). With this on,
+// the boot asks an outside reflector and writes the answer to the .rpt, with a
+// verdict on TLS beside it: the plain-HTTP leg still answers when TLS is the
+// thing that is broken, so the pair says whether a failure is the network or
+// the machine's certificate store.
+//
+// OFF BY DEFAULT, and deliberately so: it is a request to a third party, made
+// from your server, and most boots have no use for one. Turning it on tells
+// that service your server's address - which is the whole point of asking.
+[
+    QGVAR(netCheck), "CHECKBOX",
+    ["Log this server's public IP at boot", "Off by default. At mission start the server asks an outside service (api.ipify.org) what address it calls out from, and writes it to the .rpt with a verdict on TLS - the address to put in MongoDB Atlas > Network Access, and whether this machine can make an HTTPS connection at all. One request per mission start, to a third party. Turn it off again once the database connects."],
+    ["Ghosts of Battle PAC", "Service"],
+    false,
+    true
+] call CBA_fnc_addSetting;
+
 [
     QGVAR(serviceKey), "EDITBOX",
     ["Service key", "Only for an http:// pacdb service: the X-Api-Key it expects. Leave empty with a mongodb+srv:// connection string."],

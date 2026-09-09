@@ -50,6 +50,7 @@ GVAR(structFields) = _fields;
     case "nets": {"<t size='0.85'>NET</t>"};
     case "roles": {"<t size='0.85'>CLASS</t>"};
     case "promotion": {"<t size='0.85'>KEY</t>"};
+    case "trainings": {"<t size='0.85'>COURSE</t>"};
     default {"<t size='0.85'>ID</t>"};
 });
 (_display displayCtrl PAC_IDC_ST_ME) ctrlShow (_section isEqualTo "admins");
@@ -62,6 +63,7 @@ private _hint = switch (_section) do {
     case "roles": {"THE WHOLE ROLE LIVES HERE - name, description, icon, nets, tiles, traits, variables, default loadout and arsenal arrays (config_roles.hpp's shape) plus its gates - and the group menu reads it from here. The id is the class name and keeps its spelling. The three fields shown are the gates: MIN RANK (a rank id - the player's rank must map to the same or a higher Arma rank), REQUIRED SKILLS (skill ids the player must hold), LOCKED TO (Steam ids; only these players). Everything else rides along untouched; edit it on the database site. REMOVE puts a role the mission still declares back to the mission's own."};
     case "nets": {"The named nets TAC//MSG opens a mailbox for and the rail draws - C2, FIRES.cas, the four platoon nets - by the name the radio plan and the roles' nets[] use. NAME is the description, ORDER the place on the rail. The squad nets are not listed: they exist because the squads do."};
     case "admins": {"Who may open the admin console and the TAC//PAC pages, in addition to the mission's own admin list and Ghost's admin flag. Keyed by Steam id. You cannot remove yourself. With 'Everyone is an admin (testing)' on, this list is not consulted."};
+    case "trainings": {"THE TRAINING CATALOGUE - every course the unit runs, one entry each. The player page's TRAINING dropdown lists these; ADD there logs the course on the man's record with the day. The COURSE id is what the record keeps, so renaming a course renames it on every record; removing one leaves the entries, shown by id. CATEGORY groups the list, DESCRIPTION is the tooltip. The promotion formula counts entries, whatever the course."};
     case "promotion": {"THE PROMOTION FORMULA - the points a player earns and the rungs of the ladder, as data you edit here. WEIGHTS, points per unit: hour (per hour on the server), op (per op attended), serviceMonth (per 30 days since enlisted), gradeMonth (per 30 days since promoted), training (per training entry), award (per award). RUNGS: rank_<rank id> = points required to hold that rank, e.g. rank_sergeant = 100. The player page and the operator file show the total, the breakdown and the next rung. A key that is not listed counts as 0."};
     default {""};
 };

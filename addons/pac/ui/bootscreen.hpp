@@ -26,41 +26,55 @@ class RscTitles {
             // SQUARE, whatever the aspect: pixelW and pixelH are one real pixel
             // each, so equal counts of them are a square - the main menu's own
             // idiom. Stretching w/h in safezone fractions is what squished it.
+            //
+            // AND IT KEEPS THE TOP THIRD TO ITSELF. At 30 grid units the mark
+            // stood nearly half the screen tall, from 0.30 to 0.78, and the
+            // title, the rule and the boot lines were all laid out inside it -
+            // white text over a picture, and the progress bar drawn straight
+            // across the artwork (user, 2026-09-06: "not right"). 16 units ends
+            // it well above the title.
             class Logo: RscPicture {
                 idc = PAC_IDC_BS_LOGO;
                 text = QPATHTOEF(media,images\logo_512.paa);
-                x = "0.5 - 15 * (pixelW * pixelGridNoUIScale)";
-                y = "0.30 * safezoneH + safezoneY";
-                w = "30 * (pixelW * pixelGridNoUIScale)";
-                h = "30 * (pixelH * pixelGridNoUIScale)";
+                x = "0.5 - 8 * (pixelW * pixelGridNoUIScale)";
+                y = "0.10 * safezoneH + safezoneY";
+                w = "16 * (pixelW * pixelGridNoUIScale)";
+                h = "16 * (pixelH * pixelGridNoUIScale)";
             };
 
+            // Two lines - the mark's name, then what it is doing.
             class Title: RscStructuredText {
                 idc = PAC_IDC_BS_TITLE;
                 text = "";
-                x = "0.30 * safezoneW + safezoneX"; y = "0.470 * safezoneH + safezoneY";
-                w = "0.40 * safezoneW"; h = "0.05 * safezoneH";
+                x = "0.25 * safezoneW + safezoneX"; y = "0.420 * safezoneH + safezoneY";
+                w = "0.50 * safezoneW"; h = "0.090 * safezoneH";
             };
 
-            // The rule under the title, and the progress bar drawn over its left.
+            // The rule under the title, and the progress bar drawn over its
+            // left. The bar's width is 0.30 of safezoneW in FUNC(bootScreen)
+            // too - keep the two agreed.
             class Rule: RscText {
                 idc = -1;
-                x = "0.35 * safezoneW + safezoneX"; y = "0.545 * safezoneH + safezoneY";
+                x = "0.35 * safezoneW + safezoneX"; y = "0.535 * safezoneH + safezoneY";
                 w = "0.30 * safezoneW"; h = "0.003 * safezoneH";
                 colorBackground[] = {0.35, 0.35, 0.34, 1};
             };
             class Bar: RscText {
                 idc = PAC_IDC_BS_BAR;
-                x = "0.35 * safezoneW + safezoneX"; y = "0.545 * safezoneH + safezoneY";
+                x = "0.35 * safezoneW + safezoneX"; y = "0.535 * safezoneH + safezoneY";
                 w = "0"; h = "0.003 * safezoneH";
                 colorBackground[] = {0.85, 0.28, 0.20, 1};
             };
 
+            // THE BOOT LINES NEED THE ROOM THEY ACTUALLY TAKE. Five entries,
+            // each long enough to wrap twice, never fitted 0.10 of the screen
+            // and the last was cut mid-sentence (user, 2026-09-06: "cut off").
+            // Wider so they wrap less, and tall enough for ten laid-out lines.
             class Step: RscStructuredText {
                 idc = PAC_IDC_BS_STEP;
                 text = "";
-                x = "0.30 * safezoneW + safezoneX"; y = "0.560 * safezoneH + safezoneY";
-                w = "0.40 * safezoneW"; h = "0.10 * safezoneH";
+                x = "0.22 * safezoneW + safezoneX"; y = "0.555 * safezoneH + safezoneY";
+                w = "0.56 * safezoneW"; h = "0.380 * safezoneH";
             };
         };
     };

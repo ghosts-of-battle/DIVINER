@@ -69,8 +69,21 @@ private _fontH = TEXT_BASE * pixelH * pixelGrid * GVAR(textScale) * GVAR(uiScale
 // returns the same number, so a caller can size a cell to fit its own label.
 private _lineH = [_size] call FUNC(textH);
 
+// THE BOX IS THE LINE. It was `_lineH max _h` while the top was still dropped
+// by half the difference - so whenever the line was SHORTER than the caller's
+// box, which is the common case, the control hung below that box by the same
+// half it had been dropped. A label not WHOLLY inside a hit is a label
+// FUNC(drawHit) will not claim, and an unclaimed label eats every press that
+// lands on it: the only clickable part of the cell was the sliver above the
+// label. "The clickable area seems confined, it is hard to find" (user,
+// 2026-09-05, of the PAC tab row) is exactly that sliver, and "nothing
+// happens" was the same sliver while the header hit still covered it.
+//
+// Taller-than-the-box lines are unchanged - the top is not dropped at all
+// then, and the box is the line either way, which is what FUNC(appFrame)
+// sizes its CLOSE hit against.
 private _ctrl = (ctrlParent _parent) ctrlCreate [QGVAR(cell), -1, _parent];
-_ctrl ctrlSetPosition [_x, _y + ((_h - _lineH) max 0) * 0.5, _w, _lineH max _h];
+_ctrl ctrlSetPosition [_x, _y + ((_h - _lineH) max 0) * 0.5, _w, _lineH];
 
 // The control's own font height is the body size; the tag scales off it. Set
 // before the text, because structured text is laid out when it is assigned.

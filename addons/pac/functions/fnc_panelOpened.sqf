@@ -66,6 +66,7 @@ lbClear _gc;
 _gc lbSetData [_gc lbAdd "(none)", ""];
 {_gc lbSetData [_gc lbAdd _x, _x]} forEach _groups;
 [PAC_IDC_AWARD_COMBO, "awards", false] call _fnc_fillCombo;
+[PAC_IDC_TRAIN_COMBO, "trainings", false] call _fnc_fillCombo;    // the training catalogue
 
 (_display displayCtrl PAC_IDC_HINT) ctrlSetStructuredText parseText "<t size='0.8'><t font='RobotoCondensedBold'>How the op window works.</t> Press START OP as the op begins (a name is optional) and STOP OP when it ends. Everyone on the server in between is counted as attended for that op; the attendance percentage on the operator files comes from these windows. ATTENDANCE TO CLIPBOARD lists who was on and for how long.<br/><br/><t font='RobotoCondensedBold'>The player page.</t> Rank and skills go on the player at once if they are in the field, and on every spawn. What is ticked under SKILLS is what they carry - seeded once from their role, then only this page changes it. Every edit is checked against the admin list on the server and logged with the date.</t>";
 

@@ -4,7 +4,7 @@ Paint schemes and bolt-on fittings, as data.
 
 **Loads:** `#include`d in [description.ext](description-ext).
 **Declares:** `GHOST_Cosmetics`.
-**Read by:** `ghost_vehicle_fnc_addCosmeticSelection` (the ACE self-interaction
+**Read by:** `ghostD_vehicle_fnc_addCosmeticSelection` (the ACE self-interaction
 menu) and `fnc_motorpool_select` (the MOTORPOOL screen).
 
 **Two readers, one list** — a scheme added here appears in both without a second
@@ -27,7 +27,7 @@ class GHOST_Cosmetics {
         vehicle = "B_AFV_Wheeled_01_cannon_F";
         name = "Woodland Paint";
         icon = "";
-        code = "[_vehicle,[[0,'a3\armor_f_tank\afv_wheeled_01\data\afv_wheeled_01_ext1_green_co.paa'],[1,'...']]] call ghost_vehicle_fnc_applyTextures;";
+        code = "[_vehicle,[[0,'a3\armor_f_tank\afv_wheeled_01\data\afv_wheeled_01_ext1_green_co.paa'],[1,'...']]] call ghostD_vehicle_fnc_applyTextures;";
     };
 };
 ```
@@ -51,7 +51,7 @@ use single quotes.
 
 ### `code` reads `_vehicle`
 
-It is compiled once by `ghost_vehicle_fnc_cosmeticEntries` and reads `_vehicle`
+It is compiled once by `ghostD_vehicle_fnc_cosmeticEntries` and reads `_vehicle`
 from the caller's scope. Do not declare it; do not rename it.
 
 ### "Toggle" is load-bearing
@@ -70,7 +70,7 @@ lines.
 ## Instructions
 
 **Add a paint:** one class. `vehicle` is the most general base class the paint
-suits; `code` calls `ghost_vehicle_fnc_applyTextures` with
+suits; `code` calls `ghostD_vehicle_fnc_applyTextures` with
 `[index, "path"]` pairs.
 
 **Add a fitting:** the same, with a `name` starting "Toggle" and `code` that

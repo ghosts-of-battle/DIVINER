@@ -1,10 +1,12 @@
-# Ghost
+# DIVINER
 
-**Ghost** is the mission framework used by Ghosts of Battle. It ships the
+**DIVINER** is the mission framework used by Ghosts of Battle. It ships the
 role-selection screen, the tablet suite, the arsenal and loadout system, the
-radio programmer, the messaging system, the motorpool and the battlefield
-systems — as a mod. Your mission supplies the roster, the gear and the comms
-plan, as configuration.
+radio programmer, the threaded messaging system, the motorpool and the
+battlefield systems — as a mod. Your mission supplies the roster, the gear and
+the comms plan, as configuration. It is a two-part system: this mod, and a
+mission built on it from the
+[2040 repository](https://github.com/ghosts-of-battle/2040).
 
 The rule the whole framework is built on:
 
@@ -39,7 +41,7 @@ There is a config for it, and changing it needs no mod rebuild.
 
 | | |
 |---|---|
-| [Nets](Nets) | TAC//MSG mailboxes, and who may read each one |
+| [Nets](Nets) | The mailboxes of TAC//MSG, the threaded messaging system, and who may read each one |
 | [Comms Plan](Comms-Plan) | ACRE and TFAR channel plans, SR / MR / LR |
 
 ## Gear and vehicles
@@ -53,9 +55,10 @@ There is a config for it, and changing it needs no mod rebuild.
 
 | | |
 |---|---|
-| [Messaging Deck](Messaging-Deck) | The report card templates |
+| [Messaging Deck](Messaging-Deck) | TAC//MSG, the threaded messaging system — the report cards that open a thread and the replies that answer one |
 | [TAC//PAC personnel](TAC-PAC) | Ranks, roles, skills, awards, attendance, orders, the log - and where it all lives |
 | [Other Systems](Other-Systems) | Logistics, AI skill, tacpad colours, welcome, admins |
+| [Editor and Zeus modules](Editor-and-Zeus-Modules) | Every module the mod adds to Eden and to Zeus, with its attributes |
 
 ## Reference
 

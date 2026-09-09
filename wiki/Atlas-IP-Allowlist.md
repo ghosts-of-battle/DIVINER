@@ -23,6 +23,30 @@ Part of the [database quick start](Quick-Start-Database); here in full.
 
 ## Finding the server's IP
 
+**Ask the server itself.** Turn on **Log this server's public IP at boot**
+(Addon Options > Ghosts of Battle PAC > Service, a server setting, off by
+default). At the next mission start the server writes a line to its `.rpt`:
+
+```
+[GHOSTD] (pac) INFO: network check: ip=203.0.113.7 | http ok, https ok - this server's network and TLS are both fine
+```
+
+That address is the one Atlas sees, which is what the access list needs. It
+is asked over plain HTTP as well as HTTPS, so the same line also says whether
+the machine can make an HTTPS connection at all:
+
+| The line says | What it means |
+|---|---|
+| `http ok, https ok` | Network and TLS are both fine. Allowlist the address. |
+| `http ok, https FAILED (…)` | The machine cannot complete a TLS handshake - usually no CA certificate store in the container. Allowlisting will not help until that is fixed. |
+| both `FAILED` | No outbound web access at all. Ask the host. |
+
+It makes one request per mission start to an outside service
+(`api.ipify.org`), which is why it is off by default. Turn it off again once
+the database connects.
+
+Other ways:
+
 - **A rented game server:** the host's control panel shows the server's IP,
   usually on the server's overview or connection page. It is the same address
   players use to connect, without the game port. If in doubt, ask the host

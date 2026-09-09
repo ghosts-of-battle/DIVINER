@@ -31,7 +31,7 @@ These are the per-file reference you look up while editing.
 |---|---|---|
 | `config_nets.hpp` | [config_nets](config_nets) | `GHOST_Nets` — every named mailbox. **Or the `<unitId>.nets` document** |
 | `config_radio.hpp` | [config_radio](config_radio) | `ghost_radio_*` — the channel plans. **SQF. Or the `<unitId>.radio` document** |
-| `config_messaging.hpp` | [config_messaging](config_messaging) | `GHOST_Templates` — the report deck |
+| `config_messaging.hpp` | [config_messaging](config_messaging) | `GHOSTFR_Templates` — the report deck |
 
 ## Gear
 

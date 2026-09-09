@@ -23,6 +23,7 @@
  * 6: Message being replied to, "" for the thread root <STRING>
  * 7: File it under another call sign, "" to use the sender's <STRING>
  * 8: Audience tags <ARRAY> of <STRING>
+ * 9: Map pin, [x, y, z] for a thread that should mark the map, [] for none <ARRAY>
  *
  * THE CALL SIGN OVERRIDE IS FOR TESTING ALONE, and it is here rather than in a
  * second write path because a test that files messages through code the live
@@ -46,7 +47,8 @@ params [
     ["_threadId", "", [""]],
     ["_parentId", "", [""]],
     ["_asCallsign", "", [""]],
-    ["_tags", [], [[]]]
+    ["_tags", [], [[]]],
+    ["_pin", [], [[]]]
 ];
 
 // The client tidies these, but the client is not who decides. A tag that
@@ -78,7 +80,7 @@ if (_template isEqualTo createHashMap) exitWith {["no such template"] call _fnc_
 ([_templateId, _payload] call FUNC(validate)) params ["_ok", "_why"];
 if (!_ok) exitWith {[_why] call _fnc_refuse};
 
-([_unit, _template, _payload, _threadId] call FUNC(srvThreadFor)) params ["_thread", "_threadWhy", "_isRoot"];
+([_unit, _template, _payload, _threadId, _pin] call FUNC(srvThreadFor)) params ["_thread", "_threadWhy", "_isRoot"];
 if (_threadWhy != "") exitWith {[_threadWhy] call _fnc_refuse};
 
 if (_isRoot && {_addressees isEqualTo []}) exitWith {

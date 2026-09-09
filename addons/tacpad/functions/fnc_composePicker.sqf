@@ -126,6 +126,8 @@ private _cards = (_ids select {_x isNotEqualTo "freetext"}) apply {[_x, [_x] cal
         GVAR(composeTemplate) = _ctrl getVariable [QGVAR(pick), ""];
         GVAR(composePick) = false;
         GVAR(composeMarker) = "";
+        GVAR(composePin) = [];
+        GVAR(composePinPick) = false;
         {[] call FUNC(readerDraw)} call CBA_fnc_execNextFrame;
     }] call FUNC(drawHit);
     _hit setVariable [QGVAR(pick), _id];

@@ -96,8 +96,8 @@ passed the point where it wanted this data. The last thing `loadConfigs.sqf`
 does is tell it:
 
 ```sqf
-if (!isNil "ghost_init_fnc_missionConfigsReady") then {
-    call ghost_init_fnc_missionConfigsReady;
+if (!isNil "ghostD_init_fnc_missionConfigsReady") then {
+    call ghostD_init_fnc_missionConfigsReady;
 };
 ```
 

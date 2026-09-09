@@ -18,7 +18,7 @@ the nets, the radio plan, the report deck and the schemes with it - lives
 in the service's database, **one document per config file so people can
 edit them separately**: `<unitId>.settings`, `.ranks`, `.skills`, `.awards`,
 `.statuses`, `.admins`, `.nets`, `.radio`, `.orbat`, `.templates`,
-`.schemes`, `.promotion`, one per role `<unitId>.role.<class>` and one per order
+`.schemes`, `.promotion`, `.trainings`, one per role `<unitId>.role.<class>` and one per order
 `<unitId>.opord.<id>`. A section document is
 `{ "section": "ranks", "items": { id: {...} } }`; a role is
 `{ "section": "role", "id": "teamleadBanshee", "role": {...} }` with every
@@ -149,6 +149,29 @@ class statuses { class loa { name = "Leave of absence"; }; };
 
 Awards are given from the panel and stamped with the date and who gave them.
 A status is a label on the roster - what it means is the unit's business.
+
+## trainings
+
+The training catalogue: the courses the unit runs. The player page's TRAINING
+dropdown lists them; pick one and press ADD to log it on the record with the
+day. The box beside the list is optional - lead with `YYYY-MM-DD` to back-date
+the course, and anything after is the note. Every entry is
+`{ name, category, description }`; the class name is the course id.
+
+```cpp
+class trainings {
+    class cls_course { name = "Combat Lifesaver course"; category = "Medical";    description = "ACE CLS: bandages, tourniquets, IVs, triage"; };
+    class tl_course  { name = "Team leader course";      category = "Leadership"; description = "Fireteam and squad leading, reports, the tacpad"; };
+    class jfo_course { name = "JFO course";              category = "Fires";      description = "Calling fires: 9-line, CAS, artillery"; };
+};
+```
+
+Editable in game under EDIT STRUCTURE > TRAINING; in the database it is the
+`<unitId>.trainings` document. A record's training entries keep the course id,
+so renaming a course renames it on every record; removing one leaves the
+entries, shown by id. A unit with no catalogue can still type a course into
+the box as free text. The promotion formula counts entries, whatever the
+course.
 
 ## promotion
 

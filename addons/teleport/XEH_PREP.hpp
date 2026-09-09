@@ -1,5 +1,6 @@
 PREP(addAction);
 PREP(addPoint);
+PREP(applyTheme);
 PREP(deletePoint);
 PREP(listCheck);
 PREP(onButtonClick);

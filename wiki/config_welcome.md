@@ -4,7 +4,7 @@ The welcome modal, shown to every player once the mission display is up.
 
 **Loads:** `#include`d in [description.ext](description-ext).
 **Declares:** `GHOST_Welcome`.
-**Read by:** `initPlayerLocal.sqf` → `ghost_common_fnc_modal`.
+**Read by:** `initPlayerLocal.sqf` → `ghostD_common_fnc_modal`.
 
 ---
 

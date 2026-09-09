@@ -166,13 +166,14 @@ if (GVAR(memberMarkers) > 0) then {
     // YOU WERE. The line was `- [ACE_player]`, unconditionally, on the
     // reasoning that the engine draws your own icon so a second one would be
     // a duplicate. That is true on a preset with extended map content ON.
-    // Ghost ships its own preset with it OFF - see
-    // addons/difficulty/CfgDifficultyPresets.hpp, `mapContent = 0` - which is
-    // the whole point of a milsim difficulty: you navigate by compass and GPS,
-    // not by watching yourself move. With that set the engine draws nothing,
-    // BFT then removed the only other source, and the man looking at the map
-    // could see his squad, his group marker and every tracked group on the
-    // island EXCEPT HIMSELF.
+    // A milsim preset turns it OFF (`mapContent = 0`) - which is the whole
+    // point of one: you navigate by compass and GPS, not by watching yourself
+    // move. DIVINER no longer ships such a preset - the `difficulty` addon was
+    // dropped as out of scope, and `ghost` still has it - and a server may be
+    // running one anyway. With map content off the engine draws nothing, BFT
+    // then removed the only other source, and the man looking at the map could
+    // see his squad, his group marker and every tracked group on the island
+    // EXCEPT HIMSELF.
     //
     // So it is asked rather than assumed. The no-duplicate intent is intact on
     // any preset that does draw you, and a mission that turns map content back

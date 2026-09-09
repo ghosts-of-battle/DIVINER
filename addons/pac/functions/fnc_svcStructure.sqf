@@ -75,7 +75,7 @@ private _errors = 0;
         };
         default {_errors = _errors + 1};
     };
-} forEach ["admins", "settings", "ranks", "skills", "awards", "statuses", "nets", "radio", "templates", "schemes", "promotion"];
+} forEach ["admins", "settings", "ranks", "skills", "awards", "statuses", "nets", "radio", "templates", "schemes", "promotion", "trainings"];
 
 // the ORBAT document
 ([_unit + ".orbat"] call FUNC(svcLoad)) params ["_odoc", "_ostatus"];

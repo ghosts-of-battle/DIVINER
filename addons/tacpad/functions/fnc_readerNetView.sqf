@@ -63,7 +63,9 @@ private _net = GVAR(readerNet);
 private _title = [_net, "ALL NETS"] select (_net isEqualTo "ALL");
 
 private _y = _padY;
-[_root, [_dx + _pad, _y, _dw - 2 * _pad, _rowH * 1.2], toUpper _title, _ink, 1.2, true] call FUNC(drawText);
+// The title stops short of the CLOSE button FUNC(readerDraw) puts in the
+// pane's top-right corner (user, 2026-09-05).
+[_root, [_dx + _pad, _y, _dw - _dw * 0.15 - 3 * _pad, _rowH * 1.2], toUpper _title, _ink, 1.2, true] call FUNC(drawText);
 _y = _y + _rowH * 1.3;
 
 [

@@ -22,11 +22,12 @@ class RscMapControl;
 class GVAR(dialog) {
     idd = IDD_TP;
     movingEnable = 1;
-    onLoad = QUOTE(uiNamespace setVariable [ARR_2(QQGVAR(display),_this select 0)]; private _map = uiNamespace getVariable [ARR_2(QQGVAR(map),controlNull)]; _map ctrlMapAnimAdd [ARR_3(0,0.3,getMarkerPos QQGVAR(marker))]; ctrlMapAnimCommit _map);
+    onLoad = QUOTE(uiNamespace setVariable [ARR_2(QQGVAR(display),_this select 0)]; private _map = uiNamespace getVariable [ARR_2(QQGVAR(map),controlNull)]; _map ctrlMapAnimAdd [ARR_3(0,0.3,getMarkerPos QQGVAR(marker))]; ctrlMapAnimCommit _map; [_this select 0] call FUNC(applyTheme));
     onUnload = QUOTE(uiNamespace setVariable [ARR_2(QQGVAR(display),displayNull)]; deleteMarkerLocal QQGVAR(marker););
 
     class ControlsBackground {
         class BarTitle: RscText {
+            idc = IDC_TP_TITLE;
             x = QUOTE(TP_X);
             y = QUOTE(TP_Y);
             w = QUOTE(TP_PANEL_W);
@@ -34,9 +35,10 @@ class GVAR(dialog) {
             text = "Teleport list";
             font = "PuristaSemibold";
             style = 2 + 512;
-            // GHOST RED, #CC4331, rather than the player's own interface
-            // colour - the mission version read GUI_BCG_RGB from the profile,
-            // so the title bar was a different colour on every machine.
+            // THE FALLBACK ONLY. FUNC(applyTheme) repaints this from the
+            // TAC//PAC scheme when the dialog opens; what is here is what
+            // a server without tacpad gets - not the player's GUI_BCG_RGB,
+            // which is what made the bar a different colour per machine.
             colorBackground[] = {0.8, 0.263, 0.192, 0.8};
             moving = 1;
             sizeEx = "1.6 * pixelGridNoUIScale * pixelH";
@@ -52,6 +54,7 @@ class GVAR(dialog) {
             onUnload = QUOTE(uiNamespace setVariable [ARR_2(QQGVAR(map),controlNull)]);
         };
         class BgMain: RscText {
+            idc = IDC_TP_BG;
             x = QUOTE(TP_X + TP_PANEL_W * 0.5);
             y = QUOTE(TP_Y + TP_BAR_H + TP_GAP_H);
             w = QUOTE(TP_PANEL_W * 0.5);

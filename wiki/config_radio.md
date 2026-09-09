@@ -4,7 +4,7 @@
 > the `<unitId>.radio` document (`items: {srRadios, srChannels, mrChannels,
 > lrChannels, srSquadChannel, ...}` - the name after the prefix, the value as
 > written). TAC//PAC writes the globals from it at boot and on every client
-> (`ghost_pac_fnc_radioApply`) and re-programs the ACRE presets when the plan
+> (`ghostD_pac_fnc_radioApply`) and re-programs the ACRE presets when the plan
 > changed. A mission that still ships this file seeds the document and keeps
 > working; `frameworkmongo.Stratis` does not ship it. The rules below still hold -
 > the names in `mrChannels` must match the ORBAT's platoon and radio nets.
@@ -14,8 +14,8 @@ The comms plan. **Despite the `.hpp`, this is SQF** — it is run by
 running it *is* the handover.
 
 **Loads:** compiled at CBA preInit by `loadConfigs.sqf`. **Not** `#include`d.
-**Read by:** `ghost_gear_fnc_setupRadios`, `ghost_players_fnc_getRadioChannel`,
-`ghost_players_fnc_platoonNet`.
+**Read by:** `ghostD_gear_fnc_setupRadios`, `ghostD_players_fnc_getRadioChannel`,
+`ghostD_players_fnc_platoonNet`.
 
 It holds an ACRE block and a TFAR block. The mission uses whichever radio mod is
 loaded and ignores the other — edit the one you run.

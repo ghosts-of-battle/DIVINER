@@ -18,6 +18,811 @@ contract and are spelled the same in both repos. Never rewrite them.
 
 ## Unreleased
 
+### ADD OPERATOR: somebody can be put on the roster before they ever join
+**Sync:** `yes` - rewrite `ghostD_` to `ghost_`. No contract change: no existing
+function, event or config key changed shape. Two new functions and three new
+control ids, all additive.
+
+Asked 2026-09-09: "add a way to add players to the roster". A record was only
+ever created when a player connected - `FUNC(record)`, from the connect
+handler - so a unit that enlists somebody on Discord on Tuesday had no way to
+have them on the roster before Saturday. The only route in was
+`FUNC(csvImport)`, which means editing `pac_roster.csv` in the mission and
+restarting it.
+
+**`FUNC(record)` still creates the record.** Its own header says it is the only
+place a record is made, so the shape stays defined once. The new server
+function checks the caller and the id, then makes the same
+`[_uid, _name] call FUNC(record)` call the connect handler makes - a player
+added by hand and a player who walked in are the same kind of thing afterwards,
+with every key from `FUNC(recordFields)` present from the start.
+
+**Nothing is granted.** The record arrives with an operator id and today's
+`enlistedAt`, and nothing else - exactly what a first connect leaves behind.
+Rank, role and skills stay an admin's decision on the player page. A system
+that quietly grants qualifications is the thing PAC exists to avoid.
+
+**Files:**
+
+- `addons/pac/functions/fnc_adminAddOperator.sqf` - **new**. Server only,
+  `ghostD_adminpanel_fnc_isAdmin` checked. Params `[_caller, _uid, _name]`.
+  Refuses an empty id, an id with a non-digit (`toArray` / 48-57), and an id
+  already in `GVAR(players)`. A id that is not 17 digits long is **accepted but
+  reported** - test servers exist, but a mistyped id is a record that never
+  matches its person. Calls `FUNC(record)`, then `FUNC(logAction)` with type
+  `"operator"`, then `FUNC(storeSave)` and `FUNC(publish)`. Tells the caller
+  through `ghostD_notify_fnc_notify` on `owner _caller`.
+- `addons/pac/functions/fnc_panelAddOperator.sqf` - **new**. Client side of the
+  button. Guards `GVAR(summary) getOrDefault ["readOnly", false]`, reads the two
+  edits off `uiNamespace getVariable [QGVAR(display), displayNull]`, confirms
+  with `BIS_fnc_guiMessage` (repeating the id back - the last chance to catch a
+  wrong digit), then `[player, _uid, _name] remoteExec [QFUNC(adminAddOperator), 2]`
+  and clears both boxes.
+- `addons/pac/ui/idcs.inc.hpp` - three ids added: `PAC_IDC_L_ADD_UID` 86,
+  `PAC_IDC_L_ADD_NAME` 87, `PAC_IDC_L_ADD` 88.
+- `addons/pac/ui/dialog.inc.hpp` - `L_LIST` height **0.818 -> 0.778** to make
+  room, and three controls at `y = 0.912`: `L_ADD_UID` (`RscADMPEdit`, w 0.088),
+  `L_ADD_NAME` (`RscADMPEdit`, w 0.064), `L_ADD` (`RscADMPButton`, w 0.052,
+  `onButtonClick = [] call FUNC(panelAddOperator)`).
+- `addons/pac/XEH_PREP.hpp` - `PREP(adminAddOperator);` and
+  `PREP(panelAddOperator);`.
+- `addons/pac/functions/fnc_panelStyle.sqf` - `PAC_IDC_L_ADD` added to the
+  button paint list so it takes the theme like every other button.
+
+**Checked:** `hemtt check` clean - 1054 sqf compiled, no warnings. Not yet
+tested in game: the confirmation dialog, the notify text and the list refresh
+after `FUNC(publish)` want a live server.
+
+### The web manager gained the same button, and three other things
+**Sync:** `no` - none of it is in this repo. Recorded here only because it
+depends on contracts this repo owns, so a change to them breaks it.
+
+`DIVINER_Web` (separate repository) now has an add-operator form, a colour
+scheme picker, a wiki side panel, and a Discord id column. Two dependencies on
+this repo, both worth knowing before either is changed:
+
+- **It writes a record itself**, mirroring `FUNC(recordFields)` key for key,
+  because a partial record breaks the "every key is present" guarantee every
+  reader here relies on. Adding a key to `FUNC(recordFields)` means adding it
+  in `DIVINER_Web/src/pages/roster.php` too.
+- **It issues operator ids** as `OP-` + (highest in the store + 1), since
+  `GVAR(meta)`'s `operatorSeq` counter is profile-side and not in the Mongo
+  document. This is safe in both directions only because `FUNC(operatorSeq)`
+  skips ids already held by a record - if that skip is ever removed, the two
+  can collide.
+- The site's Steam sign-in authorises against `<unit>.admins`, which
+  `FUNC(adminStructure)` writes as both a keyed `items` map and a sorted `ids`
+  array. It reads either; dropping the `ids` array would still work.
+
+### A plain message can carry a map pin, and the pin marks the map for everyone it reached
+**Sync:** `yes` - rewrite `ghostD_` to `ghost_`. Note the two CONTRACT changes
+below before porting: a public function and a CBA event both gained a trailing
+argument.
+
+Asked 2026-09-07: "add a button to add markers to a standard message". A report
+pins the map because its template names a `grid` field in `anchor`; a plain
+message has one text box and nothing to point at, so it could not.
+
+**Why the pin is not a payload field.** The obvious implementation - give the
+`freetext` template a `grid` field - fails twice. `FUNC(composeSend)` builds the
+payload only from `_template get "order"`, so a key no line produces never gets
+in; and `FUNC(validate)` deletes any key the template does not declare, logging
+"payload carried unknown field". It would also have meant editing the deck in
+`config_messaging.hpp` AND in the `<unit>.templates` document, since the two
+missions keep it in different places. So the pin travels beside the payload as
+its own argument, which works for every template and needed no mission or
+database edit.
+
+**Contract changes, called out on their own:**
+
+- `ghostD_messaging_fnc_submit` (Public) takes an **optional 7th argument**,
+  `_pin` - `[x, y, z]` or `[]`. Existing callers are unaffected.
+- The `ghostD_messaging_submit` CBA **server event** payload gains a **10th
+  element**, the same pin. A client and server of different builds will disagree
+  about this array; the trailing position and the `params` default make a short
+  array harmless.
+- Threads gain a **`pinned`** boolean. Only a pin sets it - a template `anchor`
+  does not - so the deck's reports go on anchoring without marking.
+
+Client, all in `addons/tacpad`:
+
+- `XEH_preInit.sqf` - `GVAR(composePin)` (`[]` for none) and
+  `GVAR(composePinPick)` (the marker list open or not).
+- `functions/fnc_composePane.sqf` - a MAP PIN row above the message box, drawn
+  only for a plain message. `CURRENT LOC` pins where you stand and reads
+  `CLEAR PIN` once set; `MAP MARKER` drops the same list the deck's grid fields
+  use (`FUNC(markerGrids)`), so a man who has already drawn the spot does not
+  read a grid off his own map and retype it. The box height is recomputed after
+  the row so the list pushes it down rather than covering it.
+- `functions/fnc_composeSend.sqf` - sends `+GVAR(composePin)` as submit's 7th
+  argument, and carries it in `GVAR(composePending)` as a **7th tuple element**
+  so a server refusal puts the pin back with everything else.
+- `XEH_postInit.sqf` - the pending restore reads that element,
+  `["_pin", []]`.
+- `fnc_composeOpen.sqf`, `fnc_openReader.sqf`, `fnc_composePicker.sqf` and the
+  four reset sites in `fnc_composePane.sqf` - both new GVARs cleared wherever
+  `GVAR(composeMarker)` already was.
+
+Server, all in `addons/messaging`:
+
+- `functions/fnc_srvSubmit.sqf` - accepts `_pin` and hands it to
+  `FUNC(srvThreadFor)`.
+- `functions/fnc_srvThreadFor.sqf` - **the pin beats the template's anchor**,
+  because it is the one the sender chose on purpose; the anchor lookup now runs
+  only when no pin arrived. Sets `pinned` on the thread. Replies do not pin: a
+  thread is pinned by its root.
+- `functions/fnc_srvDeliver.sqf` - when a thread is `pinned` and carries no
+  marker yet, fires `QGVAR(marker)` at each recipient and stores the name as
+  `marker` on the thread. **Targeted at `_bodySeen`, not `_seen` and not
+  `allPlayers`**: the quiet pass hands an index row to every player on the
+  server so a shared mailbox is readable, and marking all of them would put a
+  friendly tasking on the other side's map - the hazard `FUNC(srvTic)` avoids by
+  targeting its own side rather than creating a global marker.
+
+**Nothing new to clean up.** It reuses `FUNC(cltMarker)` for the drawing and the
+existing `marker` key on the thread, which `FUNC(srvSweep)` already deletes when
+the thread goes.
+
+Checked with `hemtt check` - clean, 1052 SQF files (one L-S26 brace hint fixed
+in `srvThreadFor`). NOT tested in game: wants a pinned message sent to a net to
+confirm the marker appears for the recipients and for nobody else, and that
+`srvSweep` removes it with the thread.
+
+### Teleport menu ignored the TAC//PAC colour scheme - Ghost red on every theme
+**Sync:** `yes` - but the port has a trap: the guard and the call are the
+function's name as a STRING, `isNil "ghostD_tacpad_fnc_theme"` and
+`call ghostD_tacpad_fnc_theme`. A mechanical `ghostD_` to `ghost_` sweep that
+only looks at code and not at string literals will leave the guard naming a
+function that never exists, and the menu will silently keep the fallback
+colours. Rewrite both.
+
+Reported 2026-09-08: "the tp windows does not follow the ui color scheem".
+
+`addons/teleport/gui.hpp` is a config dialog and states its colours once; the
+scheme the player picked is a CBA setting that config cannot read. So the title
+bar was `{0.8, 0.263, 0.192, 0.8}` - Ghost red - on the light scheme, the olive
+scheme and every custom one alike, and the two buttons were flat black.
+
+- `addons/teleport/functions/fnc_applyTheme.sqf` - **new**. Takes the display,
+  reads `[] call ghostD_tacpad_fnc_theme` (which answers
+  `[_ground, _ink, _accent, _line]`) and repaints: the title bar gets the accent
+  as its background with the GROUND as its text - accent on ink is the one
+  pairing in the scheme that is not guaranteed readable, both being foreground
+  colours - `BgMain` gets the ground, the list box gets ink text, and OK and
+  CANCEL get ground on ink.
+- `addons/teleport/gui.hpp` - `BarTitle` and `BgMain` given `idc`s so the
+  function can reach them; the dialog's `onLoad` now ends
+  `[_this select 0] call FUNC(applyTheme)`. The hardcoded colours are kept and
+  recommented as the fallback rather than deleted.
+- `addons/teleport/script_component.hpp` - `IDC_TP_TITLE` 9605 and `IDC_TP_BG`
+  9606, continuing the addon's own 96xx block.
+- `addons/teleport/XEH_PREP.hpp` - `PREP(applyTheme);`.
+
+**No new dependency.** `teleport` requires `ghostD_main`, `ghostD_notify` and
+CBA, and it stays that way: the theme call is guarded by
+`isNil "ghostD_tacpad_fnc_theme"`, so a server running teleport without the
+tablet suite opens the menu on the config colours exactly as before.
+
+The list box's SELECTION colours are still config's - `colorSelect` and
+`colorSelectBackground` have no runtime setter on `RscListBox`, unlike
+background and text. If the selected row wants the accent too, the list has to
+become an `RscListNBox` or the scheme has to move into config as evaluated
+expression strings.
+
+Checked with `hemtt check` - clean, 1052 SQF files. NOT tested in game: wants
+the menu opened on at least two schemes to confirm the bar tracks the setting.
+
+### Wiki: the report deck class was documented under the wrong name, and the database case was not documented at all
+**Sync:** `careful` - the wiki is DIVINER's own now (SYNC.md), so the pages do
+not port. The FACT does: `GHOSTFR_Templates` is the class name in `ghost` too,
+so if `ghost` keeps a copy of these pages it carries the same error.
+
+Two things, found while adding a tasking card to a database-backed unit.
+
+**The class name was wrong in seven places.** The wiki said
+`class GHOST_Templates`; `addons/messaging/functions/fnc_loadTemplates.sqf`
+reads `missionConfigFile >> "GHOSTFR_Templates"`, and
+`framework.Stratis\config\config_messaging.hpp` declares `GHOSTFR_Templates`.
+Anyone following the wiki would have named the class `GHOST_Templates`, got no
+error at all - the parser is happy, the class is simply never looked at - and a
+mission with no report deck. Corrected in `wiki/config_messaging.md` (3),
+`wiki/Messaging-Deck.md` (3) and `wiki/Config-Reference.md` (1).
+
+**A mission whose config lives in the database ships no `config_messaging.hpp`,
+and nothing said so.** Reported 2026-09-08: "how come i do not see
+config\config_messaging.hpp". `frameworkmongo.Stratis` has neither it nor
+`config_groups.hpp`, `config_nets.hpp`, `config_radio.hpp`, `config_roles.hpp`
+or `config_tacpad.hpp` - the deck is the `<unit>.templates` document and
+`ghostD_pac_fnc_templatesApply` registers it. New section
+"When there is no config_messaging.hpp" in `wiki/config_messaging.md`, spelling
+out that `loadTemplates` runs first and the file wins where both exist, that
+`templatesApply` skips ids already registered so nothing merges card by card,
+and quoting the `.rpt` line that says which path was taken. A pointer to it
+added to `wiki/Messaging-Deck.md`'s Related list.
+
+No code changed. Checked by reading `fnc_loadTemplates.sqf`,
+`fnc_templatesApply.sqf` and both missions' `config\` folders.
+
+### GOB Zeus modules registered at preInit, so none of the twelve worked
+**Sync:** `yes` - `ghost` has the same file and almost certainly the same call
+site; check ghost's `init/XEH_preInit.sqf` before porting, and rewrite `ghostD_`
+to `ghost_`.
+
+Reported 2026-09-08: "the zeus modules did not present any variables to fill in,
+and they did not work".
+
+`addons/init/functions/fnc_zenModuels.sqf` registers all twelve GOB modules
+through `zen_custom_modules_fnc_register`. It was called from
+`addons/init/XEH_preInit.sqf`, and that is too early - the register function is
+not reliably compiled at addon preInit, so the twelve either never reached
+Zeus's module tree or were dropped when ZEN built its own. A module that is not
+in the tree cannot show its card, which is both halves of the report.
+
+Every other addon here already registers at postInit:
+`addons/respawn/XEH_postInit.sqf` calls `FUNC(addZeusModules)`,
+`addons/patrol_base/XEH_postInit.sqf` calls `FUNC(addZeusModule)`, and
+`addons/teleport/XEH_postInit.sqf` calls `FUNC(zenModules)` - and the middle two
+also guard on `isNil "zen_custom_modules_fnc_register"`. `init` was the odd one
+out. (The filename's typo, `zenModuels`, is left alone: `PREP(zenModuels)` and
+the call site spell it the same way, and renaming it is a separate change.)
+
+- `addons/init/XEH_preInit.sqf` - `call FUNC(zenModuels);` removed, replaced with
+  a comment pointing at postInit. `EGVAR(patches,usesZen)` is still assigned here
+  and still read by the function later; preInit is the right place for it.
+- `addons/init/XEH_postInit.sqf` - `call FUNC(zenModuels);` added after
+  `call FUNC(playerpost);`. That file's existing `if (is3DEN) exitWith {};` keeps
+  the registration out of the editor.
+- `addons/init/functions/fnc_zenModuels.sqf` - an `isNil
+  "zen_custom_modules_fnc_register"` guard added under the existing
+  `EGVAR(patches,usesZen)` check, matching `patrol_base` and `respawn`, so a
+  missing ZEN reports once instead of throwing mid-registration.
+
+Ruled out while diagnosing, so nobody re-checks it: ten of the twelve module
+bodies already open a proper `zen_dialog_fnc_create` card - only
+`fnc_addStaging` and `fnc_enableUnitSimulation` have none, by design - and the
+functions those cards call, `ghostD_mission_fnc_addStagingZone` and
+`EFUNC(systems,setUnitInjury)`, both exist and are PREP'd.
+
+Checked with `hemtt check` - clean. NOT tested in game: this is a timing change
+and wants a Zeus session to confirm the twelve appear under GOB AI, GOB
+Logistics and GOB Mission and open their cards.
+
+### `difficulty` removed - out of DIVINER's scope
+**Sync:** `no` - `ghost` keeps this addon. Porting the removal back would delete
+something that is in scope there; this is the split, not a fix.
+
+Decided 2026-09-08. `difficulty` is a `ghost` addon, and DIVINER's scope is
+TAC//PAC, messaging and UI. Nothing was wrong with it - it is simply not this
+mod's business to set the host's difficulty preset, AI skill or surface
+behaviour. The whole addon is gone, eight files:
+
+| File | What it declared |
+|---|---|
+| `addons/difficulty/config.cpp` | `CfgPatches` class `ghostD_difficulty`, `requiredAddons[] = {"ghostD_main"}`, authors `3Mydlo3` and `veteran29` |
+| `addons/difficulty/CfgDifficultyPresets.hpp` | `defaultPreset = Difficulty_GHOST`, and class `Difficulty_GHOST` - displayName "Ghosts of Battle", `levelAI = ghostD_difficulty_LevelAI`, and an Options block holding `mapContent = 0`, `groupIndicators = 0`, `friendlyTags = 0`, `enemyTags = 0`, `detectedMines = 0`, `autoReport = 0`, `thirdPersonView = 1` |
+| `addons/difficulty/CfgAILevelPresets.hpp` | `ghostD_difficulty_LevelAI` |
+| `addons/difficulty/CfgAISkill.hpp` | `CfgAISkill` - the global AI coefficients (`aimingAccuracy`, `aimingShake`, `aimingSpeed`, `commanding`, `courage` and the rest), incorporated from pre-ACE 3.10.0 |
+| `addons/difficulty/CfgSurfaces.hpp` | `CfgSurfaces` > `Default` > `AIAvoidStance = 2` |
+| `addons/difficulty/script_component.hpp` | `COMPONENT difficulty` |
+| `addons/difficulty/$PBOPREFIX$` | `z\ghostD\addons\difficulty` |
+| `addons/difficulty/README.md` | the generated addon readme |
+
+No addon named `ghostD_difficulty` in `requiredAddons`, so nothing lost a
+dependency and the build is unchanged.
+
+**This is a behaviour change, not only a deletion.** DIVINER no longer ships a
+`defaultPreset`, so a mission that used to be handed `Difficulty_GHOST` now runs
+on whatever preset the host or the server has. The one place in this repo that
+reads a difficulty option is `addons/bft/functions/fnc_draw.sqf`, and it asks
+`difficultyOption "mapContent" > 0` at runtime rather than assuming - so it is
+still correct, but it now takes the other branch on any host with extended map
+content ON: `ACE_player` is subtracted from `GVAR(memberUnits)`, where the
+shipped preset's `mapContent = 0` used to keep him on the map. That is the
+intended no-duplicate behaviour and it is a visible difference from before. The
+comment above that check cited `addons/difficulty/CfgDifficultyPresets.hpp` as
+its evidence; the file is gone, so the comment now explains the preset without
+naming a path this repo does not have.
+
+Gone with the addon: the global `CfgAISkill` coefficients and the `CfgSurfaces`
+`Default` override, so AI aim and `AIAvoidStance` fall back to Arma's own values
+unless another loaded mod - ACE, normally - sets them.
+
+Checked with `hemtt check` - clean: 70 addon configs rapified, 1051 SQF files
+compiled, no errors. A grep for `ghostD_difficulty` and `addons/difficulty`
+finds nothing left in source; the only matches are this note, the SYNC.md
+bullet, and stale build output under `.hemttout/` and `releases/*.zip`. Not
+tested in game.
+
+### Attribution: the projects DIVINER is based on and inspired by
+**Sync:** `no` - DIVINER's own credits.
+
+Asked 2026-09-06. The credits said only "CBA, ACE3, ACRE2 and the YMF role
+framework"; the projects the work draws on are now named with their licences,
+as the user supplied them:
+
+| Project | Licence |
+|---|---|
+| `ArmaForces/Mods` | GPL |
+| `AXEmod/AXE` | GPLv3 |
+| `Theseus-Aegis/Mods` | GPLv2 |
+| `last-resort-gaming/LRG-Fundamentals` | MIT |
+| `Theseus-Aegis/TheseusServices` | APL-SA |
+| `BourbonWarfare/POTATO` | GPLv2 |
+
+- `STEAM.md` - the list added under `[h2]Credits[/h2]` as a BBCode `[list]`,
+  led by the user's own line "Source projects are on GitHub — search the
+  owner/repo path" (they are named rather than linked, which is what was
+  asked).
+- `README.md` - a new `## Credits` section with the same table, since the
+  Steam page points at the repository for licensing. It also states that
+  DIVINER ships under APL-SA.
+
+**Two things left for the user, both flagged and neither actioned:** `LICENSE`
+still carries the template placeholders `{YEAR}` and `{AUTHOR}` on line 1, and
+four of the six projects are GPL-family while DIVINER ships APL-SA - which
+matters only if code was actually taken rather than the ideas.
+
+### Steam change notes, in Steam's own format
+**Sync:** `no` - DIVINER's Workshop copy.
+
+Asked 2026-09-06: "change notes in steam format". New `STEAM_CHANGES.md`,
+the same convention as `STEAM.md`: a note at the top, then one BBCode block to
+paste into the Workshop update's change-note field. Written for the people who
+run and play it rather than for a porter - `CHANGES.md` stays the engineering
+record and the porting sheet.
+
+**Scoped to 2026-09-06 only** on the user's follow-up ("only from today
+please"), so it is the two entries below this one - the pacdb 0.4.0 network
+check, and the measured-text / record-column / boot-screen layout fixes - and
+nothing earlier. Leads with the one thing a server owner must act on: **copy
+the new `ghostd_pacdb_x64.so` / `.dll`**, which carry the new verb. No file
+paths, no function names, no sync verdicts.
+
+When the earlier work is published, its notes have to be written from the
+entries below these two; this file is a single update's notes, not a running
+log.
+
+**Checked:** no addon touched, so no build. Not published - the file is for the
+user to paste.
+
+### Wrapped text is measured, not counted; record columns meet in the middle; the boot screen stops drawing over its own logo
+**Sync:** `yes` - `addons/pac`; rewrite `ghostD_` to `ghost_`.
+
+Four faults off three screenshots, 2026-09-06.
+
+**1. "Text cut off" - every wrapped block in the PAC app.** The app sized a
+block of prose by counting its characters and dividing by a guess at how many
+fit on a line (`ceil(count _text / 150)`). That guess is wrong at any text
+size or UI scale but the one it was tuned on, and when it came out low the
+tail was laid out below the control's own box and clipped mid-sentence -
+SITUATION, ENEMY, CIVIL/TERRAIN and EXECUTION all lost their last line. The
+number was 80 before, then 150 on 2026-09-05, which only moved which blocks
+broke.
+
+- `addons/pac/functions/fnc_app.sqf` - `_fnc_block` (the OPORD sections) now
+  draws the text, reads `ctrlTextHeight` (what the engine actually laid out at
+  that width), grows the control to it and advances by that. No estimate left.
+
+**2. Record columns at opposite edges.** `_fnc_row` put the label hard against
+the left margin and its value hard against the right, so a word and its answer
+sat a whole panel apart (user: "justified right" / "justified left to make it
+easier to read"). New column constants `_labW = _w * 0.30`, `_valX = _w *
+0.34`, `_valW = _w * 0.66 - _pad`: labels are right-aligned against the gutter,
+values left-aligned just past it. Applies to RANK, ROLE, GROUP, STATUS and
+TIME ON.
+
+**3. Skills and awards were their own little layouts.** Both now use a new
+`_fnc_wrapped` helper - the same two columns, with the value measured and
+grown the way `_fnc_block` is. Awards join to one line as `Name  (date)`
+rather than a two-column table of their own; the empty states read
+`None assigned` and `None` in the value column.
+
+**4. The boot screen drew its text on top of its logo, and cut the log off.**
+`addons/pac/ui/bootscreen.hpp`:
+- `Logo` was 30 grid units square at `y 0.30`, so it stood from 0.30 to about
+  0.78 of the screen and the title, the rule, the progress bar and the boot
+  lines were all laid out inside it - white text over artwork and the bar
+  drawn across the mark (user: "not right"). Now **16 units at `y 0.10`**, so
+  it ends well above the title.
+- `Title` `y 0.470 -> 0.420`, `x/w 0.30/0.40 -> 0.25/0.50`, `h 0.05 -> 0.09`
+  (it is two lines: the name and "INITIALISING THE UNIT").
+- `Rule` and `Bar` `y 0.545 -> 0.535`. Width stays `0.30 * safezoneW`, which
+  `FUNC(bootScreen)`'s `_barW = 0.30` must keep agreeing with.
+- `Step` `y 0.560 -> 0.555`, `x/w 0.30/0.40 -> 0.22/0.56`, and **`h 0.10 ->
+  0.38`**: five boot lines each wrapping twice never fitted a tenth of the
+  screen and the last was cut mid-sentence (user: "cut off").
+
+**Checked:** `hemtt check` clean; **shipped in 0.1.0.1074** (`hemtt release`
+with Arma closed, pac PBO 12:01). Not yet verified in game.
+
+### pacdb 0.4.0: a network check that reports the server's public IP and a TLS verdict
+**Sync:** `careful` - `addons/pac` plus the `tools/pacdb` extension; `ghost` has no service layer to carry it.
+
+Asked 2026-09-06, from a dedicated server whose database would not connect:
+"is there a way to add curl ifconfig.me to the framework so that in the start
+up the source ips can be shown". Arma has no HTTP of its own and a container
+may carry no `curl`, so it belongs in the extension, which already does
+networking. The user asked for it behind a CBA setting, off by default, and
+declined bundled certificates.
+
+**What it answers.** The rpt from that server (17:09, arma3server) showed the
+extension loaded, the SRV record resolved to
+`ac-00pka6q-shard-00-00.mqqwhyt.mongodb.net:27017`, TCP connected, and then
+`Interop+OpenSsl+SslException: SSL Handshake fa…` - truncated by Arma before
+the OpenSSL detail. So the IP allowlist and the credentials were never
+reached and are not implicated; TLS is. The check settles which half is at
+fault, because **the plain-HTTP leg still answers when TLS is broken**:
+
+| result | means |
+|---|---|
+| http ok, https ok | network and TLS both fine; the IP is what Atlas needs allowlisting |
+| http ok, https FAILED | TLS is broken on that machine - the certificate store |
+| both FAILED | no outbound web access at all |
+
+- `tools/pacdb/extension/Extension.cs` - version **0.3.0 to 0.4.0**; new
+  `netcheck` verb (`Task.Run(NetCheck)`), and `NetCheck()` fetches
+  `http://api.ipify.org` then `https://api.ipify.org`, sending one callback
+  `netcheck` with `ip=<addr> | <verdict>`. An **IPv4-only reflector on
+  purpose**: `ifconfig.me` answers on whichever protocol the request used, and
+  an IPv6 address is not what goes in an Atlas access-list entry. New
+  `Innermost(Exception)` walks to the innermost message and caps it at 160
+  characters, because the outer wrappers are what Arma's truncation was
+  eating. Also corrected two user-facing strings that still named the CBA
+  setting `'Service URL'`; it is **`Database`**.
+- `addons/pac/initSettings.inc.sqf` - new setting `GVAR(netCheck)`, CHECKBOX,
+  "Log this server's public IP at boot", category `["Ghosts of Battle PAC",
+  "Service"]`, **default `false`**, server-wide.
+- `addons/pac/functions/fnc_boot.sqf` - step 3, before the config read: when
+  the setting is on, a bootLog line and `"ghostd_pacdb" callExtension
+  ["netcheck", []]`.
+- `addons/pac/XEH_postInit.sqf` - `case "netcheck"` in the ExtensionCallback
+  handler, logging `network check: <data>`.
+
+**Binaries rebuilt for both platforms** (NativeAOT cannot cross-compile):
+Windows `dotnet publish -c Release -r win-x64`, Linux `build-linux.sh
+--native` in WSL Ubuntu-20.04 (glibc 2.31, so Debian 11/12 and Ubuntu 20.04+).
+Both copied to the repo root, which is what HEMTT ships (`[files] include`).
+**The server must be given the new files** - they are in the release archive
+beside the PBOs.
+
+**Checked:** the Windows library was exercised directly through its own
+callback (ctypes: `RVExtensionRegisterCallback`, then `netcheck`) and answered
+`version: 0.4.0`, `ip=98.43.56.253 | http ok, https ok - this server's network
+and TLS are both fine`. `hemtt check` clean. Not yet run on the Linux server -
+that is the point of it.
+
+### PAC app: tap a name on the ROSTER tab to read that man's record
+**Sync:** `yes` - `addons/pac`; rewrite `ghostD_` to `ghost_`.
+
+Asked 2026-09-05: "in the pac roster let players click on a name to see their
+record, except notes - notes are for admin in pac only".
+
+**Notes cannot leak here, by construction.** `FUNC(publish)` sends one flat row
+per player - uid, name, rankId, roleId, groupId, statusId, skillIds, awards,
+updatedAt, [minutes, joins] - and deliberately keeps notes and saved loadouts
+on the server. The client has never held a note, so a record view built from
+the published roster has none to show. Notes stay on the admin page.
+
+- `addons/pac/XEH_preInit.sqf` - new client view state `GVAR(viewUid)`, `""`
+  meaning your own record.
+- `addons/pac/functions/fnc_app.sqf`:
+  - ROSTER rows get a hit (`[_pad, _y, _w - 2 * _pad, _rowH]`, the whole row)
+    that sets `GVAR(viewUid)` from the row's `rowUid`, `GVAR(view) = "record"`
+    and reopens next frame. A hint line, `TAP A NAME TO READ THAT MAN'S
+    RECORD`, sits above the column heads.
+  - RECORD draws `GVAR(viewUid)`'s row when set, else the player's own
+    (`_self`). Reading somebody else adds a `< BACK TO ROSTER` row and a
+    `PERSONNEL RECORD` label; the empty-state text distinguishes "that player
+    is no longer on the published roster" from your own missing record.
+  - The tab row clears `GVAR(viewUid)`, so MY RECORD is always your own.
+  - Header rewritten; the attendance comment no longer says "own".
+
+**Behaviour:** any player can read any published record - rank, role, group,
+status, skills, awards, time on. No notes anywhere in the app, on any tab.
+
+**Checked:** `hemtt check` clean; the only occurrences of "notes" in
+`fnc_publish.sqf` and `fnc_app.sqf` are the comments saying they are not sent.
+**Shipped in 0.1.0.1070** (`hemtt release` with Arma closed, pac PBO 23:57).
+Not verified in game.
+
+### TAC//SUPPORT: a fire mission opens Simplex's own panel
+**Sync:** `careful` - `addons/tacpad_apps`; `ghost` has the same board, but check whether it still routes artillery to the local window before porting.
+
+Asked 2026-09-05: "arty support call needs to open the simplex panel". The
+board sent ARTILLERY and CAS to a window of ours
+(`FUNC(supportRequest)` - point on the map, rounds per gun, ADVANCED to hand
+off) and everything else to Simplex. Artillery now goes where transport and
+logistics already went: a fire mission is drawn on Simplex's own map, with its
+sheaf, dispersion and its own rules about what the guns will take, and a
+second screen in front of that could only disagree with it.
+
+- `addons/tacpad_apps/functions/fnc_appSupport.sqf` - the row press tests
+  `toUpper _s isEqualTo "CAS"` (was `in ["ARTILLERY", "CAS"]`), so ARTILLERY
+  falls to the existing `[_s, _e, false] call sss_common_fnc_openGUI` branch.
+  `openMap false` still runs first for both, so the map toggle is not desynced.
+  Comment rewritten.
+- `addons/tacpad_apps/functions/fnc_supportRequest.sqf` - header says CAS is
+  the only service that reaches it from the board. **No code removed**: the
+  artillery path (rounds per gun, `sss_artillery_fnc_canFire` /
+  `_fire`) still works if anything calls it with ARTILLERY, and
+  `FUNC(supportRequestDraw)`'s ADVANCED button still hands off to Simplex.
+
+**Behaviour:** pressing a gun battery on the SUPPORT board opens Simplex's
+request screen directly instead of the two-step window. CAS is unchanged -
+say if you want it moved too, it is the same one-line test.
+
+**Checked:** `hemtt check` clean; **shipped in 0.1.0.1066** (`hemtt release`
+with Arma closed, tacpad_apps PBO 22:55). Not verified in game - needs Simplex
+loaded and a commissioned battery.
+
+### drawText: a centred label no longer hangs below its own cell, so hits claim it and the whole cell is clickable
+**Sync:** `yes` - `addons/tacpad/functions/fnc_drawText.sqf`; rewrite `ghostD_` to `ghost_`. One line, and it affects every drawn label in the suite.
+
+**The failure, in its own terms.** "The my record button on the pac app does
+not work", then "still hard to click", then "the clickable area seems
+confined, it's hard to find" (2026-09-05). The last phrasing is the tell, and
+it is a failure `fnc_drawHit.sqf` already names in its own header: *"Where a
+label covered most of a cell, the cell answered only in the margins around
+it."*
+
+**The cause.** A structured-text control takes a mouse press and cannot act
+on it, so `FUNC(drawHit)` gives every label drawn inside its rectangle a
+handler that forwards the press - but only if the label is **wholly inside**
+(a label spanning two cells must not be claimed by one). `FUNC(drawText)`
+positioned a label as:
+
+```
+_ctrl ctrlSetPosition [_x, _y + ((_h - _lineH) max 0) * 0.5, _w, _lineH max _h];
+```
+
+The top is dropped by half of `_h - _lineH` to centre the line, but the height
+stayed `_lineH max _h` - `_h` in that same case. So a label whose line is
+shorter than its box, which is the common case, hung below the box by exactly
+the half it had been dropped, failed the containment test, was never claimed,
+and ate every press on it. What stayed clickable was the sliver of cell above
+the label. On the PAC tab row that sliver is a few pixels: "hard to find".
+The header comment already said what was meant - *"the box is shrunk to that
+and dropped to the middle"* - the code just never shrank it.
+
+- `addons/tacpad/functions/fnc_drawText.sqf` - the height is `_lineH`. For a
+  line taller than the box nothing changes (the top is not dropped, and
+  `_lineH max _h` was already `_lineH`), so `FUNC(appFrame)`'s
+  `_headerH max _lineH` CLOSE hit still contains its label; for the common
+  case the label now sits wholly inside its cell and is claimed.
+
+**Behaviour:** every cell in the suite becomes clickable across its whole
+area rather than only where its label is not - the app tab rows, the reader's
+rows, the tiles, the CLOSE buttons. Visually unchanged: the text is laid out
+inside a box of the same top and the same width, one line tall.
+
+**Checked:** `hemtt check` clean; **shipped in 0.1.0.1062** (`hemtt release`
+with Arma closed, tacpad PBO 22:22, signature `ghostD_0.1.0.1062`). The 0.1.0.1057
+rpt confirmed the other half of this - four tab presses, four correct draws -
+so the handler was never in doubt, only the delivery. Not yet verified in game.
+
+### App frame: the header band is as tall as its text line, so the CLOSE hit no longer spills into the body's first row
+**Sync:** `yes` - `addons/tacpad/functions/fnc_appFrame.sqf`; rewrite `ghostD_` to `ghost_`. Affects every app's first body row, not only PAC.
+
+**The failure, in its own terms.** "The my record button on the pac app
+does not work" (2026-09-05), then "still hard to click". The diagnostic log
+lines (entry below) on the 0.1.0.1057 session settled what it was NOT: every
+press that reached the app drew the right view - `PAC tab pressed: 'record'`
+followed by `PAC app drawn: view 'record', 17 on the roster, own record
+found`, and likewise roster and opord. So presses were being lost before the
+tab, intermittently, in part of the button's area.
+
+**The cause.** `fnc_appFrame.sqf` places the body at `_by + _headerH` with
+`_headerH = HEADER_H * textScale * uiScale * safeZoneH`, then creates the
+full-width CLOSE hit AFTER the body (on top of it, by design - a body group
+under it would eat the close press) sized `_headerH max _lineH`, `_lineH =
+[0.9] call FUNC(textH)`, so that the header labels are wholly inside it and
+claimable. Past the text size where the 0.9 line outgrows the constant band,
+that hit spills into the body by `_lineH - _headerH` - the top of the first
+row, which in PAC is the tab row. A press that starts on the spill and
+releases a few pixels lower lands on neither control (ButtonClick is
+press-in-release-in): nothing happens. A press well below the boundary works.
+`FUNC(appIdle)` already sized the band with the same `max`.
+
+- `addons/tacpad/functions/fnc_appFrame.sqf` - `_headerH` is now
+  `(HEADER_H * textScale * uiScale * safeZoneH) max ([0.9] call FUNC(textH))`,
+  so the band, its fill, the close hit and the body's top all agree, and the
+  body starts below the whole hit. The band grows visibly only when the text
+  is large enough to have needed it.
+
+**Checked:** `hemtt check` clean; **shipped in 0.1.0.1058** (`hemtt release`
+with Arma closed, tacpad PBO 20:37). Not yet verified in game - the rpt
+cannot show a press that never arrived, so the confirmation is the user's.
+
+### PAC app: diagnostic log lines for the tab row (temporary)
+**Sync:** `yes` - `addons/pac/functions/fnc_app.sqf`; two INFO lines, remove when the fault is found.
+
+Reported 2026-09-05: "the my record button on the pac app does not work".
+The session's `.rpt` (build 0.1.0.1054) holds no script error, no
+`openApp` refusal and no handler throw, and every link from the press to the
+redraw reads correctly - `fnc_drawHit`'s label ownership uses the same
+rectangle for all three tabs, `fnc_openApp`'s stale-reopen guard passes for
+the current app, `fnc_appFrame` rebuilds without clearing `appCurrent`, the
+record lookup keys on `FUNC(uid)`. So the app now says what it does:
+`PAC tab pressed: '<view>' - reopening the app` on the press, and
+`PAC app drawn: view '<view>', N on the roster, uid <id>, own record found /
+NOT found` on every draw (the message is built into one string first - a
+comma inside a macro argument is an argument separator). Also, from the same
+pass: `_tall` reads both variables through `getVariable` with defaults - they
+are initialised in `XEH_preInit.sqf`, so the earlier brace removal was not the
+fault, but this form can never be.
+
+Also, same pass: the three in-app reopens in `fnc_app.sqf` (the tab row,
+an OPORD list row, BACK) were `[] spawn { ["pac"] call
+ghostD_tacpad_fnc_openApp }` - the only scheduled reopen in the suite; every
+other app uses `{...} call CBA_fnc_execNextFrame`. Aligned to that. Not
+proven to be the cause; the odd one out is gone.
+
+**Checked:** `hemtt check` clean; the log lines **shipped in 0.1.0.1055**
+(pac PBO 20:13) and the reopen alignment in **0.1.0.1056** (pac PBO 20:23),
+both `hemtt release` with Arma closed. The user's "nothing happens" was
+observed on 0.1.0.1054, before either. **Result (0.1.0.1057 session,
+20:34):** four presses, four correct draws, own record found every time; a
+fifth draw at 20:34:20 with no press before it - something other than a tab
+reopened the app. The fault was delivery, not the handler - see the entry
+above. Keep the two lines until the user confirms the frame fix, then
+remove them.
+
+### Training catalogue in the structure; a course dropdown on the player page
+**Sync:** `careful` - `addons/pac`; the `.trainings` database document rides the service layer.
+
+Asked 2026-09-05: "in pac training needs a config doc in storage and a drop
+down to select the training". The courses a unit runs are now a structure
+section, **`trainings`**, items `{name, category, description}` keyed by
+course id - config, editor and database alike - and the player page picks
+from it.
+
+- `addons/pac/functions/fnc_structFields.sqf` - `case "trainings"`: fields
+  `category` (t) and `description` (t).
+- `addons/pac/functions/fnc_structOpened.sqf` - `["trainings", "TRAINING"]`
+  in the section combo (before ADMINS); `fnc_structSection.sqf` - hint text
+  and ID label `COURSE`; `fnc_adminStructure.sqf` - `"trainings"` in the
+  whitelist and header.
+- `fnc_loadStructure.sqf`, `fnc_svcStructure.sqf`, `fnc_svcPushStructure.sqf`,
+  `fnc_structureAdopt.sqf` - `"trainings"` added to each section list, so it
+  loads from `CfgGFA_PAC >> trainings`, reads and pushes as `<unitId>.trainings`,
+  and rides along on adoption.
+- `addons/pac/ui/idcs.inc.hpp` - `PAC_IDC_TRAIN_COMBO 85`.
+- `addons/pac/ui/dialog.inc.hpp` - new `TRAIN_COMBO` (RscADMPCombo, x 0.240 w
+  0.128) on the training row; `TRAIN_EDIT` narrowed to x 0.372 w 0.108 (the
+  day and note); the TRAINING title says "pick the course; the box takes a day
+  (YYYY-MM-DD) and a note".
+- `fnc_panelOpened.sqf` - fills `PAC_IDC_TRAIN_COMBO` from `trainings` via
+  `_fnc_fillCombo`.
+- `fnc_panelTraining.sqf` - ADD sends `[courseId, text]` from the combo and
+  the box; with nothing picked, the box alone as text (a unit with no
+  catalogue); nothing at all notifies and sends nothing.
+- `fnc_adminSet.sqf` - `trainingAdd` accepts `[courseId, text]` (course
+  checked against the section through `_fnc_known`) or plain text; the entry
+  is now `[when, by, text, courseId]`; the log detail names the course.
+  Header updated.
+- `fnc_panelFill.sqf` - a training row shows the course name (looked up by
+  id) then the note; an old three-element entry shows its text.
+- `fnc_operatorJson.sqf` - `personnel_logs.training[]` entries gain
+  `course_id` and `course`.
+- **Mission:** `framework.Stratis/config/config_pac.hpp` gained
+  `class trainings` with nine courses (cls, medic, team leader, JFO, engineer,
+  EOD, UAV, pilot, marksman).
+- **Database:** the same nine PUT to Atlas as `framework.trainings` (new
+  config document; the store untouched).
+- **Wiki:** `wiki/config_pac.md` new `## trainings` and `.trainings` in the
+  document list; `wiki/TAC-PAC.md` training paragraph rewritten for the
+  dropdown.
+
+**Contract:** new structure section `trainings`; new document
+`<unitId>.trainings`; a record's training entry is `[when, by, text,
+courseId]` (old entries stay three elements and still display);
+`adminSet "trainingAdd"` takes `[courseId, text]` or text.
+
+**Checked:** `hemtt check` clean (1051 sqf). **Shipped in 0.1.0.1051** -
+`hemtt release` with Arma closed, no error, pac and tacpad PBOs rebuilt at
+19:16, signature `ghostD_0.1.0.1051`. Wiki republished as commit `be1001b`.
+Not yet verified in game.
+
+### TAC//MSG reader: a CLOSE button in the window's top-right
+**Sync:** `yes` - `addons/tacpad`; rewrite `ghostD_` to `ghost_`.
+
+Asked 2026-09-05: "put a close button in the upper right of the messaging
+window". The reader (`createDialog` `ghostD_tacpad_reader`) closed only on
+Esc (`fnc_openReader.sqf` keyDown); every view drew into one content group
+with nothing in the corner.
+
+- `addons/tacpad/functions/fnc_readerDraw.sqf` - right after the two column
+  dividers, before any view is dispatched: an outlined CLOSE at
+  `[_detailX + _detailW - _closeW - _pad, _padY * 2]`, `_closeW = _detailW *
+  0.15`, `_closeH = textH(0.8) + 2 padY`; its hit does `closeDisplay 0` on
+  `uiNamespace ghostD_tacpad_reader`. Outlined rather than filled so ACK keeps
+  the one loud button.
+- The three views leave that slot free: `fnc_readerThreadView.sqf` `_ackX`
+  is `_dx + _dw - 2 * _btnW - 2 * _pad` (NOTIFY / PIN / ACK shift one slot
+  left); `fnc_readerNetView.sqf` title width is `_dw - _dw * 0.15 - 3 *
+  _pad`; `fnc_composePane.sqf` `_cancelX` is `_dx + _dw - 2 * _cancelW - 2 *
+  _pad` and its title width `_dw - 2 * _cancelW - 4 * _pad`.
+- **Second pass, same day ("close button on the messaging app does not
+  work", on 0.1.0.1050):** the first version drew CLOSE before the views, and
+  `fnc_drawHit.sqf`'s own rule is that a label drawn across a button's
+  rectangle AFTER the button takes the press - the full-width lines every view
+  lays under its header ran across the button's foot, so it showed and did
+  nothing. CLOSE is now a local block `_fnc_closeButton` in `fnc_readerDraw.sqf`
+  called at the end of each branch - after `FUNC(composePane)`, after
+  `FUNC(readerNetView)`, after `FUNC(readerThreadView)` - so its hit is the last
+  control in the pane, as the vocabulary requires (fill, frame, text, hit last).
+
+**Checked:** `hemtt check` clean (1051 sqf, no help lines). The first
+version went out in 0.1.0.1050 (built by the user at 18:53) and did not
+respond - the second-pass bullet above. **The fix shipped in 0.1.0.1051**,
+`hemtt release` with Arma closed, no error, tacpad PBO rebuilt at 19:16,
+signature `ghostD_0.1.0.1051`. Not yet verified in game.
+
+### Wiki: Editor and Zeus modules page
+**Sync:** `no` - wiki only; DIVINER's module set (`ghost` has `airdefence` and others DIVINER does not, see SYNC.md).
+
+Asked 2026-09-05: "add the 3den and zeus modules to the wiki". New
+`wiki/Editor-and-Zeus-Modules.md`, built from `CfgVehicles` (`Module_F`
+classes, their `Attributes` / `Arguments` and `description`) and from the ZEN
+registrations (`addons/init/functions/fnc_zenModuels.sqf`,
+`respawn/fnc_addZeusModules.sqf`, `patrol_base/fnc_addZeusModule.sqf`,
+`teleport/fnc_zenModules.sqf`): every Eden module with where it appears (Eden,
+Zeus, both), its attributes with defaults, and what it does; the Zeus-only
+tools by their ZEN category; the Eden attributes the mod adds. Linked from
+`_Sidebar.md` (Mission systems) and `Home.md` (Mission systems table).
+
+**Checked:** every link on the page resolves; republished as wiki commit
+`79a79af` (47 pages) and read back from the remote.
+
+### PAC is the source of truth for rank everywhere - the floor no longer puts Private back
+**Sync:** `careful` - `addons/players/functions/fnc_getRank.sqf` and `addons/adminpanel/functions/admin/fn_setPlayerRank.sqf` exist in `ghost`; the PAC calls are `isNil`-guarded so they port safely and are inert without PAC. New `addons/pac/functions/fnc_rankOf.sqf` rides with pac.
+
+**The failure, in its own terms.** Reported 2026-09-05: "admin panel still
+shows me as a pvt - needs updated to match pac at login or at role or
+arsenal open". The admin panel reads the unit's live engine rank
+(`fn_updatePlayerList` via `getRank`/`rankShort`, `fn_updateRankCombo` via
+`rank _player`), so PVT there meant the unit really was Private. What set it
+was `ghostD_players_fnc_setRank`, the mission's rank floor: `getRank` read
+`YMF_playerRanks` (empty on a PAC mission) and fell to `Dynamic_Ranks >>
+default_rank` / "Private", and `setRank` is called by `initPlayerLocal.sqf`
+(login), `groups/fnc_setupPlayer.sqf:138` (role pick) and
+`gear/fnc_preInit.sqf:32,42,54` + `gear/fnc_postInit.sqf:28` (arsenal
+open/close) - each one after PAC's `applyRank` had put Sergeant on, and
+nothing re-applied PAC afterwards. Exactly the three moments named.
+
+- **New `addons/pac/functions/fnc_rankOf.sqf`** (PREP'd after
+  `PREP(applyRank)`): `[unit | uid]` returns the man's PAC rank as a
+  proper-case Arma rank name ("Sergeant") from the published roster row's
+  `rankId` and the structure rank's `armaRank`, or "" when PAC has nothing for
+  him. Client-safe; uses `FUNC(uid)`.
+- `addons/players/functions/fnc_getRank.sqf` - after the map/default lookup:
+  `if (!isNil "ghostD_pac_fnc_rankOf") then { _pac = [_unit] call
+  ghostD_pac_fnc_rankOf; if (_pac isNotEqualTo "") then {_rank = _pac} }`.
+  Header rewritten. Every reader of `getRank` now agrees with PAC: `setRank`
+  (so the login, the role setup and the arsenal re-apply PAC's rank instead of
+  the floor), `groups/fnc_roleGate.sqf` (**rank gates now honour PAC ranks** -
+  on a PAC mission they read everyone as Private before), the admin panel's
+  list and combo, `players/fnc_unit_getVariables.sqf`, `zenmodules/fnc_callEndex.sqf`.
+- `addons/adminpanel/functions/admin/fn_setPlayerRank.sqf` - the RANK combo
+  routes through PAC when it is loaded: the chosen Arma rank is mapped to the
+  first structure rank whose `armaRank` matches and sent as
+  `[player, uid, "rankId", id] remoteExecCall ["ghostD_pac_fnc_adminSet", 2]`;
+  notify says to press SAVE on the PAC page to keep it; the list redraws a
+  second later. Falls through to the legacy `setRankOverride` path when PAC
+  is absent or no structure rank maps. Without this the combo wrote
+  `YMF_playerRanks`, which the PAC-aware `getRank` would override at once.
+
+**Behaviour change:** a man with a PAC rank keeps it through login, role
+pick, arsenal and the admin panel; role rank gates use the PAC rank; the admin
+RANK combo writes the PAC record (profile until SAVE).
+
+**Checked:** `hemtt check` clean; **shipped in 0.1.0.1048** with Arma closed,
+verified from the artifact: `fnc_rankOf` in the pac PBO header, players and
+adminpanel PBOs rebuilt, signature `ghostD_0.1.0.1048`. One `help[L-S26]`
+in `fnc_rankOf.sqf` (braces round `_rankId isNotEqualTo ""`) was fixed after
+that build; behaviour identical, not re-released, ships next. Not yet
+verified in game.
+
 ### Skill colours: a `color` on each skill, drawn on the squad panel
 **Sync:** `careful` - `addons/pac` + `addons/tacpad_apps`; the Atlas `.skills` document rides the service layer.
 
@@ -160,7 +965,41 @@ the sibling repo or the dropped systems were fixed:
 
 **Checked:** every internal wiki link resolves (one false positive in a code
 sample); no secrets in `wiki/` (grepped for the Atlas password, user, cluster
-and API key). Not yet published - waiting on the wiki's first page.
+and API key). **Published 2026-09-05** as commit `8cf5173` on
+`DIVINER.wiki.git` `master`, 46 pages, from the user's clone
+`D:\Git\DIVINER.wiki` after they created the first page. The script now pulls
+into an existing clone (`WIKI_PUBLISH_WORKDIR`) instead of wiping it, and
+refuses a directory that is some other repository; syntax-checked and
+dry-run against that clone.
+
+**Second pass, same day, republished as commit `0587045` (26 pages changed).**
+Asked "in wiki and steam desc: threaded messaging system", and a wider sweep
+found names the first pass had missed:
+- TAC//MSG is described as a **threaded messaging system** on `Home` (intro
+  and both Comms / Mission systems rows), `Messaging-Deck` (a new paragraph:
+  thread ids, replies and acknowledgements under the thread, `transitionsTo`
+  state, follow / mute, a net read as one conversation), `Nets` and
+  `config_messaging`. `STEAM.md`'s TAC//MSG bullet says the same.
+- `Nets` now opens storage-first: the list is the `nets` structure section /
+  `<unitId>.nets` document, editable under EDIT STRUCTURE > NETS, read via
+  `ghostD_messaging_fnc_netNames`; `config_nets.hpp` is the on-disk form and
+  first-boot seed (asked "was nets not moved to the storage" - it was; the
+  page read as if the file were the source).
+- Every mod name the pages cite moved to the DIVINER prefix: 23
+  `ghost_<addon>_fnc_*` to `ghostD_<addon>_fnc_*` (each verified to exist under
+  `addons/`), `ghost_init` to the `init` addon (`ghostD_init`) on
+  `loadConfigs`, `ghost_Settings_setAiSystemDifficulty` to
+  `ghostD_Settings_setAiSystemDifficulty` on `config_skill` and
+  `Other-Systems` (it is the CBA setting `EGVAR(Settings,...)`, and the
+  mission's `config_skill.hpp` already used the `ghostD_` name). The product
+  name `Ghost` became `DIVINER` on `Home` (title and intro, which also states
+  the two-part system), `Installation` and `Roles`. Kept on purpose: vehicle
+  class names `ghost_US_JTF_tna_*`, the callsign `ghost_6`, and the Eden
+  module name `Ghost - Intel Package`, which `addons/hacking/CfgVehicles.hpp`
+  still declares. `SYNC.md` records the pass.
+- The publish script refused the first attempt because two of those names
+  were still present (its pre-publish sweep), and the second attempt was
+  invoked by a relative path from the wrong directory; the third published.
 
 ### Lint: L-S26 braces off two cheap comparisons
 **Sync:** `yes` - style only; rewrite `ghostD_` to `ghost_`.

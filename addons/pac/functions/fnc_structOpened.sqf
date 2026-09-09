@@ -30,5 +30,5 @@ private _sel = 0;
     private _i = _combo lbAdd _label;
     _combo lbSetData [_i, _id];
     if (_id isEqualTo GVAR(structSection)) then {_sel = _i};
-} forEach [["ranks", "RANKS"], ["skills", "SKILLS"], ["awards", "AWARDS"], ["statuses", "STATUSES"], ["roles", "ROLES"], ["nets", "NETS"], ["promotion", "PROMOTION"], ["admins", "ADMINS"]];
+} forEach [["ranks", "RANKS"], ["skills", "SKILLS"], ["awards", "AWARDS"], ["statuses", "STATUSES"], ["roles", "ROLES"], ["nets", "NETS"], ["promotion", "PROMOTION"], ["trainings", "TRAINING"], ["admins", "ADMINS"]];
 _combo lbSetCurSel _sel;     // fires structSection

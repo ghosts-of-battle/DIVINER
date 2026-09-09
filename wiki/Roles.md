@@ -113,7 +113,7 @@ roles, is on [Custom Traits](Custom-Traits).
 | `ace_medical_medicClass` | `0` none, `1` combat life saver, `2` medic |
 | `ace_isEngineer` | `0` none, `1` engineer, `2` advanced |
 | `ace_isEOD` | Explosives disposal |
-| `isJFO`, `isISR` | Ghost's own role flags |
+| `isJFO`, `isISR` | DIVINER's own role flags |
 | `UAVHacker`, `draAccessDrones`, `draAccessSensors` | Drone and sensor access |
 
 Keep `isLeader` consistent with your [Rank Gates](Rank-Gates) — in the reference

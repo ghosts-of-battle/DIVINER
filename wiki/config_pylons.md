@@ -5,7 +5,7 @@ the MOTORPOOL screen.
 
 **Loads:** compiled at CBA preInit by [loadConfigs](loadConfigs) into
 `ghost_missionConfig_pylons`. **SQF**, not a class config.
-**Read by:** `ghost_vehicle_fnc_addPylonSelection`.
+**Read by:** `ghostD_vehicle_fnc_addPylonSelection`.
 
 ---
 

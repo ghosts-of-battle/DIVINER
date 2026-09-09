@@ -55,7 +55,7 @@ _out set ["orbat", [GVAR(structure) getOrDefault ["orbat", createHashMap], _orba
 {
     private _v = _s getOrDefault [_x, createHashMap];
     _out set [_x, [GVAR(structure) getOrDefault [_x, createHashMap], _v] select (_v isEqualType createHashMap && {count _v > 0})];
-} forEach ["templates", "schemes", "nets", "radio", "promotion"];
+} forEach ["templates", "schemes", "nets", "radio", "promotion", "trainings"];
 
 GVAR(structure) = _out;
 

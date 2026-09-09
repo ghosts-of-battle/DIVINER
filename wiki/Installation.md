@@ -12,7 +12,7 @@
 | **ACRE2** *or* **TFAR** | Optional. The comms plan holds a block for each; the mission uses whichever is loaded, or in-game radio if neither |
 | **Simplex Support Services** | Optional — the fire-support tasking (TAC//SUPPORT) is built over it |
 
-Ghost is built with [HEMTT](https://brettmayson.github.io/HEMTT/). Building it
+DIVINER is built with [HEMTT](https://brettmayson.github.io/HEMTT/). Building it
 yourself:
 
 ```

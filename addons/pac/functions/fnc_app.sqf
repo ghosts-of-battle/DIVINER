@@ -10,6 +10,12 @@
  * look at their record and cannot touch it, which is what makes the record
  * worth looking at.
  *
+ * AND ANY MAN'S RECORD, from the ROSTER tab: tap a name and the RECORD tab
+ * shows his published row. NOT HIS NOTES - FUNC(publish) never sends them,
+ * because a note is written by an admin ABOUT a player; they live on the
+ * admin page and nowhere else (user, 2026-09-05). The tab row clears whoever
+ * was open, so MY RECORD is always your own.
+ *
  * THE STRUCTURE IS READ LOCALLY. Every rank, skill and OPORD is compiled config
  * and identical on every machine, so an id is turned into a name here rather
  * than the server sending names down - FUNC(lookup) is that, and it also says
@@ -35,7 +41,15 @@ if (isNull _display) exitWith {};
 // AN OPEN ORDER GETS A TALLER FRAME. An OPORD is nine blocks of prose, and the
 // record's height cut it off after FRIENDLY (user, 2026-09-05: "this is
 // missing information and rows").
-private _tall = GVAR(view) isEqualTo "opord" && GVAR(openOpord) isNotEqualTo "";
+// NIL-SAFE ON BOTH SIDES, AND NO BRACES. `a && b` evaluates b whatever a is;
+// only `a && {b}` short-circuits. The braces this line had were taken off for
+// a lint help (L-S26) on 2026-09-05, after which openOpord - unset until an
+// order has ever been opened - was read on every open, the draw aborted on
+// the undefined variable, and every tab came up blank ("the my record button
+// does not work"). getVariable with a default never errors, so this is safe
+// without the braces the lint objects to.
+private _tall = (missionNamespace getVariable [QGVAR(view), "record"]) isEqualTo "opord"
+    && (missionNamespace getVariable [QGVAR(openOpord), ""]) isNotEqualTo "";
 ([_display, "PAC", 0.62, [0.58, 0.88] select _tall] call ghostD_tacpad_fnc_appFrame) params ["", "_body"];
 if (isNull _body) exitWith {};
 
@@ -54,6 +68,14 @@ private _view = GVAR(view);
 private _uid = [player] call FUNC(uid);
 private _roster = missionNamespace getVariable [QGVAR(roster), []];
 
+// DIAGNOSTIC (2026-09-05, "the my record button does not work"): every draw
+// says which view it drew and whether this player's own row was on the roster,
+// so the .rpt answers the question the screen cannot. Hoisted into one string
+// - a comma inside a macro argument reads as an argument separator.
+private _found = (_roster findIf {(_x # 0) isEqualTo _uid}) >= 0;
+private _diag = format ["PAC app drawn: view '%1', %2 on the roster, uid %3, own record %4", _view, count _roster, _uid, ["NOT found", "found"] select _found];
+INFO_1("%1",_diag);
+
 // ---- the tab row -------------------------------------------------------------
 private _y = 0;
 {
@@ -71,7 +93,18 @@ private _y = 0;
     private _hit = [_body, [_tx, _y, _tw - _pad, _rowH], {
         params ["_ctrl"];
         GVAR(view) = _ctrl getVariable [QGVAR(tab), "record"];
-        [] spawn { ["pac"] call ghostD_tacpad_fnc_openApp };
+        // A TAB IS A FRESH START. Pressing MY RECORD while reading somebody
+        // else's must show your own, so the tab row clears whoever was open.
+        GVAR(viewUid) = "";
+        // DIAGNOSTIC (2026-09-05): the press itself, so a tab that does nothing
+        // on screen can be told apart from a press that never arrived.
+        INFO_1("PAC tab pressed: '%1' - reopening the app",GVAR(view));
+        // NEXT FRAME, UNSCHEDULED - the way every other app reopens itself
+        // (squad, hack, timer, intel: `{...} call CBA_fnc_execNextFrame`). This
+        // was a scheduled `spawn`, the one app in the suite that reopened that
+        // way (aligned 2026-09-05 while chasing "the my record button does not
+        // work"; not proven to be the cause, but the odd one out is gone).
+        {["pac"] call ghostD_tacpad_fnc_openApp} call CBA_fnc_execNextFrame;
     }] call ghostD_tacpad_fnc_drawHit;
     _hit setVariable [QGVAR(tab), _id];
 } forEach [["record", "MY RECORD"], ["roster", "ROSTER"], ["opord", "OPORD"]];
@@ -80,23 +113,78 @@ _y = _y + _rowH + _padY;
 [_body, [0, _y, _w, RULE_THICK * pixelH], _ink] call ghostD_tacpad_fnc_drawFill;
 _y = _y + _padY * 2;
 
-// A label-left value-right line, which is most of what a record is.
+// TWO COLUMNS THAT MEET IN THE MIDDLE. The label was pinned to the left edge
+// and its value to the right, so a word and its answer sat a whole panel
+// apart with nothing between them and the eye had to cross the screen for
+// every line. The label is right-aligned against the gutter now and the value
+// left-aligned just past it (user, 2026-09-06: "justified right", "justified
+// left to make it easier to read").
+private _labW = _w * 0.30;
+private _valX = _w * 0.34;
+private _valW = _w * 0.66 - _pad;
+
 private _fnc_row = {
     params ["_label", "_value", ["_colour", _ink]];
-    [_body, [_pad, _y, _w * 0.35, _rowH], _label, _mute, 0.65, true, "left", true] call ghostD_tacpad_fnc_drawText;
-    [_body, [_w * 0.35, _y, _w * 0.65 - _pad, _rowH], _value, _colour, 0.85, false, "right"] call ghostD_tacpad_fnc_drawText;
+    [_body, [_pad, _y, _labW - _pad, _rowH], _label, _mute, 0.65, true, "right", true] call ghostD_tacpad_fnc_drawText;
+    [_body, [_valX, _y, _valW, _rowH], _value, _colour, 0.85, false, "left"] call ghostD_tacpad_fnc_drawText;
     _y = _y + _rowH;
+};
+
+// THE SAME ROW WHERE THE VALUE WRAPS, MEASURED RATHER THAN GUESSED. Every
+// wrapped block in this app sized itself by counting characters and dividing
+// by a guess at how many fit on a line, which is wrong at any text size but
+// the one it was tuned on - so the tail of a long block was drawn outside its
+// own box and clipped (user, 2026-09-06: "text cut off"). ctrlTextHeight
+// reports what the engine actually laid out at this width; the box is grown
+// to that and the next row starts below it, so nothing can be cut.
+private _fnc_wrapped = {
+    params ["_label", "_text", ["_colour", _ink], ["_size", 0.8]];
+    if (_label isNotEqualTo "") then {
+        [_body, [_pad, _y, _labW - _pad, _rowH], _label, _mute, 0.65, true, "right", true] call ghostD_tacpad_fnc_drawText;
+    };
+    private _c = [_body, [_valX, _y, _valW, _rowH], _text, _colour, _size, false, "left"] call ghostD_tacpad_fnc_drawText;
+    private _th = (ctrlTextHeight _c) max _rowH;
+    _c ctrlSetPosition [_valX, _y, _valW, _th];
+    _c ctrlCommit 0;
+    _y = _y + _th;
 };
 
 switch (_view) do {
 
-    // ---- RECORD: the player's own -------------------------------------------
+    // ---- RECORD: your own, or a man tapped on the ROSTER tab ----------------
+    // ANOTHER MAN'S RECORD IS THE PUBLISHED ROW AND NOTHING MORE. That row is
+    // name, rank, role, group, status, skills, awards and attendance - see
+    // FUNC(publish), which deliberately keeps notes and saved loadouts on the
+    // server because a note is written by an admin ABOUT a player and is
+    // nobody else's business. So this view cannot show a note: the client has
+    // never been sent one. Notes stay on the admin page (user, 2026-09-05:
+    // "let players click on a name to see their record except notes, notes
+    // are for admin in pac only").
     case "record": {
-        private _me = _roster select {(_x # 0) isEqualTo _uid};
+        private _who = [GVAR(viewUid), _uid] select (GVAR(viewUid) isEqualTo "");
+        private _self = _who isEqualTo _uid;
+        private _me = _roster select {(_x # 0) isEqualTo _who};
 
         if (_me isEqualTo []) exitWith {
             [_body, [_pad, _y, _w - 2 * _pad, _rowH], "NO RECORD", _dim, 0.8, false] call ghostD_tacpad_fnc_drawText;
-            [_body, [_pad, _y + _rowH, _w - 2 * _pad, _rowH * 2], "The server has not seen you yet, or has not published the roster.", _dim, 0.65, false] call ghostD_tacpad_fnc_drawText;
+            [
+                _body, [_pad, _y + _rowH, _w - 2 * _pad, _rowH * 2],
+                ["That player is no longer on the published roster.", "The server has not seen you yet, or has not published the roster."] select _self,
+                _dim, 0.65, false
+            ] call ghostD_tacpad_fnc_drawText;
+        };
+
+        // Reading somebody else: a way back to the list, and the roster row is
+        // the whole of what there is to read.
+        if (!_self) then {
+            [_body, [_pad, _y, _w * 0.3, _rowH], "< BACK TO ROSTER", _accent, 0.75, true] call ghostD_tacpad_fnc_drawText;
+            [_body, [_pad, _y, _w * 0.3, _rowH], {
+                GVAR(viewUid) = "";
+                GVAR(view) = "roster";
+                {["pac"] call ghostD_tacpad_fnc_openApp} call CBA_fnc_execNextFrame;
+            }] call ghostD_tacpad_fnc_drawHit;
+            [_body, [_w * 0.3, _y, _w * 0.7 - _pad, _rowH], "PERSONNEL RECORD", _mute, 0.65, true, "right", true] call ghostD_tacpad_fnc_drawText;
+            _y = _y + _rowH * 1.2;
         };
 
         (_me # 0) params ["", "_name", "_rankId", "_roleId", "_groupId", "_statusId", "_skillIds", "_awards", "_updated", ["_time", [0, 0]]];
@@ -111,37 +199,30 @@ switch (_view) do {
         ["STATUS", ["statuses", _statusId] call FUNC(lookup), _accent] call _fnc_row;
         _y = _y + _padY;
 
-        [_body, [_pad, _y, _w - 2 * _pad, _rowH], "SKILLS", _mute, 0.65, true, "left", true] call ghostD_tacpad_fnc_drawText;
-        _y = _y + _rowH;
+        // ONE WRAPPED LINE EACH, in the value column with everything else -
+        // skills were a column a screen tall once (user, 2026-09-05: "line
+        // these up horizontally") and awards a second little table of their own.
         if (_skillIds isEqualTo []) then {
-            [_body, [_pad * 2, _y, _w - 3 * _pad, _rowH], "NONE ASSIGNED", _dim, 0.75, false] call ghostD_tacpad_fnc_drawText;
-            _y = _y + _rowH;
+            ["SKILLS", "None assigned", _dim] call _fnc_wrapped;
         } else {
-            // ONE LINE, WRAPPED - not a column a screen tall (user, 2026-09-05:
-            // "line these up horizontally"). Nine skills is one row of text.
-            private _line = (_skillIds apply {["skills", _x] call FUNC(lookup)}) joinString "   ·   ";
-            private _lines = (ceil ((count _line) / 150)) max 1;
-            [_body, [_pad * 2, _y, _w - 3 * _pad, _rowH * _lines], _line, _ink, 0.8, false] call ghostD_tacpad_fnc_drawText;
-            _y = _y + _rowH * _lines;
+            ["SKILLS", (_skillIds apply {["skills", _x] call FUNC(lookup)}) joinString "   ·   "] call _fnc_wrapped;
         };
         _y = _y + _padY;
 
-        [_body, [_pad, _y, _w - 2 * _pad, _rowH], "AWARDS", _mute, 0.65, true, "left", true] call ghostD_tacpad_fnc_drawText;
-        _y = _y + _rowH;
         if (_awards isEqualTo []) then {
-            [_body, [_pad * 2, _y, _w - 3 * _pad, _rowH], "NONE", _dim, 0.75, false] call ghostD_tacpad_fnc_drawText;
-            _y = _y + _rowH;
+            ["AWARDS", "None", _dim] call _fnc_wrapped;
+        } else {
+            ["AWARDS", (_awards apply {
+                _x params [["_awardId", ""], ["_date", ""]];
+                private _n = ["awards", _awardId] call FUNC(lookup);
+                [_n, format ["%1  (%2)", _n, _date select [0, 10]]] select (_date isNotEqualTo "")
+            }) joinString "   ·   "] call _fnc_wrapped;
         };
-        {
-            _x params [["_awardId", ""], ["_date", ""]];
-            [_body, [_pad * 2, _y, _w * 0.6, _rowH], ["awards", _awardId] call FUNC(lookup), _ink, 0.8, false] call ghostD_tacpad_fnc_drawText;
-            [_body, [_w * 0.6, _y, _w * 0.4 - _pad * 2, _rowH], _date, _mute, 0.7, false, "right"] call ghostD_tacpad_fnc_drawText;
-            _y = _y + _rowH;
-        } forEach _awards;
 
         _y = _y + _padY;
-        // Own attendance, all time - the server totals it from the sessions
-        // when it publishes, so the client never sees the sessions themselves.
+        // Attendance, all time - the server totals it from the sessions when it
+        // publishes, so the client never sees the sessions themselves. It is on
+        // the published row, so it reads the same for a man you tapped.
         _time params [["_mins", 0], ["_joins", 0]];
         ["TIME ON", format ["%1h %2m  ·  %3 session%4", floor (_mins / 60), _mins mod 60, _joins, ["s", ""] select (_joins isEqualTo 1)], _ink] call _fnc_row;
         _y = _y + _rowH * 0.5;
@@ -158,6 +239,9 @@ switch (_view) do {
         // Column heads once, then one row a player. Rank abbrev, name, role, and
         // the status in the accent because it is the thing an admin set on
         // purpose and the thing a player looking down the list is checking.
+        [_body, [_pad, _y, _w - 2 * _pad, _rowH * 0.8], "TAP A NAME TO READ THAT MAN'S RECORD", _dim, 0.6, true, "left", true] call ghostD_tacpad_fnc_drawText;
+        _y = _y + _rowH * 0.8;
+
         [_body, [_pad, _y, _w * 0.12, _rowH], "RANK", _mute, 0.6, true, "left", true] call ghostD_tacpad_fnc_drawText;
         [_body, [_w * 0.12, _y, _w * 0.38, _rowH], "NAME", _mute, 0.6, true, "left", true] call ghostD_tacpad_fnc_drawText;
         [_body, [_w * 0.50, _y, _w * 0.30, _rowH], "ROLE", _mute, 0.6, true, "left", true] call ghostD_tacpad_fnc_drawText;
@@ -175,6 +259,16 @@ switch (_view) do {
             [_body, [_w * 0.12, _y, _w * 0.38, _rowH], _name, _ink, 0.8, _mine] call ghostD_tacpad_fnc_drawText;
             [_body, [_w * 0.50, _y, _w * 0.30, _rowH], ["roles", _roleId] call FUNC(lookup), _mute, 0.75, false] call ghostD_tacpad_fnc_drawText;
             [_body, [_w * 0.80, _y, _w * 0.20 - _pad, _rowH], ["statuses", _statusId] call FUNC(lookup), _accent, 0.7, false, "right"] call ghostD_tacpad_fnc_drawText;
+
+            // The row opens that man's record - the published row, no notes.
+            private _rowHit = [_body, [_pad, _y, _w - 2 * _pad, _rowH], {
+                params ["_ctrl"];
+                GVAR(viewUid) = _ctrl getVariable [QGVAR(rowUid), ""];
+                GVAR(view) = "record";
+                {["pac"] call ghostD_tacpad_fnc_openApp} call CBA_fnc_execNextFrame;
+            }] call ghostD_tacpad_fnc_drawHit;
+            _rowHit setVariable [QGVAR(rowUid), _rUid];
+
             _y = _y + _rowH;
         } forEach _roster;
     };
@@ -224,7 +318,12 @@ switch (_view) do {
                 private _hit = [_body, [_pad, _y, _w - 2 * _pad, _rowH], {
                     params ["_ctrl"];
                     GVAR(openOpord) = _ctrl getVariable [QGVAR(id), ""];
-                    [] spawn { ["pac"] call ghostD_tacpad_fnc_openApp };
+                    // NEXT FRAME, UNSCHEDULED - the way every other app reopens itself
+        // (squad, hack, timer, intel: `{...} call CBA_fnc_execNextFrame`). This
+        // was a scheduled `spawn`, the one app in the suite that reopened that
+        // way (aligned 2026-09-05 while chasing "the my record button does not
+        // work"; not proven to be the cause, but the odd one out is gone).
+        {["pac"] call ghostD_tacpad_fnc_openApp} call CBA_fnc_execNextFrame;
                 }] call ghostD_tacpad_fnc_drawHit;
                 _hit setVariable [QGVAR(id), _id];
                 _y = _y + _rowH;
@@ -240,7 +339,12 @@ switch (_view) do {
         [_body, [_pad, _y, _w * 0.2, _rowH], "< BACK", _accent, 0.75, true] call ghostD_tacpad_fnc_drawText;
         ([_body, [_pad, _y, _w * 0.2, _rowH], {
             GVAR(openOpord) = "";
-            [] spawn { ["pac"] call ghostD_tacpad_fnc_openApp };
+            // NEXT FRAME, UNSCHEDULED - the way every other app reopens itself
+        // (squad, hack, timer, intel: `{...} call CBA_fnc_execNextFrame`). This
+        // was a scheduled `spawn`, the one app in the suite that reopened that
+        // way (aligned 2026-09-05 while chasing "the my record button does not
+        // work"; not proven to be the cause, but the odd one out is gone).
+        {["pac"] call ghostD_tacpad_fnc_openApp} call CBA_fnc_execNextFrame;
         }] call ghostD_tacpad_fnc_drawHit);
         private _headline = [_hdr getOrDefault ["id", ""], "DATED " + (_hdr getOrDefault ["date", ""])] select {_x isNotEqualTo "" && _x isNotEqualTo "DATED "};
         [_body, [_w * 0.2, _y, _w * 0.8 - _pad, _rowH], _headline joinString "  -  ", _ink, 0.95, true, "right"] call ghostD_tacpad_fnc_drawText;
@@ -249,19 +353,23 @@ switch (_view) do {
         [_body, [_pad, _y, _w - 2 * _pad, _rowH * 1.3], _hdr getOrDefault ["title", _open], _ink, 1.1, true] call ghostD_tacpad_fnc_drawText;
         _y = _y + _rowH * 1.4;
 
+        // MEASURED, NOT COUNTED. This sized each block by dividing its length
+        // by a guess at characters-per-line, which is wrong at every text size
+        // but the one it was tuned on: too small and the block ran off its own
+        // box and was clipped mid-sentence (user, 2026-09-06: "text cut off"),
+        // too large and the later sections fell off the panel. ctrlTextHeight
+        // asks the engine what it actually laid out at this width.
         private _fnc_block = {
             params ["_label", "_text"];
             if (_text isEqualTo "" || {_y > _h - _rowH * 2}) exitWith {};
             [_body, [_pad, _y, _w - 2 * _pad, _rowH], _label, _mute, 0.65, true, "left", true] call ghostD_tacpad_fnc_drawText;
             _y = _y + _rowH;
-            // A line holds about 170 characters at this width and scale
-            // (measured off the screen, 2026-09-05). The old eighty made every
-            // block three times taller than its text ("bit too much space") and
-            // pushed the later sections off the panel. 150 leaves slack so a
-            // wrapped word never runs into the next label.
-            private _lines = (ceil ((count _text) / 150)) max 1;
-            [_body, [_pad * 2, _y, _w - 3 * _pad, _rowH * _lines], _text, _ink, 0.75, false] call ghostD_tacpad_fnc_drawText;
-            _y = _y + _rowH * _lines + _padY * 0.5;
+
+            private _c = [_body, [_pad * 2, _y, _w - 3 * _pad, _rowH], _text, _ink, 0.75, false] call ghostD_tacpad_fnc_drawText;
+            private _th = (ctrlTextHeight _c) max _rowH;
+            _c ctrlSetPosition [_pad * 2, _y, _w - 3 * _pad, _th];
+            _c ctrlCommit 0;
+            _y = _y + _th + _padY;
         };
 
         private _sit = _o get "situation";

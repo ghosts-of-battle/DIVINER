@@ -31,7 +31,10 @@ params [
     ["_unit", objNull, [objNull]],
     ["_template", createHashMap, [createHashMap]],
     ["_payload", [], [[]]],
-    ["_threadId", "", [""]]
+    ["_threadId", "", [""]],
+    // An explicit pin from the composer. It beats the template's own anchor,
+    // because it is the one the sender chose on purpose.
+    ["_pin", [], [[]]]
 ];
 
 private _uid = getPlayerUID _unit;
@@ -46,8 +49,23 @@ if (_threadId == "") exitWith {
     // The anchor is snapshotted now. A marker the sender used may be deleted an
     // hour later; where they said the contact was does not change.
     private _anchorPos = [];
+
+    // THE PIN WINS. A plain message has no field to anchor on, so the composer
+    // sends the position beside the payload; when one is there it is deliberate,
+    // and it beats whatever the template would have anchored on.
+    //
+    // ONLY A PIN DRAWS A MARKER. Every thread has had an anchorPos since the
+    // beginning - it is what the map view flies to - so marking them all would
+    // wallpaper the map with every SITREP ever filed. "pinned" is set here and
+    // FUNC(srvDeliver) is what reads it; a template anchor still only anchors.
+    private _pinned = false;
+    if (count _pin >= 2) then {
+        _anchorPos = [_pin # 0, _pin # 1, 0];
+        _pinned = true;
+    };
+
     private _anchorKey = _template get "anchor";
-    if (_anchorKey != "") then {
+    if (_anchorPos isEqualTo [] && _anchorKey != "") then {
         private _raw = (createHashMapFromArray _payload) getOrDefault [_anchorKey, []];
         if (_raw isEqualType [] && {count _raw >= 2}) then {
             _anchorPos = [_raw # 0, _raw # 1, 0];
@@ -83,6 +101,7 @@ if (_threadId == "") exitWith {
         // by FUNC(srvSubmit) as it goes on.
         ["tags", []],
         ["anchorPos", _anchorPos],
+        ["pinned", _pinned],
         ["anchorLabel", mapGridPosition _anchorPos],
         ["parentThreadId", ""],
         ["lastActivity", CBA_missionTime],

@@ -60,6 +60,32 @@ private _detailW = _w - _detailX - _pad;
 [_root, [_railW, 0, RULE_THICK * pixelW, _h], _ink] call FUNC(drawFill);
 [_root, [_railW + _listW + RULE_THICK * pixelW, 0, RULE_THICK * pixelW, _h], _ink] call FUNC(drawFill);
 
+// CLOSE, top-right of the window, on every view (user, 2026-09-05: "put a
+// close button in the upper right of the messaging window"). The views leave
+// this slot free: the thread header's NOTIFY / PIN / ACK, the composer's
+// CANCEL and the net title all stop one slot short of the pane's edge.
+// Outlined, not filled - ACK keeps the one loud button. Esc still closes as
+// well (FUNC(openReader)).
+//
+// DRAWN LAST, AFTER THE VIEW - see FUNC(drawHit): a label drawn across a
+// button's rectangle AFTER the button is a hole in it. The first version
+// drew this before the views, and the full-width lines every view lays under
+// its header ran across the button's foot; it showed and did nothing
+// ("close button does not work"). So it is a block, called at the end of
+// each branch below, and the hit is the last control in the pane.
+private _fnc_closeButton = {
+    private _closeH = ([0.8] call FUNC(textH)) + 2 * _padY;
+    private _closeW = _detailW * 0.15;
+    private _closeX = _detailX + _detailW - _closeW - _pad;
+    private _closeY = _padY * 2;
+    [_root, [_closeX, _closeY, _closeW, _closeH], _ink, RULE_THICK] call FUNC(drawFrame);
+    [_root, [_closeX + _pad, _closeY, _closeW - 2 * _pad, _closeH], "CLOSE", _ink, 0.8, true, "center"] call FUNC(drawText);
+    [_root, [_closeX, _closeY, _closeW, _closeH], {
+        private _d = uiNamespace getVariable [QGVAR(reader), displayNull];
+        if (!isNull _d) then {_d closeDisplay 0};
+    }] call FUNC(drawHit);
+};
+
 private _index = EGVAR(messaging,index);
 
 // ================================================================ the rail ==
@@ -427,6 +453,7 @@ private _input = _display displayCtrl IDC_RD_INPUT;
 // answering all stay on screen while you write.
 if (GVAR(composeOn)) exitWith {
     [[_detailX, _detailW]] call FUNC(composePane);
+    [] call _fnc_closeButton;
 };
 
 // A NET IS A CONVERSATION, NOT A FOLDER OF THEM. With no single thread picked,
@@ -451,6 +478,7 @@ if (GVAR(readerThread) == "") exitWith {
     ([_boxId] call EFUNC(messaging,netStream)) params ["_stream", "_pending"];
 
     [_stream, _pending, [_detailX, _detailW]] call FUNC(readerNetView);
+    [] call _fnc_closeButton;
 };
 
 private _cached = (missionNamespace getVariable [QEGVAR(messaging,cache), createHashMap]) getOrDefault [GVAR(readerThread), []];
@@ -464,3 +492,4 @@ if (_cached isEqualTo []) exitWith {
 
 _cached params ["_thread", "_messages"];
 [_thread, _messages, [_detailX, _detailW]] call FUNC(readerThreadView);
+[] call _fnc_closeButton;

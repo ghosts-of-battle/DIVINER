@@ -53,7 +53,7 @@ namespace GhostD.PacDb;
 public static class Extension
 {
     const string Name = "ghostd_pacdb";
-    const string Version = "0.3.0";
+    const string Version = "0.4.0";
     const int Chunk = 7000;
 
     static unsafe class Cb { public static delegate* unmanaged[Stdcall]<IntPtr, IntPtr, IntPtr, int> Ptr; }
@@ -100,7 +100,7 @@ public static class Extension
         switch (fn)
         {
             case "ping":
-                Task.Run(() => Send("ping", "ok " + Version + (_configured ? " -> " + Describe() + " (from " + _source + ")" : " (NOT CONFIGURED: set the CBA setting 'Service URL' to a mongodb+srv:// connection string, or a pacdb service URL)")));
+                Task.Run(() => Send("ping", "ok " + Version + (_configured ? " -> " + Describe() + " (from " + _source + ")" : " (NOT CONFIGURED: set the CBA setting 'Database' to a mongodb+srv:// connection string, or a pacdb service URL)")));
                 break;
 
             // THE MOD HANDS THE ADDRESS OVER - from its CBA server setting, which
@@ -114,6 +114,13 @@ public static class Extension
                 _source = "the mod's CBA setting";
                 Write(output, outputSize, "ok");
                 return 0;
+
+            // WHERE THIS SERVER CALLS OUT FROM, and whether TLS works at all.
+            // Off unless the admin turns the CBA setting on - it is a request to
+            // a third party, and most boots have no use for one.
+            case "netcheck":
+                Task.Run(NetCheck);
+                break;
 
             case "get":
                 if (args.Length < 1) { Write(output, outputSize, "error: get needs a key"); return 1; }
@@ -163,7 +170,7 @@ public static class Extension
 
     // ------------------------------------------------------------------ work --
 
-    const string NotConfigured = "not configured: set the CBA server setting 'Service URL' to a mongodb+srv:// connection string (or a pacdb service URL), or GHOSTD_PACDB_URL in the server's environment, or pacdb.json in the server's root";
+    const string NotConfigured = "not configured: set the CBA server setting 'Database' (Addon Options > Ghosts of Battle PAC > Service) to a mongodb+srv:// connection string (or a pacdb service URL), or GHOSTD_PACDB_URL in the server's environment, or pacdb.json in the server's root";
 
     static bool IsMongo => _url.StartsWith("mongodb://", StringComparison.OrdinalIgnoreCase) || _url.StartsWith("mongodb+srv://", StringComparison.OrdinalIgnoreCase);
 
@@ -336,6 +343,57 @@ public static class Extension
             if (_configured) _source = "pacdb.json at " + path;
         }
         catch { _configured = false; }
+    }
+
+    // ---- netcheck ---------------------------------------------------------
+    // The address Atlas will see, and a verdict on TLS, from one host over both
+    // schemes. THE PLAIN-HTTP LEG IS THE POINT: it is the only probe that still
+    // answers when TLS is the thing that is broken, so the pair separates "no
+    // route out" from "no certificate store" without guessing.
+    //
+    // An IPv4-only reflector on purpose. ifconfig.me answers on whichever
+    // protocol the request used, and an IPv6 address is not what goes in an
+    // Atlas access-list entry.
+    const string Reflector = "api.ipify.org";
+
+    static async Task NetCheck()
+    {
+        var ip = "unknown";
+        var plain = "";
+        try
+        {
+            ip = (await Http.GetStringAsync("http://" + Reflector)).Trim();
+        }
+        catch (Exception e) { plain = Innermost(e); }
+
+        var tls = "";
+        try
+        {
+            var over = (await Http.GetStringAsync("https://" + Reflector)).Trim();
+            if (ip == "unknown") ip = over;
+        }
+        catch (Exception e) { tls = Innermost(e); }
+
+        // One line the mod logs as it is. The verdict is spelled out rather than
+        // left to the reader: this is read in an .rpt by somebody whose database
+        // will not connect.
+        var verdict = (plain.Length == 0, tls.Length == 0) switch
+        {
+            (true, true)  => "http ok, https ok - this server's network and TLS are both fine",
+            (true, false) => "http ok, https FAILED (" + tls + ") - TLS is broken on this machine, which is why the database will not connect",
+            (false, true) => "http FAILED (" + plain + "), https ok",
+            _             => "http FAILED (" + plain + "), https FAILED (" + tls + ") - no outbound web access from this server",
+        };
+        Send("netcheck", "ip=" + ip + " | " + verdict);
+    }
+
+    // The message that actually says what went wrong - the outer ones are
+    // wrappers, and Arma truncates a long callback string.
+    static string Innermost(Exception e)
+    {
+        while (e.InnerException != null) e = e.InnerException;
+        var m = e.Message.Replace("\r", " ").Replace("\n", " ").Trim();
+        return m.Length > 160 ? m[..160] : m;
     }
 
     static unsafe void Send(string function, string data)

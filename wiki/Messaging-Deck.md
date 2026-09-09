@@ -1,8 +1,17 @@
 # Messaging deck
 
-`config\config_messaging.hpp` declares `class GHOST_Templates` — the TAC//MSG
+`config\config_messaging.hpp` declares `class GHOSTFR_Templates` — the TAC//MSG
 smart-card deck. Every report a player can send, and every reply a report can be
 answered with.
+
+**TAC//MSG is a threaded messaging system.** Every report a player sends opens
+a thread with its own id (`T0001`); replies, acknowledgements and the quick
+phrases go under it; the thread carries a state that the cards move
+(`transitionsTo` — open, claimed, closed); and a player can follow or mute one
+thread over the net's own setting. A net is read as one conversation, every
+thread filed to it in order, and the map-side reader opens a thread beside the
+ground it is about. The deck on this page is what starts a thread and what
+answers one.
 
 This was several hundred lines of SQF inside the mod. It is config now, read at
 preInit through `missionConfigFile`, so a new card or an extra line on an
@@ -46,7 +55,7 @@ the classes happen to appear. **Add a line and you must add its class name to
 ## Shape
 
 ```cpp
-class GHOST_Templates {
+class GHOSTFR_Templates {
     class CONTACTREP {
         displayName = "CONTACT REPORT";
         short = "CONTACT";
@@ -72,7 +81,7 @@ class GHOST_Templates {
 
 ## Adding a card
 
-1. Add a class under `GHOST_Templates`.
+1. Add a class under `GHOSTFR_Templates`.
 2. Give it `displayName` and `short`.
 3. Write its `class Lines`, one class per line.
 4. **List every line class name in `lineOrder[]`.**
@@ -94,5 +103,9 @@ Forget step 2 and the line exists, validates, and is never drawn.
   [Nets](Nets).
 - The reply buttons under the reader (ROGER / WILCO / WAIT ONE / …) are part of
   the same deck.
+- A mission whose config lives in the **database** ships no
+  `config_messaging.hpp` at all - the deck is the `<unit>.templates` document,
+  registered by `ghostD_pac_fnc_templatesApply`. See
+  [config_messaging](config_messaging#when-there-is-no-config_messaginghpp).
 
 Next: [Other Systems](Other-Systems).

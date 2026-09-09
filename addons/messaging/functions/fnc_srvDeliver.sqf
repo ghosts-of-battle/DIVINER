@@ -118,10 +118,15 @@ private _messageArray = _message toArray false;
 
 private _seen = [];
 
+// Kept apart from _seen because the quiet pass at the bottom reaches every
+// player on the server, and a pin is not for them - see the pin block below.
+private _bodySeen = [];
+
 private _fnc_push = {
     params ["_who", ["_body", true]];
     if (_who in _seen) exitWith {};
     _seen pushBack _who;
+    if (_body) then {_bodySeen pushBack _who};
 
     // ONLY THE PEOPLE IT WAS ACTUALLY FOR. The quiet pass below reaches every
     // player on the server, and adding them here would make the whole server a
@@ -173,4 +178,37 @@ private _fnc_push = {
 // that half the people on it never heard about.
 if (_boxes findIf {(_x select [0, 2]) == "B:"} >= 0) then {
     {[_x, false] call _fnc_push} forEach allPlayers;
+};
+
+// --- the pin ----------------------------------------------------------------
+// A THREAD THE SENDER PINNED MARKS THE MAP, ONCE, FOR THE PEOPLE IT REACHED.
+// Set by FUNC(srvThreadFor) when the composer sent a position beside the
+// payload; a template's own `anchor` does not set it, so the deck's reports go
+// on anchoring without marking.
+//
+// _bodySeen, NOT _seen AND NOT allPlayers. The quiet pass above hands an index
+// row to everybody on the server so a shared mailbox is readable, and marking
+// all of them would put a friendly tasking on the other side's map - the same
+// reason FUNC(srvTic) targets its own side rather than creating a global
+// marker. These are the people the message was actually pushed to.
+//
+// ONCE: the guard is the marker name already being on the thread, so a reply
+// does not drop a second pin on top of the first.
+if ((_thread getOrDefault ["pinned", false]) && {(_thread getOrDefault ["marker", ""]) isEqualTo ""}) then {
+    private _pos = _thread getOrDefault ["anchorPos", []];
+    if (_pos isNotEqualTo []) then {
+        private _name = format [QGVAR(pin_%1), _thread get "id"];
+        private _label = _thread getOrDefault ["subject", ""];
+        if (_label isEqualTo "") then {_label = "MESSAGE"};
+
+        {
+            if (isNull _x) then {continue};
+            [QGVAR(marker), [_name, _pos, _label], _x] call CBA_fnc_targetEvent;
+        } forEach _bodySeen;
+
+        // The thread carries its marker name so FUNC(srvSweep) takes it away
+        // with the thread. A marker nobody removes is how a map ends up
+        // wallpapered in old traffic.
+        _thread set ["marker", _name];
+    };
 };

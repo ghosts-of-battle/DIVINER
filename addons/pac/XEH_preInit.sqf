@@ -42,9 +42,12 @@ GVAR(windowOpen) = "";           // id of the manually started op window, "" for
 GVAR(roster) = [];
 GVAR(summary) = createHashMap;
 
-// The app's own view state, per client: which tab, which OPORD is open.
+// The app's own view state, per client: which tab, which OPORD is open, and
+// whose record the RECORD tab is showing ("" is your own - a name tapped on
+// the ROSTER tab puts that man's uid here).
 GVAR(view) = "record";
 GVAR(openOpord) = "";
+GVAR(viewUid) = "";
 
 ADDON = true;
 

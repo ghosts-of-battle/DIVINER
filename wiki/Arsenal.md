@@ -9,7 +9,7 @@ Common_Arsenal            everyone, always
   + the role's own        arsenalWeapons / Magazines / Items / Backpacks
 ```
 
-That merge is `ghost_groups_fnc_setupPlayer`, which hands the result to
+That merge is `ghostD_groups_fnc_setupPlayer`, which hands the result to
 `ace_arsenal_fnc_addVirtualItems`.
 
 ---

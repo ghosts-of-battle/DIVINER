@@ -5,7 +5,7 @@ per-element pools.
 
 **Loads:** `#include`d in [description.ext](description-ext).
 **Declares:** `MotorPool_Common`, and includes each `MotorPool_<Callsign>`.
-**Read by:** `ghost_vehicle_fnc_motorpool_open`, `fnc_motorpool_squadClass`.
+**Read by:** `ghostD_vehicle_fnc_motorpool_open`, `fnc_motorpool_squadClass`.
 
 ---
 

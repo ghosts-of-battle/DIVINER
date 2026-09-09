@@ -12,6 +12,8 @@ Description:
         identity     name (the Arma profile name, refreshed on connect),
                      operatorId (OP-nnnnn, given once), milsimName (the
                      name the unit calls them - "Cpl J. Miller"), discordId,
+                     email (OPTIONAL, given by the player themselves on the
+                     web manager - never asked for in game, never public),
                      enlistedAt (YYYY-MM-DD, the day the unit first saw them)
         service      rankId, promotedAt (the day the rank last changed),
                      clearance (what the unit lets them do - free text),
@@ -45,6 +47,7 @@ Author:
     ["operatorId", ""],
     ["milsimName", ""],
     ["discordId", ""],
+    ["email", ""],
     ["enlistedAt", ""],
     ["rankId", ""],
     ["promotedAt", ""],

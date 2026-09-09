@@ -14,7 +14,7 @@ The mission framework of Ghosts of Battle: the role screen, the tablet suite, th
 [list]
 [*][b]Role selection[/b] - platoon tabs, squads and slots from one config, rank and skill gates on the slots, slots that can be locked to named players.
 [*][b]TAC//PAD[/b] - the tablet: squad panel, comms and the report reader, drones, jamming, the intrusion suite, fire support requests, weather, timers, radio.
-[*][b]TAC//MSG[/b] - a messaging system with named nets, a report deck (CASEVAC, contact, SITREP, patrol and more), mailboxes per net, tags for squads and platoons.
+[*][b]TAC//MSG[/b] - a [b]threaded messaging system[/b]: every report opens a thread, replies and acknowledgements stay under it, a thread carries its state (open, claimed, closed) and can be followed or muted. Named nets, a report deck (CASEVAC, contact, SITREP, patrol and more), mailboxes per net, tags for squads and platoons, and a reader on the map.
 [*][b]TAC//PAC[/b] - personnel: ranks, skills, awards, statuses, op windows and attendance, OPORDs with a METT-TC reply from the leaders, an operator file per player, a dated action log, an in-game structure and ORBAT editor, and an admin page for all of it.
 [*][b]Arsenal and loadouts[/b] - a common arsenal, one per element, per-role whitelists, kept loadouts and auto-slotting.
 [*][b]Comms plan[/b] - ACRE2 (or TFAR) radios programmed from one plan: SR team nets, MR platoon nets, LR racks; an optional radio mesh where manpacks and racks relay for each other.
@@ -49,3 +49,14 @@ Remember the two-part system: the mod is what you subscribed to here, the missio
 
 [h2]Credits[/h2]
 Ghosts of Battle. Built on the shoulders of CBA, ACE3, ACRE2 and the YMF role framework. Licence in the repository.
+
+[b]Based on & inspired by[/b]
+Source projects are on GitHub — search the owner/repo path.
+[list]
+[*]ArmaForces/Mods — GPL
+[*]AXEmod/AXE — GPLv3
+[*]Theseus-Aegis/Mods — GPLv2
+[*]last-resort-gaming/LRG-Fundamentals — MIT
+[*]Theseus-Aegis/TheseusServices — APL-SA
+[*]BourbonWarfare/POTATO — GPLv2
+[/list]

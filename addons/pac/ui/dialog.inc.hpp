@@ -133,8 +133,42 @@ class GVAR(panel) {
             x = "0.012 * safezoneW + safezoneX";
             y = "0.128 * safezoneH + safezoneY";
             w = "0.212 * safezoneW";
-            h = "0.818 * safezoneH";
+            h = "0.778 * safezoneH";
             onLBSelChanged = QUOTE([] call FUNC(panelSelect););
+        };
+
+        // ---- add somebody who has never joined -----------------------------
+        // A record is normally made on first connect. This is the row for a
+        // recruit who is on the roster before their first operation.
+        class L_ADD_UID: RscADMPEdit {
+            idc = PAC_IDC_L_ADD_UID;
+            text = "";
+            tooltip = "Steam id of somebody to put on the roster - the 17 digits from their Steam profile. The record is keyed on it and it cannot be changed afterwards.";
+            x = "0.012 * safezoneW + safezoneX";
+            y = "0.912 * safezoneH + safezoneY";
+            w = "0.088 * safezoneW";
+            h = "0.030 * safezoneH";
+        };
+
+        class L_ADD_NAME: RscADMPEdit {
+            idc = PAC_IDC_L_ADD_NAME;
+            text = "";
+            tooltip = "Their name, so the roster reads as something other than a number. Optional - it is refreshed from their profile when they first connect.";
+            x = "0.104 * safezoneW + safezoneX";
+            y = "0.912 * safezoneH + safezoneY";
+            w = "0.064 * safezoneW";
+            h = "0.030 * safezoneH";
+        };
+
+        class L_ADD: RscADMPButton {
+            idc = PAC_IDC_L_ADD;
+            text = "ADD";
+            tooltip = "Put this Steam id on the roster now, with no rank, role or skills. Asks first.";
+            x = "0.172 * safezoneW + safezoneX";
+            y = "0.912 * safezoneH + safezoneY";
+            w = "0.052 * safezoneW";
+            h = "0.030 * safezoneH";
+            onButtonClick = QUOTE([] call FUNC(panelAddOperator););
         };
 
         class L_COUNT: RscADMPStructuredText {
@@ -365,7 +399,7 @@ class GVAR(panel) {
         // was held. FUNC(panelTraining).
         class TRAINING_TITLE: RscADMPStructuredText {
             idc = PAC_IDC_TRAINING_TITLE;
-            text = "<t font='RobotoCondensedBold' size='0.7'>T R A I N I N G</t>  <t size='0.7'>lead with YYYY-MM-DD to back-date</t>";
+            text = "<t font='RobotoCondensedBold' size='0.7'>T R A I N I N G</t>  <t size='0.7'>pick the course; the box takes a day (YYYY-MM-DD) and a note</t>";
             x = "0.240 * safezoneW + safezoneX";
             y = "0.732 * safezoneH + safezoneY";
             w = "0.380 * safezoneW";
@@ -380,13 +414,27 @@ class GVAR(panel) {
             h = "0.066 * safezoneH";
         };
 
+        // The course comes off the unit's training catalogue - structure section
+        // "trainings", document <unitId>.trainings, EDIT STRUCTURE > TRAINING -
+        // and the box beside it takes an optional day (YYYY-MM-DD) and a note
+        // (user, 2026-09-05: "a config doc in storage and a drop down to select
+        // the training").
+        class TRAIN_COMBO: RscADMPCombo {
+            idc = PAC_IDC_TRAIN_COMBO;
+            tooltip = "The course, from the unit's catalogue (EDIT STRUCTURE > TRAINING)";
+            x = "0.240 * safezoneW + safezoneX";
+            y = "0.828 * safezoneH + safezoneY";
+            w = "0.128 * safezoneW";
+            h = "0.032 * safezoneH";
+        };
+
         class TRAIN_EDIT: RscADMPEdit {
             idc = PAC_IDC_TRAIN_EDIT;
             text = "";
-            tooltip = "e.g.  2026-08-14 CLS course, passed";
-            x = "0.240 * safezoneW + safezoneX";
+            tooltip = "Optional: the day it was held and a note, e.g.  2026-08-14 passed";
+            x = "0.372 * safezoneW + safezoneX";
             y = "0.828 * safezoneH + safezoneY";
-            w = "0.240 * safezoneW";
+            w = "0.108 * safezoneW";
             h = "0.032 * safezoneH";
         };
 

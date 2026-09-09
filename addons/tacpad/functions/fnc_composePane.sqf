@@ -78,10 +78,12 @@ private _onNet = (_addressed findIf {(_x select [0, 2]) isEqualTo "P:"}) < 0;
 private _y = _padY * 2;
 
 private _cancelW = _dw * 0.15;
-private _cancelX = _dx + _dw - _cancelW - _pad;
+// One slot in from the pane's edge: the corner is CLOSE, drawn by
+// FUNC(readerDraw) for every view (user, 2026-09-05).
+private _cancelX = _dx + _dw - 2 * _cancelW - 2 * _pad;
 
 [
-    _root, [_dx + _pad, _y, _dw - _cancelW - 3 * _pad, _rowH * 1.2],
+    _root, [_dx + _pad, _y, _dw - 2 * _cancelW - 4 * _pad, _rowH * 1.2],
     ["NEW MESSAGE", "REPLY"] select _reply,
     _ink, 1.25, true
 ] call FUNC(drawText);
@@ -92,7 +94,9 @@ private _cancelX = _dx + _dw - _cancelW - _pad;
     GVAR(composeOn) = false;
     GVAR(composePick) = false;
     GVAR(composeToPick) = false;
-    GVAR(composeMarker) = "";
+    GVAR(composeMarker) = "";
+    GVAR(composePin) = [];
+    GVAR(composePinPick) = false;
     GVAR(composeValues) = createHashMap;
     GVAR(composeGridText) = createHashMap;
     {[] call FUNC(readerDraw)} call CBA_fnc_execNextFrame;
@@ -158,7 +162,9 @@ if (!_reply) then {
     [_root, [_changeX, _y, _changeW, _btnH], {
         [] call FUNC(composeHarvest);
         GVAR(composeToPick) = true;
-        GVAR(composeMarker) = "";
+        GVAR(composeMarker) = "";
+        GVAR(composePin) = [];
+        GVAR(composePinPick) = false;
         {[] call FUNC(readerDraw)} call CBA_fnc_execNextFrame;
     }] call FUNC(drawHit);
 } else {
@@ -310,7 +316,9 @@ private _actW = _dw * 0.24;
 [_root, [_dx + _pad, _y, _actW, _btnH], {
     [] call FUNC(composeHarvest);
     GVAR(composePick) = true;
-    GVAR(composeMarker) = "";
+    GVAR(composeMarker) = "";
+    GVAR(composePin) = [];
+    GVAR(composePinPick) = false;
     {[] call FUNC(readerDraw)} call CBA_fnc_execNextFrame;
 }] call FUNC(drawHit);
 
@@ -323,7 +331,9 @@ if (_templateId isNotEqualTo "") then {
     [_root, [_dropX, _y, _dropW, _btnH], {
         [] call FUNC(composeHarvest);
         GVAR(composeTemplate) = "";
-        GVAR(composeMarker) = "";
+        GVAR(composeMarker) = "";
+        GVAR(composePin) = [];
+        GVAR(composePinPick) = false;
         {[] call FUNC(readerDraw)} call CBA_fnc_execNextFrame;
     }] call FUNC(drawHit);
 };
@@ -348,6 +358,81 @@ private _footH = _btnH + _padY * 3;
 private _contentH = _h - _footH - _y;
 
 if (_templateId isEqualTo "") then {
+    // ---------------------------------------------------------- the map pin --
+    // A REPORT ANCHORS ON A FIELD; A MESSAGE HAS NOTHING TO POINT AT. The deck's
+    // cards carry a `grid` field and name it in `anchor`, which is what pins the
+    // thread to the map. A plain message has one text box, so the pin is
+    // thread-level state - GVAR(composePin) - and travels BESIDE the payload
+    // rather than in it: EFUNC(messaging,validate) drops any key the template
+    // does not declare, so a pin smuggled in as a field would be thrown away on
+    // the way to the server. See EFUNC(messaging,srvThreadFor).
+    private _pinned = GVAR(composePin) isNotEqualTo [];
+    private _pinW = _dw * 0.24;
+
+    [
+        _root, [_dx + _pad, _y, _dw - 2 * _pinW - 4 * _pad, _btnH],
+        ["MAP PIN - NONE", format ["MAP PIN - %1", mapGridPosition GVAR(composePin)]] select _pinned,
+        [_mute, _accent] select _pinned, 0.62, true, "left", true
+    ] call FUNC(drawText);
+
+    // One button for both halves: pinning where you stand and taking the pin
+    // off again are the same press twice.
+    private _hereX = _dx + _dw - 2 * _pinW - 2 * _pad;
+    [_root, [_hereX, _y, _pinW, _btnH], [_line, _accent] select _pinned, [RULE_THIN, RULE_THICK] select _pinned] call FUNC(drawFrame);
+    [_root, [_hereX + _pad, _y, _pinW - 2 * _pad, _btnH], ["CURRENT LOC", "CLEAR PIN"] select _pinned, [_ink, _accent] select _pinned, 0.64, true, "center"] call FUNC(drawText);
+    [_root, [_hereX, _y, _pinW, _btnH], {
+        [] call FUNC(composeHarvest);
+        GVAR(composePin) = [[], getPosATL player] select (GVAR(composePin) isEqualTo []);
+        GVAR(composePinPick) = false;
+        {[] call FUNC(readerDraw)} call CBA_fnc_execNextFrame;
+    }] call FUNC(drawHit);
+
+    // The same marker list the deck's grid fields offer, so a man who has
+    // already drawn the spot on his map does not read a grid off it and retype
+    // it into a sentence.
+    private _mkX = _dx + _dw - _pinW - _pad;
+    private _pickOpen = GVAR(composePinPick);
+    [_root, [_mkX, _y, _pinW, _btnH], [_line, _accent] select _pickOpen, [RULE_THIN, RULE_THICK] select _pickOpen] call FUNC(drawFrame);
+    [_root, [_mkX + _pad, _y, _pinW - 2 * _pad, _btnH], "MAP MARKER", [_ink, _accent] select _pickOpen, 0.64, true, "center"] call FUNC(drawText);
+    [_root, [_mkX, _y, _pinW, _btnH], {
+        [] call FUNC(composeHarvest);
+        GVAR(composePinPick) = !GVAR(composePinPick);
+        {[] call FUNC(readerDraw)} call CBA_fnc_execNextFrame;
+    }] call FUNC(drawHit);
+
+    _y = _y + _btnH + _padY;
+
+    if (GVAR(composePinPick)) then {
+        private _markers = [8] call FUNC(markerGrids);
+        if (_markers isEqualTo []) then {
+            [_root, [_dx + _pad * 2, _y, _dw - 3 * _pad, _rowH * 0.9], "NO MAP MARKERS", _dim, 0.66] call FUNC(drawText);
+            _y = _y + _rowH * 0.9;
+        } else {
+            {
+                _x params ["_label", "_pos"];
+                private _my = _y + _forEachIndex * _rowH * 0.9;
+                [_root, [_dx + _pad * 2, _my, _dw * 0.5, _rowH * 0.9], _label, _ink, 0.7] call FUNC(drawText);
+                [_root, [_dx + _dw * 0.55, _my, _dw * 0.4 - _pad, _rowH * 0.9], mapGridPosition _pos, _mute, 0.66, false, "right"] call FUNC(drawText);
+                [_root, [_dx + _pad, _my + _rowH * 0.9 - RULE_THIN * pixelH, _dw - 2 * _pad, RULE_THIN * pixelH], _line] call FUNC(drawFill);
+                private _hitP = [_root, [_dx + _pad, _my, _dw - 2 * _pad, _rowH * 0.9], {
+                    params ["_ctrl"];
+                    [] call FUNC(composeHarvest);
+                    private _at = _ctrl getVariable [QGVAR(markerPos), []];
+                    if (_at isEqualTo []) exitWith {};
+                    GVAR(composePin) = _at;
+                    GVAR(composePinPick) = false;
+                    {[] call FUNC(readerDraw)} call CBA_fnc_execNextFrame;
+                }] call FUNC(drawHit);
+                _hitP setVariable [QGVAR(markerPos), _pos];
+            } forEach _markers;
+            _y = _y + (count _markers) * _rowH * 0.9;
+        };
+        _y = _y + _padY;
+    };
+
+    // The box takes whatever the pin row and its list left.
+    _contentH = _h - _footH - _y;
+
     // The plain message. One field, and it is the one the freetext template
     // already defines - the key is read off the template rather than spelled
     // here, so renaming the line cannot break sending.
