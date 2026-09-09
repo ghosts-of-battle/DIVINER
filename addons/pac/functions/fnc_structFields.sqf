@@ -77,25 +77,81 @@ switch (_section) do {
     // config_roles.hpp shape, by the same names - see
     // ghostD_groups_fnc_roleFields). The unlabelled fields ride along
     // untouched when the editor saves.
-    case "roles": {[
-        ["minRank", "t", "MIN RANK", "a rank id, e.g. sergeant; empty = no rank gate"],
-        ["requiredSkills", "a", "REQUIRED SKILLS", "skill ids, comma-separated, e.g. pilot; empty = no skill gate"],
-        ["uids", "a", "LOCKED TO", "Steam ids, comma-separated; non-empty = only these players (and admin grants) may take it"],
-        ["description", "t", "", ""],
-        ["icon", "t", "", ""],
-        ["nets", "a", "", ""],
-        ["tiles", "a", "", ""],
-        ["traits", "a", "", ""],
-        ["customVariables", "a", "", ""],
-        ["defaultLoadout", "a", "", ""],
-        ["groupArsenal", "t", "", ""],
-        ["arsenalWeapons", "a", "", ""],
-        ["arsenalMagazines", "a", "", ""],
-        ["arsenalItems", "a", "", ""],
-        ["arsenalBackpacks", "a", "", ""],
-        ["arsenalWhitelist", "a", "", ""],
-        ["defaultSkills", "a", "", ""],
-        ["slotTag", "t", "", ""]
+    // A ROLE IS EIGHT SCREENS ON ONE SECTION (2026-09-09), the same eight the
+    // website has: identity, gates, nets, tiles, traits, variables, loadout,
+    // arsenal. Every screen returns the WHOLE field list and labels only its
+    // own three - an unlabelled field is not drawn and rides along untouched
+    // when the editor saves, which is how a role's loadout survives somebody
+    // editing its tiles. FUNC(structBase) maps every one of them to "roles".
+    case "roles";
+    case "roles_gates";
+    case "roles_nets";
+    case "roles_tiles";
+    case "roles_traits";
+    case "roles_vars";
+    case "roles_loadout";
+    case "roles_arsenal";
+    case "roles_items": {
+        private _labels = createHashMapFromArray (switch (_section) do {
+            case "roles_gates": {[
+                ["minRank", ["MIN RANK", "a rank id, e.g. sergeant; empty = no rank gate"]],
+                ["requiredSkills", ["REQUIRED SKILLS", "skill ids, comma-separated, e.g. pilot; empty = no skill gate"]],
+                ["uids", ["LOCKED TO", "Steam ids, comma-separated; non-empty = only these players (and admin grants) may take it"]]
+            ]};
+            case "roles_nets": {[
+                ["nets", ["NETS", "TAC//MSG nets he reads, comma-separated - C2, FIRES.cas. A net he is not on is a net he cannot see; there is no 'all nets'"]]
+            ]};
+            case "roles_tiles": {[
+                ["tiles", ["TILES", "TAC//PAD tiles he sees, comma-separated - drones, jam, hack, weather, timer, radio, intel, support, pac. A tile not listed is not drawn and its app cannot be reached"]]
+            ]};
+            case "roles_traits": {[
+                ["traits", ["TRAITS", "engine traits, comma-separated - UAVHacker, audibleCoef. Anything a PAC skill owns (medic, engineer, EOD) is applied by PAC afterwards and ignored here"]]
+            ]};
+            case "roles_vars": {[
+                ["customVariables", ["CUSTOM VARIABLES", "setVariable on the man when he slots in, comma-separated - draWhitelisted, isISR, isJFO"]]
+            ]};
+            case "roles_loadout": {[
+                ["defaultLoadout", ["DEFAULT LOADOUT", "what he spawns in, as the array a config file writes. CAPTURE takes it off you as you stand"]]
+            ]};
+            case "roles_arsenal": {[
+                ["groupArsenal", ["GROUP ARSENAL", "a named arsenal this role also draws from - Arsenal_Banshee. Empty for the common one only"]],
+                ["arsenalWeapons", ["WEAPONS", "classnames only this role may draw, comma-separated. ON TOP of the common arsenal, never instead of it"]],
+                ["arsenalMagazines", ["MAGAZINES", "classnames, comma-separated"]]
+            ]};
+            case "roles_items": {[
+                ["arsenalItems", ["ITEMS", "classnames, comma-separated - ACE_Vector, ACRE_PRC117F"]],
+                ["arsenalBackpacks", ["BACKPACKS", "classnames, comma-separated"]]
+            ]};
+            // "roles" itself is the identity screen; NAME is the box above.
+            default {[
+                ["description", ["DESCRIPTION", "what the job is - read on the slot card"]],
+                ["icon", ["ICON", "a paa path; empty is fine"]],
+                ["slotTag", ["SLOT TAG", "how the HUD labels the slot; empty means the class name"]]
+            ]};
+        });
+        private _all = [
+            ["name", "t"], ["description", "t"], ["icon", "t"], ["slotTag", "t"],
+            ["minRank", "t"], ["requiredSkills", "a"], ["uids", "a"],
+            ["nets", "a"], ["tiles", "a"], ["traits", "a"], ["customVariables", "a"],
+            ["defaultLoadout", "a"], ["groupArsenal", "t"],
+            ["arsenalWeapons", "a"], ["arsenalMagazines", "a"],
+            ["arsenalItems", "a"], ["arsenalBackpacks", "a"],
+            ["arsenalWhitelist", "a"], ["defaultSkills", "a"]
+        ];
+        _all apply {
+            _x params ["_field", "_kind"];
+            private _lab = _labels getOrDefault [_field, ["", ""]];
+            [_field, _kind, _lab # 0, _lab # 1]
+        };
+    };
+    // THE UNIT'S OWN TRAIT NAMES (2026-09-09). setUnitTrait's third argument
+    // says whether a name is a custom one, and a name with that flag wrong is
+    // thrown away without a word. Listing them means a role ticks a name off a
+    // list instead of anybody having to remember which is which.
+    case "traits": {[
+        ["label", "t", "SHOWN AS", "what the role editor calls it - 'DRA whitelisted'"],
+        ["kind", "t", "KIND", "bool for a yes/no, number for a value. Anything else is read as bool"],
+        ["help", "t", "WHAT IT DOES", "one line, read by whoever is deciding whether a role should have it"]
     ]};
     default {[]};
 };

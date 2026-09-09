@@ -710,6 +710,19 @@ class GVAR(panel) {
             onButtonClick = QUOTE([] call FUNC(panelCsv););
         };
 
+        // What this server actually has loaded -> <unit>.classes, for the web
+        // manager's arsenal and motorpool editors.
+        class EXPORT_CLASSES: RscADMPButton {
+            idc = PAC_IDC_EXPORT_CLASSES;
+            text = "EXPORT CLASSES";
+            tooltip = "Write every weapon, magazine, item, backpack and vehicle this server has loaded (scope 2 only) to the '<unit>.classes' document, so the web manager's arsenal and motorpool editors offer real classnames instead of a text box. Press it again after changing the modset.";
+            x = "0.900 * safezoneW + safezoneX";
+            y = "0.822 * safezoneH + safezoneY";
+            w = "0.088 * safezoneW";
+            h = "0.030 * safezoneH";
+            onButtonClick = QUOTE([] call FUNC(panelExportClasses););
+        };
+
         // ---- the admin tools: the editors and the sample data ----------------
         class TOOLS_TITLE: RscADMPStructuredText {
             idc = PAC_IDC_TOOLS_TITLE;

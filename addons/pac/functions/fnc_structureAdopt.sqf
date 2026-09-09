@@ -55,7 +55,7 @@ _out set ["orbat", [GVAR(structure) getOrDefault ["orbat", createHashMap], _orba
 {
     private _v = _s getOrDefault [_x, createHashMap];
     _out set [_x, [GVAR(structure) getOrDefault [_x, createHashMap], _v] select (_v isEqualType createHashMap && {count _v > 0})];
-} forEach ["templates", "schemes", "nets", "radio", "promotion", "trainings"];
+} forEach ["templates", "schemes", "nets", "radio", "promotion", "trainings", "welcome", "motorpool", "motorpoolVariants", "arsenal", "radar", "traits"];
 
 GVAR(structure) = _out;
 
@@ -72,6 +72,20 @@ if (_settings isEqualType createHashMap) then {
 
 [] call FUNC(rolesFromMission);
 GVAR(structureHash) = [] call FUNC(structureHash);
+
+// THE MISSION CONFIGS THE DATABASE CARRIES, NOW THAT IT IS HERE (2026-09-09).
+// EFUNC(init,missionConfigsReady) falls back to <unit>.logistics, .pylons and
+// .skill for anything the mission did not hand over itself - but at preInit,
+// when it is first called, the structure has not arrived and there is nothing
+// to fall back TO, so a mission with no config\ folder got empty databases and
+// no explanation. This is the moment the data exists, so this is where it is
+// asked again. It is idempotent: a mission that DID ship those files built them
+// already and this finds the work done.
+if (!isNil QEFUNC(init,missionConfigsReady)) then {
+    if (call EFUNC(init,missionConfigsReady)) then {
+        INFO("mission configs built from the database - the mission shipped none");
+    };
+};
 
 INFO_4("structure adopted from the service: %1 rank(s), %2 skill(s), %3 role(s), %4 OPORD(s)",count (_out get "ranks"),count (_out get "skills"),count (_out get "roles"),count (_out get "opords"));
 

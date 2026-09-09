@@ -55,6 +55,20 @@
 // OFF BY DEFAULT, and deliberately so: it is a request to a third party, made
 // from your server, and most boots have no use for one. Turning it on tells
 // that service your server's address - which is the whole point of asking.
+// DATABASE REQUIRED. A mission whose config lives in the database has no
+// arsenal, no nets, no roles and no ranks without it. Booting anyway gives a
+// server full of people with no gear and no radios, and an admin working out
+// over twenty minutes that a connection string is wrong. On, the boot stops
+// and says so; off (the default, and right for a mission that still ships a
+// config folder) it carries on with the server's own config.
+[
+    QGVAR(svcRequired), "CHECKBOX",
+    ["Database required", "For a mission that ships no config folder. If the database cannot be read at mission start, TAC//PAC stops and writes a PAC BOOT FAILED block to the .rpt instead of running unconfigured. Leave off for a mission that carries its own config\\ files - it will fall back to those."],
+    ["Ghosts of Battle PAC", "Service"],
+    false,
+    true
+] call CBA_fnc_addSetting;
+
 [
     QGVAR(netCheck), "CHECKBOX",
     ["Log this server's public IP at boot", "Off by default. At mission start the server asks an outside service (api.ipify.org) what address it calls out from, and writes it to the .rpt with a verdict on TLS - the address to put in MongoDB Atlas > Network Access, and whether this machine can make an HTTPS connection at all. One request per mission start, to a third party. Turn it off again once the database connects."],

@@ -25,7 +25,7 @@ private _list = _display displayCtrl PAC_IDC_ST_LIST;
 private _sel = lbCurSel _list;
 if (_sel < 0) exitWith {};
 private _id = _list lbData _sel;
-private _section = GVAR(structSection);
+private _section = [GVAR(structSection)] call FUNC(structBase);
 
 [_id, _section] spawn {
     params ["_id", "_section"];

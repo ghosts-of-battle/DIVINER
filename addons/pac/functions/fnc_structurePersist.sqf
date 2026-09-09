@@ -89,6 +89,10 @@ switch (true) do {
             [_unit + ".orbat", createHashMapFromArray [
                 ["section", "orbat"],
                 ["faction", _items getOrDefault ["faction", ""]],
+                // WEST | EAST | GUER | CIV - which side the unit fights on
+                // (2026-09-09). Written even when empty, so a side cleared in
+                // game is cleared in the database rather than lingering.
+                ["side", _items getOrDefault ["side", ""]],
                 ["groups", _items getOrDefault ["groups", []]],
                 ["platoons", _items getOrDefault ["platoons", []]],
                 ["radioNets", _items getOrDefault ["radioNets", []]]

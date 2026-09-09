@@ -5,6 +5,7 @@ PREP(getRadioChannel);
 PREP(getRank);
 PREP(isCurator);
 PREP(platoonNet);
+PREP(platoonOf);
 PREP(setActiveRadio);
 PREP(setRadioChannel);
 PREP(setRank);

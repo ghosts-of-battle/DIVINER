@@ -41,15 +41,47 @@ private _cached = missionNamespace getVariable [QGVAR(cosmeticCache), []];
 if (_cached isNotEqualTo []) exitWith {_cached};
 
 private _root = missionConfigFile >> "GHOSTFR_Cosmetics";
+private _out = [];
 
-if !(isClass _root) exitWith {
-    // Not an error. A mission that defines no catalogue simply offers no paint
-    // schemes, and both readers handle an empty list.
-    INFO("VehicleCosmetics","No GHOSTFR_Cosmetics class in the mission config - no cosmetic entries.");
-    []
+// ---- the unit's own, from the database ------------------------------------
+// <unit>.cosmetics holds {items: {id: {vehicle, name, icon, code}}}. Read
+// first so a mission's own class can still add to it, and so a mission that
+// ships no config folder has paint schemes at all.
+if (!isNil "ghostD_pac_structure") then {
+    private _db = (ghostD_pac_structure getOrDefault ["cosmetics", createHashMap]) getOrDefault ["items", createHashMap];
+    {
+        private _e = _db get _x;
+        if (_e isEqualType createHashMap) then {
+            private _vehicleClass = _e getOrDefault ["vehicle", ""];
+            private _name = _e getOrDefault ["name", ""];
+            private _codeText = _e getOrDefault ["code", ""];
+            if (_vehicleClass isEqualTo "" || _name isEqualTo "") then {
+                WARNING_1("VehicleCosmetics","Database cosmetic '%1' has no vehicle or no name - skipped",_x);
+            } else {
+                // Compiled defensively: this text came from a website, and a
+                // bad paste must not take the whole catalogue down with it.
+                private _fn = {};
+                try {
+                    _fn = compile _codeText;
+                } catch {
+                    WARNING_1("VehicleCosmetics","Database cosmetic '%1' will not compile - skipped",_x);
+                    _fn = {};
+                };
+                if (_fn isNotEqualTo {}) then {
+                    _out pushBack [_vehicleClass, _name, [_e getOrDefault ["icon", ""], _fn]];
+                };
+            };
+        };
+    } forEach (keys _db);
 };
 
-private _out = [];
+if !(isClass _root) exitWith {
+    // Not an error. A mission that defines no catalogue simply offers what the
+    // database gave us, which may be nothing; both readers handle an empty list.
+    INFO_1("VehicleCosmetics","No GHOSTFR_Cosmetics class in the mission config - %1 entries from the database.",count _out);
+    missionNamespace setVariable [QGVAR(cosmeticCache), _out];
+    _out
+};
 
 {
     private _entry = _x;

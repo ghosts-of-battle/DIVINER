@@ -67,6 +67,84 @@ if (_isRespawn) then {
         } forEach configProperties [_x, "isArray _x", false];
     } forEach _arsenalSources;
 
+    // THE DATABASE ADDS TO THE MISSION'S ARSENAL, it does not replace it - so a
+    // mission that ships config\arsenal keeps working and one that ships none
+    // gets everything from <unit>.arsenal. The common lists first, then the
+    // variant the role's groupArsenal names.
+    if (!isNil "ghostD_pac_fnc_cfgLists") then {
+        private _fromDb = ["arsenal"] call ghostD_pac_fnc_cfgLists;
+        private _variants = ((missionNamespace getVariable ["ghostD_pac_structure", createHashMap])
+            getOrDefault ["arsenal", createHashMap]) getOrDefault ["variants", createHashMap];
+        // FOUR LAYERS, NARROWEST LAST: common, the platoon's, the squad's,
+        // then the role's own variant. The platoon and squad documents are
+        // found by DERIVING their name from the ids - plt_<platoon> and
+        // sqd_<squad>, upper case with anything else an underscore - so
+        // adding one is creating a document and nothing else. The web manager
+        // computes the same name with the same rule.
+        private _fnc_slug = {
+            params ["_s"];
+            // Built as an array and joined once: concatenating in the loop
+            // reallocates the string on every character.
+            private _chars = [];
+            {
+                // 0-9, A-Z survive; everything else becomes an underscore.
+                private _ok = (_x >= 48 && _x <= 57) || (_x >= 65 && _x <= 90);
+                _chars pushBack ([95, _x] select _ok);
+            } forEach (toArray toUpper _s);
+            private _out = toString _chars;
+            // No leading or trailing underscores - "1-1 SQD " must not become
+            // a name that differs from the one the website wrote.
+            while {_out select [0, 1] isEqualTo "_"} do {_out = _out select [1]};
+            while {count _out > 0 && {_out select [count _out - 1, 1] isEqualTo "_"}} do {
+                _out = _out select [0, count _out - 1];
+            };
+            _out
+        };
+
+        private _pick = [_fromDb];
+
+        // The squad is the player's group name; the platoon is whichever one
+        // lists that squad. Both may be absent - a man outside the ORBAT just
+        // gets the common arsenal.
+        private _squad = toUpper groupId (group player);
+        if (_squad isNotEqualTo "") then {
+            private _sv = _variants getOrDefault ["sqd_" + ([_squad] call _fnc_slug), createHashMap];
+
+            private _pltId = "";
+            {
+                _x params ["_pid", "", "", "", ["_squads", []]];
+                if (_squads findIf {toUpper _x isEqualTo _squad} > -1) exitWith {_pltId = _pid};
+            } forEach ((missionNamespace getVariable ["ghostD_pac_structure", createHashMap])
+                getOrDefault ["orbat", createHashMap] getOrDefault ["platoons", []]);
+
+            if (_pltId isNotEqualTo "") then {
+                private _pv = _variants getOrDefault ["plt_" + ([_pltId] call _fnc_slug), createHashMap];
+                if (count _pv > 0) then {_pick pushBack _pv};
+            };
+            if (count _sv > 0) then {_pick pushBack _sv};
+        };
+
+        if (_groupArsenal isNotEqualTo "" && {_variants isEqualType createHashMap}) then {
+            private _v = _variants getOrDefault [_groupArsenal, createHashMap];
+            if (count _v > 0) then {_pick pushBack _v};
+        };
+        {
+            private _lists = _x;
+            {
+                private _name = toLower _x;
+                private _vals = _lists get _x;
+                if (_vals isEqualType []) then {
+                    switch (true) do {
+                        case (_name isEqualTo "weapons"): {_weapons append _vals};
+                        case (_name isEqualTo "magazines"): {_magazines append _vals};
+                        case (_name isEqualTo "backpacks"): {_backpacks append _vals};
+                        case (_name select [0,5] isEqualTo "items"): {_items append _vals};
+                    };
+                };
+            } forEach (keys _lists);
+        } forEach _pick;
+    };
+
     [player,true,false] call ace_arsenal_fnc_removeVirtualItems;
     {
         [player,_x,false] call ace_arsenal_fnc_addVirtualItems;

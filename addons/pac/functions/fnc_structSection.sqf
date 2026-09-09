@@ -29,6 +29,9 @@ private _combo = _display displayCtrl PAC_IDC_ST_SECTION;
 private _sel = lbCurSel _combo;
 if (_sel >= 0) then {GVAR(structSection) = _combo lbData _sel};
 private _section = GVAR(structSection);
+// The screen and the section it edits are two different things: a role has
+// eight screens and they all read and write "roles". See FUNC(structBase).
+private _base = [_section] call FUNC(structBase);
 
 // [label, field, hint] x3 per section, from the one table - the labelled
 // entries, padded to the three rows the screen has.
@@ -45,22 +48,48 @@ GVAR(structFields) = _fields;
     _edit ctrlSetTooltip _hint;
 } forEach [[PAC_IDC_ST_F1_LABEL, PAC_IDC_ST_F1, 0], [PAC_IDC_ST_F2_LABEL, PAC_IDC_ST_F2, 1], [PAC_IDC_ST_F3_LABEL, PAC_IDC_ST_F3, 2]];
 
-(_display displayCtrl PAC_IDC_ST_ID_LABEL) ctrlSetStructuredText parseText (switch (_section) do {
+(_display displayCtrl PAC_IDC_ST_ID_LABEL) ctrlSetStructuredText parseText (switch (_base) do {
     case "admins": {"<t size='0.85'>STEAM ID</t>"};
     case "nets": {"<t size='0.85'>NET</t>"};
     case "roles": {"<t size='0.85'>CLASS</t>"};
+    case "traits": {"<t size='0.85'>TRAIT</t>"};
     case "promotion": {"<t size='0.85'>KEY</t>"};
     case "trainings": {"<t size='0.85'>COURSE</t>"};
     default {"<t size='0.85'>ID</t>"};
 });
-(_display displayCtrl PAC_IDC_ST_ME) ctrlShow (_section isEqualTo "admins");
+
+// THE NAME BOX BELONGS TO THE SCREEN THAT NAMES THE THING. A role's identity
+// screen names it; its tiles screen does not, and showing an empty box there
+// invites somebody to type in it and wipe the name. FUNC(structSave) only
+// sends the box when it is shown.
+private _namesIt = !(_section in ["roles_gates", "roles_nets", "roles_tiles",
+    "roles_traits", "roles_vars", "roles_loadout", "roles_arsenal", "roles_items"]);
+{(_display displayCtrl _x) ctrlShow _namesIt} forEach [PAC_IDC_ST_NAME, PAC_IDC_ST_NAME_LABEL];
+
+// The spare button is ADD ME on the admin list and CAPTURE on a role's
+// loadout - two things a screen can do that nothing else can.
+private _spare = _display displayCtrl PAC_IDC_ST_ME;
+_spare ctrlShow (_section in ["admins", "roles_loadout"]);
+_spare ctrlSetText (["ADD ME", "CAPTURE"] select (_section isEqualTo "roles_loadout"));
+_spare ctrlSetTooltip (["Admins: put your own Steam id and name in the fields",
+    "Take the loadout off yourself as you stand and put it in the box. Nothing is written until SAVE"]
+    select (_section isEqualTo "roles_loadout"));
 
 private _hint = switch (_section) do {
     case "ranks": {"A rank maps to one of Arma's seven through ARMA RANK - that is what setRank, the scoreboard and Role_Access read. Any number of unit ranks may map to one. The ID is what every player record holds: renaming one in use orphans the players who hold it."};
     case "skills": {"A skill is a name for a set of effects, applied to the player and cleared when the skill is taken away. Effects: medic:N (ACE class 0/1/2), engineer:N, eod:N, trait:NAME (unit variable true, broadcast), var:NAME=VALUE."};
     case "awards": {"Awards are given from the roster page and stamped with the date and who gave them. TYPE, IMAGE and CAMPAIGN are for display and are free text."};
     case "statuses": {"A status is a label on the roster - Active, Leave, Reserve - and what it means is the unit's business. Sample data uses index 1 for 'on leave' and 2 for 'reserve'."};
-    case "roles": {"THE WHOLE ROLE LIVES HERE - name, description, icon, nets, tiles, traits, variables, default loadout and arsenal arrays (config_roles.hpp's shape) plus its gates - and the group menu reads it from here. The id is the class name and keeps its spelling. The three fields shown are the gates: MIN RANK (a rank id - the player's rank must map to the same or a higher Arma rank), REQUIRED SKILLS (skill ids the player must hold), LOCKED TO (Steam ids; only these players). Everything else rides along untouched; edit it on the database site. REMOVE puts a role the mission still declares back to the mission's own."};
+    case "roles_gates": {"WHO MAY TAKE THE SLOT. All three are optional and empty means no gate. MIN RANK is a rank id and the player's rank must map to the same or a higher Arma rank. REQUIRED SKILLS are skill ids he must hold. LOCKED TO is Steam ids: anything here makes the slot theirs alone, an admin grant aside."};
+    case "roles_nets": {"THE NETS HE READS in TAC//MSG, comma-separated. A net he is not on is a net he cannot see - there is no 'all nets', and that IS the privacy rule. Sub-nets are the dotted ones and are separate: listing C2 does not give him C2.reports. The names come from the NETS section."};
+    case "roles_tiles": {"THE TAC//PAD TILES HE SEES, comma-separated: drones, jam, hack, weather, timer, radio, intel, support, pac. A tile not listed is not drawn at all and the app behind it cannot be reached - clicking a tile is the only way in. If NO role in the unit lists any, the gate is off entirely and everybody sees every tile."};
+    case "roles_traits": {"ENGINE TRAITS - setUnitTrait - comma-separated. The engine's own are audibleCoef, camouflageCoef, loadCoef, medic, engineer, explosiveSpecialist and UAVHacker; anything else is one of the unit's own, listed under CUSTOM TRAITS. Whatever a PAC skill owns is applied by PAC after the role and is skipped here, so set those as skills."};
+    case "roles_vars": {"CUSTOM VARIABLES - setVariable on the man when he slots in, comma-separated: draWhitelisted, isISR, isJFO. Not the same thing as a trait, and not the same thing as a skill."};
+    case "roles_loadout": {"WHAT HE SPAWNS IN, as the array a config file writes. CAPTURE takes the loadout off you exactly as you stand - go to an arsenal, dress the man, come back and press it - which is how you actually build one. Nothing is written until SAVE."};
+    case "roles_arsenal": {"WHAT HE MAY DRAW, on top of the common arsenal and his platoon's and his squad's. They ADD UP; nothing here takes anything away. GROUP ARSENAL names a shared list this role also draws from. The two boxes are this role's own, for the kit the job needs and nobody else gets."};
+    case "roles_items": {"The other two arsenal lists - items and backpacks - on their own screen because three boxes is all there is. Same rule: on top of everything else, never instead of it."};
+    case "traits": {"THE UNIT'S OWN TRAIT NAMES, as opposed to the seven the engine already has. A role assigns them by name and the custom flag setUnitTrait needs is set from this list - which is the argument that silently throws a trait away when it is wrong. KIND is bool for a yes/no or number for a value."};
+    case "roles": {"THE WHOLE ROLE LIVES HERE - name, description, icon, nets, tiles, traits, variables, default loadout and arsenal arrays (config_roles.hpp's shape) plus its gates - and the group menu reads it from here. The id is the class name and keeps its spelling. This screen is its IDENTITY; the seven ROLE screens below it in the section list are the rest, one subject each - the same eight the website has. Everything a screen does not show rides along untouched, so editing a role's tiles cannot lose its loadout. REMOVE puts a role the mission still declares back to the mission's own."};
     case "nets": {"The named nets TAC//MSG opens a mailbox for and the rail draws - C2, FIRES.cas, the four platoon nets - by the name the radio plan and the roles' nets[] use. NAME is the description, ORDER the place on the rail. The squad nets are not listed: they exist because the squads do."};
     case "admins": {"Who may open the admin console and the TAC//PAC pages, in addition to the mission's own admin list and Ghost's admin flag. Keyed by Steam id. You cannot remove yourself. With 'Everyone is an admin (testing)' on, this list is not consulted."};
     case "trainings": {"THE TRAINING CATALOGUE - every course the unit runs, one entry each. The player page's TRAINING dropdown lists these; ADD there logs the course on the man's record with the day. The COURSE id is what the record keeps, so renaming a course renames it on every record; removing one leaves the entries, shown by id. CATEGORY groups the list, DESCRIPTION is the tooltip. The promotion formula counts entries, whatever the course."};
@@ -71,7 +100,7 @@ private _hint = switch (_section) do {
 
 // ---- the list ----------------------------------------------------------------
 private _list = _display displayCtrl PAC_IDC_ST_LIST;
-private _items = GVAR(structure) getOrDefault [_section, createHashMap];
+private _items = GVAR(structure) getOrDefault [_base, createHashMap];
 private _rows = [];
 {
     _rows pushBack [format ["%1  (%2)", _y getOrDefault ["name", _x], _x], _x];
@@ -88,4 +117,4 @@ private _keep = -1;
 } forEach _rows;
 if (_keep >= 0) then {_list lbSetCurSel _keep};
 
-(_display displayCtrl PAC_IDC_ST_COUNT) ctrlSetStructuredText parseText format ["<t size='0.8'>%1 in %2</t>", count _rows, _section];
+(_display displayCtrl PAC_IDC_ST_COUNT) ctrlSetStructuredText parseText format ["<t size='0.8'>%1 in %2</t>", count _rows, _base];

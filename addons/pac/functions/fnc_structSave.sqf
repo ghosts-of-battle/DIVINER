@@ -24,10 +24,17 @@ if (isNull _display) exitWith {};
 // a role id is a class name and a net id is its name on the radio: both keep
 // their case; every other id is lower case
 private _id = trim ctrlText (_display displayCtrl PAC_IDC_ST_ID);
-if !(GVAR(structSection) in ["roles", "nets"]) then {_id = toLower _id};
+private _base = [GVAR(structSection)] call FUNC(structBase);
+if !(_base in ["roles", "nets"]) then {_id = toLower _id};
 if (_id isEqualTo "") exitWith {["TAC//PAC", "An id is needed.", [0.831, 0.267, 0.267, 1]] call EFUNC(notify,notify)};
 
-private _rec = createHashMapFromArray [["name", trim ctrlText (_display displayCtrl PAC_IDC_ST_NAME)]];
+// THE NAME BOX BELONGS TO THE SCREEN THAT SHOWS IT. On a role's nets or
+// loadout screen the box is hidden and empty, and sending it would blank the
+// role's name every time somebody saved its tiles.
+private _rec = createHashMap;
+if (ctrlShown (_display displayCtrl PAC_IDC_ST_NAME)) then {
+    _rec set ["name", trim ctrlText (_display displayCtrl PAC_IDC_ST_NAME)];
+};
 {
     _x params ["_editIdc", "_i"];
     ((GVAR(structFields) # _i) params ["", "_field"]);
@@ -35,4 +42,4 @@ private _rec = createHashMapFromArray [["name", trim ctrlText (_display displayC
 } forEach [[PAC_IDC_ST_F1, 0], [PAC_IDC_ST_F2, 1], [PAC_IDC_ST_F3, 2]];
 
 GVAR(structId) = _id;
-[player, GVAR(structSection), "set", _id, _rec] remoteExec [QFUNC(adminStructure), 2];
+[player, _base, "set", _id, _rec] remoteExec [QFUNC(adminStructure), 2];

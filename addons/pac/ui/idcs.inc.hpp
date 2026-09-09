@@ -85,6 +85,10 @@
 #define PAC_IDC_L_ADD_NAME      87
 #define PAC_IDC_L_ADD           88
 
+// EXPORT CLASSES (2026-09-09) - writes what this server has loaded to
+// <unit>.classes, so the web manager's editors can offer real classnames.
+#define PAC_IDC_EXPORT_CLASSES  89
+
 // The boot screen (ui/bootscreen.hpp) - RscTitles, its own idc space
 #define PAC_IDC_BS_LOGO         200
 #define PAC_IDC_BS_TITLE        201

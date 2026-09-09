@@ -10,7 +10,12 @@ Description:
         <unit>.settings          { section: "settings",  items: {...} }
         <unit>.ranks             { section: "ranks",     items: {id: rank} }
         <unit>.skills / .awards / .statuses / .admins / .nets / .templates /
-        <unit>.schemes           - the same shape
+        <unit>.schemes / .traits - the same shape. "traits" is the unit's own
+                                 trait catalogue (2026-09-09): the names that
+                                 are NOT the engine's seven, so a role editor
+                                 can offer them as a list instead of asking
+                                 somebody to type one and get the custom flag
+                                 right.
         <unit>.radio             { section: "radio",     items: {key: value} }
                                  - config_radio.hpp's globals by name
         <unit>.orbat             { section: "orbat", faction, groups,
@@ -75,22 +80,152 @@ private _errors = 0;
         };
         default {_errors = _errors + 1};
     };
-} forEach ["admins", "settings", "ranks", "skills", "awards", "statuses", "nets", "radio", "templates", "schemes", "promotion", "trainings"];
+} forEach ["admins", "settings", "ranks", "skills", "awards", "statuses", "nets", "radio", "templates", "schemes", "promotion", "trainings", "motorpool", "traits"];
 
-// the ORBAT document
-([_unit + ".orbat"] call FUNC(svcLoad)) params ["_odoc", "_ostatus"];
+// the ORBAT document. A unit may keep more than one - <unit>.orbat.<id> -
+// and the "currentOrbat" setting names which this mission wants; empty means
+// the common one. Same arrangement as currentOpord picking an order.
+private _orbatKey = _unit + ".orbat";
+private _wantOrbat = _settings getOrDefault ["currentOrbat", ""];
+if (_wantOrbat isEqualType "" && _wantOrbat isNotEqualTo "") then {
+    _orbatKey = _unit + ".orbat." + _wantOrbat;
+};
+([_orbatKey] call FUNC(svcLoad)) params ["_odoc", "_ostatus"];
+// A named ORBAT that is not there falls back to the common one rather than
+// leaving the mission with no order of battle at all.
+if (_ostatus isNotEqualTo "ok" && _orbatKey isNotEqualTo (_unit + ".orbat")) then {
+    ([_unit + ".orbat"] call FUNC(svcLoad)) params ["_odoc", "_ostatus"];
+};
 if (_ostatus isEqualTo "error") exitWith {[createHashMap, "error"]};
 if (_ostatus isEqualTo "ok") then {
     private _g = _odoc getOrDefault ["groups", []];
     private _p = _odoc getOrDefault ["platoons", []];
     private _r = _odoc getOrDefault ["radioNets", []];
     private _f = _odoc getOrDefault ["faction", ""];
+    private _s = _odoc getOrDefault ["side", ""];
     if (_g isEqualType [] && _p isEqualType []) then {
         if !(_r isEqualType []) then {_r = []};
         if !(_f isEqualType "") then {_f = ""};
-        _structure set ["orbat", createHashMapFromArray [["groups", _g], ["platoons", _p], ["radioNets", _r], ["faction", _f]]];
+        // The side the unit fights on (2026-09-09). Absent means unsaid, and
+        // ghostD_groups_fnc_orbat answers WEST for that - what every caller
+        // assumed before the field existed.
+        if !(_s isEqualType "") then {_s = ""};
+        _structure set ["orbat", createHashMapFromArray [["groups", _g], ["platoons", _p], ["radioNets", _r], ["faction", _f], ["side", _s]]];
         _found = _found + 1;
     };
+};
+
+// the WELCOME document - {title, subtitle, lines[]}, not {section, items},
+// so it is fetched on its own like the ORBAT. Absent is not an error: a unit
+// that has not written one keeps whatever the mission's config says.
+([_unit + ".welcome"] call FUNC(svcLoad)) params ["_wdoc", "_wstatus"];
+if (_wstatus isEqualTo "error") exitWith {[createHashMap, "error"]};
+if (_wstatus isEqualTo "ok") then {
+    private _lines = _wdoc getOrDefault ["lines", []];
+    if (_lines isEqualType [] && {count _lines > 0}) then {
+        _structure set ["welcome", createHashMapFromArray [
+            ["title", [_wdoc getOrDefault ["title", ""], ""] select !((_wdoc getOrDefault ["title", ""]) isEqualType "")],
+            ["subtitle", [_wdoc getOrDefault ["subtitle", ""], ""] select !((_wdoc getOrDefault ["subtitle", ""]) isEqualType "")],
+            ["lines", _lines]
+        ]];
+        _found = _found + 1;
+    };
+};
+
+// ---- the list-shaped config documents, and their variants ----------------
+// <unit>.arsenal is the common one; <unit>.arsenal.<name> is a variant, found
+// by listing the prefix exactly as roles and orders are. A role's
+// groupArsenal property names the variant it wants, so the variant id IS the
+// class name the mission used - "Arsenal_Banshee" stays "Arsenal_Banshee".
+{
+    private _doc = _x;
+    private _rec = createHashMap;
+
+    ([_unit + "." + _doc] call FUNC(svcLoad)) params ["_ldoc", "_lstatus"];
+    if (_lstatus isEqualTo "error") exitWith {};
+    if (_lstatus isEqualTo "ok") then {
+        private _l = _ldoc getOrDefault ["lists", createHashMap];
+        if (_l isEqualType createHashMap) then {_rec set ["lists", _l]};
+    };
+
+    private _variants = createHashMap;
+    ([_unit + "." + _doc + ".", "list"] call FUNC(svcLoad)) params ["_vkeys", "_vstatus"];
+    if (_vstatus isNotEqualTo "error" && {_vkeys isEqualType []}) then {
+        {
+            ([_x] call FUNC(svcLoad)) params ["_vdoc", "_vst"];
+            if (_vst isEqualTo "ok") then {
+                private _vl = _vdoc getOrDefault ["lists", createHashMap];
+                private _vid = _vdoc getOrDefault ["id", ""];
+                if (_vid isEqualTo "") then {
+                    _vid = _x select [count (_unit + "." + _doc + "."), 99];
+                };
+                if (_vl isEqualType createHashMap && _vid isNotEqualTo "") then {
+                    _variants set [_vid, _vl];
+                };
+            };
+        } forEach _vkeys;
+    };
+    if (count _variants > 0) then {_rec set ["variants", _variants]};
+
+    // WHICH VERSION IS THE COMMON ONE (2026-09-09). The unit keeps more than
+    // one common arsenal - a bare-bones "Framework" and a set named for the
+    // camo an operation is in, Ghost_OCP, Ghost_MTP, Ghost_Tropical ... - and
+    // until now nothing could pick between them: the variants were only ever
+    // reached by a role's groupArsenal, so the camo sets were documents nobody
+    // read. The "currentArsenal" setting names one, exactly as "currentOrbat"
+    // names an ORBAT and "currentOpord" an order.
+    //
+    // IT REPLACES THE COMMON LISTS, it does not add to them - the point of a
+    // camo set is that a man cannot draw the other four. Unset, or naming a
+    // version that is not there, leaves the common document alone, which is
+    // what every mission did before this existed.
+    if (_doc isEqualTo "arsenal") then {
+        private _want = _settings getOrDefault ["currentArsenal", ""];
+        if (_want isEqualType "" && _want isNotEqualTo "") then {
+            private _hit = "";
+            {
+                if (toLower _x isEqualTo toLower _want) exitWith {_hit = _x};
+            } forEach (keys _variants);
+            if (_hit isEqualTo "") then {
+                WARNING_1("currentArsenal names '%1' and there is no such arsenal version - the common one is used",_want);
+            } else {
+                _rec set ["lists", _variants get _hit];
+                INFO_1("common arsenal: the '%1' version",_hit);
+            };
+        };
+    };
+
+    if (count _rec > 0) then {
+        _structure set [_doc, _rec];
+        _found = _found + 1;
+    };
+} forEach ["arsenal", "radar"];
+
+// ---- the motorpool's variants (2026-09-09) -------------------------------
+// The motorpool is items-shaped, so the loop above - which reads "lists"
+// documents - never saw its variants and a platoon's own pool was fetched by
+// nobody. <unit>.motorpool.<name> is one pool, and the variant id IS the class
+// name the mission used ("MotorPool_Nomad"), the same rule as the arsenal.
+private _mpVariants = createHashMap;
+([_unit + ".motorpool.", "list"] call FUNC(svcLoad)) params ["_mpKeys", "_mpStatus"];
+if (_mpStatus isNotEqualTo "error" && _mpKeys isEqualType []) then {
+    {
+        ([_x] call FUNC(svcLoad)) params ["_vdoc", "_vst"];
+        if (_vst isEqualTo "ok") then {
+            private _vitems = _vdoc getOrDefault ["items", createHashMap];
+            private _vid = _vdoc getOrDefault ["id", ""];
+            if (_vid isEqualTo "") then {
+                _vid = _x select [count (_unit + ".motorpool."), 99];
+            };
+            if (_vitems isEqualType createHashMap && _vid isNotEqualTo "") then {
+                _mpVariants set [_vid, _vitems];
+            };
+        };
+    } forEach _mpKeys;
+};
+if (count _mpVariants > 0) then {
+    _structure set ["motorpoolVariants", _mpVariants];
+    _found = _found + 1;
 };
 
 if (_errors > 0) exitWith {[createHashMap, "error"]};

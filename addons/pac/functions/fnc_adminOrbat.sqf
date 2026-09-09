@@ -19,11 +19,21 @@ Description:
                   THE SR RADIO CHANNEL ORDER, so position is a real edit.
         platoon   key = the tab id; record {name, callsign, net, squads}
         radioNet  key = the net id; record {net, squads}
-        faction   record {name}
+        faction   record {name, side} - side is WEST | EAST | GUER | CIV
+
+    And the two that write the RADIO section rather than the ORBAT, because
+    that is where the mod reads a channel from:
+
+        squadRadio    key = the squad's name; record {acre, tfarSw, tfarLr}.
+                      An empty value drops the squad's row, which puts it back
+                      on the plan's fallback.
+        platoonRadio  key = the platoon id; record {lr} - its long range
+                      channel, empty for the plan default.
 
 Parameters:
     0: Caller <OBJECT>
     1: Kind <STRING> - "squad" | "platoon" | "radioNet" | "faction"
+                     | "squadRadio" | "platoonRadio"
     2: Op <STRING> - "set" | "remove"
     3: Key <STRING>
     4: Record <HASHMAP> (set only)
@@ -76,7 +86,19 @@ switch (_kind) do {
     case "faction": {
         private _name = ["name"] call _fnc_text;
         _orbat set ["faction", _name];
-        _detail = format ["faction '%1'", _name];
+        // AND THE SIDE (2026-09-09). A side the engine does not have is a side
+        // nothing can be created on and the failure is silent at mission
+        // start, so an unrecognised one is simply not written.
+        private _side = toUpper (["side"] call _fnc_text);
+        if (_side in ["WEST", "EAST", "GUER", "CIV"]) then {
+            _orbat set ["side", _side];
+        } else {
+            if (_side isNotEqualTo "") then {
+                [format ["'%1' is not a side. WEST, EAST, GUER or CIV.", _side], true] call _fnc_tell;
+                _ok = false;
+            };
+        };
+        _detail = format ["faction '%1', side '%2'", _name, _orbat getOrDefault ["side", ""]];
     };
     case "squad": {
         private _at = _groups findIf {toUpper (_x # 0) isEqualTo toUpper _key};
@@ -138,8 +160,66 @@ switch (_kind) do {
     default {
         _ok = false;
     };
+    // ---- the channels, which live in the RADIO section, not the ORBAT ----
+    // A squad without a radio is half a squad, so they are edited beside it -
+    // but the mod reads them from <unit>.radio (srSquadChannel for ACRE,
+    // tfarNets for TFAR, lrPlatoonChannel for a platoon's long range), so that
+    // is where they are written. The website writes exactly the same rows.
+    case "squadRadio";
+    case "platoonRadio": {
+        private _radio = +(GVAR(structure) getOrDefault ["radio", createHashMap]);
+        if !(_radio isEqualType createHashMap) then {_radio = createHashMap};
+
+        // Set one row of a keyed table, or drop it when nothing is given.
+        private _fnc_row = {
+            params ["_table", "_key", "_values"];
+            private _rows = _radio getOrDefault [_table, []];
+            if !(_rows isEqualType []) then {_rows = []};
+            _rows = _rows select {
+                _x isEqualType [] && {toUpper (_x param [0, ""]) isNotEqualTo toUpper _key}
+            };
+            if (count _values > 0) then {_rows pushBack ([_key] + _values)};
+            _radio set [_table, _rows];
+        };
+
+        if (_kind isEqualTo "squadRadio") then {
+            if (_key isEqualTo "") exitWith {["Pick a squad first.", true] call _fnc_tell; _ok = false};
+            private _acre = ["acre"] call _fnc_text;
+            ["srSquadChannel", _key, [[], [parseNumber _acre]] select (_acre isNotEqualTo "")] call _fnc_row;
+
+            private _sw = ["tfarSw"] call _fnc_text;
+            private _lr = ["tfarLr"] call _fnc_text;
+            private _tf = [];
+            if (_sw isNotEqualTo "" || _lr isNotEqualTo "") then {
+                _tf = [parseNumber _sw, parseNumber _lr];
+            };
+            ["tfarNets", _key, _tf] call _fnc_row;
+            _detail = format ["%1 channels: ACRE %2, TFAR %3/%4", _key, _acre, _sw, _lr];
+        } else {
+            if (_key isEqualTo "") exitWith {["Pick a platoon first.", true] call _fnc_tell; _ok = false};
+            private _lrCh = ["lr"] call _fnc_text;
+            ["lrPlatoonChannel", _key, [[], [parseNumber _lrCh]] select (_lrCh isNotEqualTo "")] call _fnc_row;
+            _detail = format ["%1 long range channel %2", _key, [_lrCh, "(the plan default)"] select (_lrCh isEqualTo "")];
+        };
+
+        if (!_ok) exitWith {};
+
+        GVAR(structure) set ["radio", _radio];
+        // The globals the gear and player code read are written from the
+        // section, so a channel changed in game takes effect without a
+        // restart - the same call the boot makes.
+        if (!isNil QFUNC(radioApply)) then {[] call FUNC(radioApply)};
+        ["radio"] call FUNC(structurePersist);
+        [getPlayerUID _caller, name _caller, "orbat", _key, _detail] call FUNC(logAction);
+        INFO_2("%1 edited the radio plan: %2",name _caller,_detail);
+        [format ["Radio: %1.", _detail], false] call _fnc_tell;
+    };
 };
 if (!_ok) exitWith {false};
+
+// A channel edit is done - it wrote the radio section and persisted it, and
+// has no business rewriting the ORBAT on the way out.
+if (_kind in ["squadRadio", "platoonRadio"]) exitWith {true};
 
 _orbat set ["groups", _groups];
 _orbat set ["platoons", _platoons];

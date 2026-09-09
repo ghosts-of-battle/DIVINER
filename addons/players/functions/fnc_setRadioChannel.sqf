@@ -53,10 +53,27 @@ if (EGVAR(patches,usesTFAR)) exitWith {
     private _squad = toUpper ([_player] call EFUNC(players,unit_getSquadName));
     private _swIdx = ghostFR_radio_tfarSwFallback;
     private _lrIdx = ghostFR_radio_tfarLrFallback;
+    private _hadRow = false;
     {
         _x params ["_name","_sw","_lr"];
-        if (toUpper _name isEqualTo _squad) exitWith { _swIdx = _sw; _lrIdx = _lr; };
+        if (toUpper _name isEqualTo _squad) exitWith { _swIdx = _sw; _lrIdx = _lr; _hadRow = true; };
     } forEach ghostFR_radio_tfarNets;
+
+    // HIS PLATOON'S LONG RANGE, when the squad has no row of its own
+    // (2026-09-09). Same table as ACRE - lrPlatoonChannel, keyed by platoon id -
+    // so the two radio systems are told the same thing once. A squad that names
+    // its own LR keeps it; nothing changes for a plan that sets them per squad.
+    if (!_hadRow) then {
+        private _plt = [_squad] call FUNC(platoonOf);
+        if (_plt isNotEqualTo "") then {
+            {
+                if (!(_x isEqualType [])) then {continue};
+                if (toUpper (_x param [0, ""]) isEqualTo toUpper _plt) exitWith {
+                    _lrIdx = _x param [1, _lrIdx];
+                };
+            } forEach (missionNamespace getVariable ["ghostFR_radio_lrPlatoonChannel", []]);
+        };
+    };
 
     // SW handheld
     private _sw = call TFAR_fnc_activeSwRadio;

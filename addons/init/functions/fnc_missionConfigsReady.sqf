@@ -31,6 +31,29 @@
 // and the second caller must not rebuild what the first already built.
 if (GVAR(configsBuilt)) exitWith {false};
 
+// THE DATABASE FILLS WHAT THE MISSION DID NOT. A mission that ships
+// config_logistics.sqf sets the global itself and this leaves it alone; one
+// that ships no config folder gets it from <unit>.logistics instead. Only ever
+// a fallback, so nothing a mission supplies is overridden from a website.
+if (!isNil "ghostD_pac_fnc_cfgCode") then {
+    {
+        _x params ["_doc", "_global", "_wrap", "_callIt"];
+        if ((missionNamespace getVariable [_global, []]) isEqualTo []) then {
+            private _code = [_doc, _wrap] call ghostD_pac_fnc_cfgCode;
+            if (_code isNotEqualTo {}) then {
+                // logistics and pylons are tables the file RETURNS, so the
+                // compiled code is called; the skill block is handed over as
+                // code and called later, once per AI unit.
+                missionNamespace setVariable [_global, [_code, call _code] select _callIt];
+            };
+        };
+    } forEach [
+        ["logistics", "ghostFR_missionConfig_logistics", "", true],
+        ["pylons",    "ghostFR_missionConfig_pylons",    "", true],
+        ["skill",     "ghostFR_missionConfig_skillBlock", "private _unit = _this; ", false]
+    ];
+};
+
 private _haveLogistics = (missionNamespace getVariable ["ghostFR_missionConfig_logistics", []]) isNotEqualTo [];
 private _havePylons = (missionNamespace getVariable ["ghostFR_missionConfig_pylons", []]) isNotEqualTo [];
 

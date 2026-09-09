@@ -81,5 +81,27 @@ switch (_radioType) do {
 
         if (_planIndex > -1) then {(ghostFR_radio_mrChannels select _planIndex) select 0} else {ghostFR_radio_mrDefault};
     };
-    default {ghostFR_radio_lrDefault}; //LR (and anything unknown) sits on DET
+    default {
+        //LR: HIS PLATOON'S CHANNEL FIRST (2026-09-09). The long-range plan used
+        //to be one channel for everybody, so two platoons could not talk among
+        //themselves without the whole task force listening. The table is keyed
+        //by PLATOON ID, not by net - two platoons can share a messaging net and
+        //still want different LR channels - see FUNC(platoonOf).
+        //
+        //Nothing in the table, no platoon, or no ORBAT at all: lrDefault, which
+        //is exactly what this did before, so a plan that does not use it is
+        //unchanged.
+        private _channel = ghostFR_radio_lrDefault;
+        private _plt = [_group] call FUNC(platoonOf);
+        if (_plt isNotEqualTo "") then {
+            private _table = missionNamespace getVariable ["ghostFR_radio_lrPlatoonChannel", []];
+            {
+                if (!(_x isEqualType [])) then {continue};
+                if (toUpper (_x param [0, ""]) isEqualTo toUpper _plt) exitWith {
+                    _channel = _x param [1, _channel];
+                };
+            } forEach _table;
+        };
+        _channel
+    };
 };

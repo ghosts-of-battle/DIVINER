@@ -52,7 +52,16 @@ private _fields = switch (_section) do {
         ["SQUADS", "squads", "the squads on it, comma-separated, by name"]
     ]};
     case "faction": {[
-        ["NAME", "name", "the name over the role screen"]
+        ["FACTION", "name", "the name over the role screen - '<FACTION>  ROLE SELECTION'"],
+        ["SIDE", "side", "WEST, EAST, GUER or CIV - which side of the war this unit's groups are created on"]
+    ]};
+    case "squadradio": {[
+        ["ACRE CHANNEL", "acre", "the short-range channel number on the 148/152. Empty puts the squad back on the plan's fallback"],
+        ["TFAR SHORT", "tfarSw", "the TFAR short-range slot, 1 to 8. Empty for the fallback"],
+        ["TFAR LONG", "tfarLr", "the TFAR long-range slot. Empty falls back to the platoon's, then the plan's"]
+    ]};
+    case "platoonradio": {[
+        ["LONG RANGE CHANNEL", "lr", "the channel every man in this platoon is put on - their 117F, and any vehicle set they climb into. Empty leaves them on the plan's default"]
     ]};
     case "operators": {[
         ["MILSIM NAME", "milsimName", "the name the unit calls them - Cpl J. Miller"],
@@ -82,7 +91,9 @@ GVAR(mgFields) = _fields;
 // the id row: what the item is keyed by
 private _idLabel = switch (_section) do {
     case "squads": {"SQUAD"};
+    case "squadradio": {"SQUAD"};
     case "platoons": {"TAB ID"};
+    case "platoonradio": {"PLATOON"};
     case "radionets": {"NET ID"};
     case "operators": {"STEAM ID"};
     default {""};
@@ -99,6 +110,8 @@ _idEdit ctrlSetTooltip (switch (_section) do {
 });
 
 // the buttons
+// A CHANNEL IS NOT A THING YOU CREATE OR DELETE - it belongs to a squad or a
+// platoon that already exists, and clearing the box is how it is removed.
 (_display displayCtrl PAC_IDC_MG_NEW) ctrlShow (_section in ["squads", "platoons", "radionets"]);
 (_display displayCtrl PAC_IDC_MG_REMOVE) ctrlShow (_section in ["squads", "platoons", "radionets"]);
 (_display displayCtrl PAC_IDC_MG_SAVE) ctrlShow (_section isNotEqualTo "log");
@@ -112,9 +125,11 @@ _idEdit ctrlSetTooltip (switch (_section) do {
 private _hint = switch (_section) do {
     case "log": {"Every action an admin took, dated and signed: rank, role, group, status, skills, awards, notes, the operator fields, structure and ORBAT edits, op windows, imports, kicks and bans. Kept in the store and on the record of the player it was done to (their operator file lists it under admin actions). Type in the filter to narrow it; newest first."};
     case "squads": {"A squad is a name, its slots and a condition. SLOTS are role classes in slot order - the first is the element leader. The list order is the SR radio channel order (row one is channel one on the handheld), so POSITION is a real change and the card painted on the radio has to be regenerated after it. Saving a squad rebuilds the live slot table at once; nobody seated is thrown out - a man stays by squad name and slot number."};
-    case "platoons": {"A tab groups squads on the role screen and carries the platoon's net - its mailbox and MR channel, tied to it here and nowhere else. Up to ten tabs, five to a row. A squad in no tab still appears, under UNASSIGNED."};
+    case "platoons": {"A platoon groups squads on the role screen and carries the platoon's net - its mailbox and MR channel, tied to it here and nowhere else. Up to ten tabs, five to a row. A squad in no tab still appears, under UNASSIGNED."};
     case "radionets": {"Nets that cross a platoon boundary - GROUND 1 is a rifle squad and the crew that carries it. Asked before the platoon's net when a man is tuned. The name must be an MR channel in the radio plan."};
-    case "faction": {"The name over the role screen - '<FACTION>  ROLE SELECTION'."};
+    case "faction": {"WHO THE UNIT IS, before any of its parts. The FACTION is the name over the role screen. The SIDE is which side of the war its groups are created on - WEST, EAST, GUER or CIV; a side the engine does not have is a side nothing can be created on, so anything else is refused."};
+    case "squadradio": {"A squad's own channels. ACRE is a channel number on the short-range set; TFAR is two slots, short and long, because TFAR has a fixed number of channels and ACRE does not. Clearing a box puts the squad back on the plan's fallback. Written to the radio plan, not the ORBAT - that is where the mod reads a channel from - and applied at once, without a restart."};
+    case "platoonradio": {"The long-range channel every man in this platoon is put on. Long range used to be one channel for the whole task force, which is right for a detachment net and wrong the moment two platoons want to talk among themselves. Empty leaves them on the plan's default, which is how it worked before. Set the channels themselves in the radio plan."};
     case "operators": {"Pick an operator to see their file: identity, service, assignment, qualifications, attendance, awards and every action logged against them. The six fields are the ones only a person can know; rank, role, group, status, skills and awards are set on the roster page and the platoon comes off the ORBAT."};
     default {""};
 };
@@ -164,9 +179,38 @@ switch (_section) do {
         _total = count _nets;
     };
     case "faction": {
-        private _faction = if (!isNil "ghostD_groups_fnc_orbat") then {([] call ghostD_groups_fnc_orbat) # 3} else {""};
-        _rows pushBack [format ["faction  %1", _faction], "faction"];
+        private _o = if (!isNil "ghostD_groups_fnc_orbat") then {[] call ghostD_groups_fnc_orbat} else {[[], [], [], "", "WEST"]};
+        _rows pushBack [format ["%1   side %2", _o param [3, ""], _o param [4, "WEST"]], "faction"];
         _total = 1;
+    };
+    // The same squads and platoons the sections above list, with what each is
+    // on rather than what it holds.
+    case "squadradio": {
+        private _groups = if (!isNil "ghostD_groups_fnc_orbat") then {([] call ghostD_groups_fnc_orbat) # 0} else {[]};
+        private _acre = missionNamespace getVariable ["ghostFR_radio_srSquadChannel", []];
+        private _tfar = missionNamespace getVariable ["ghostFR_radio_tfarNets", []];
+        {
+            private _name = _x # 0;
+            private _ch = "-";
+            {if (toUpper (_x param [0, ""]) isEqualTo toUpper _name) exitWith {_ch = str (_x param [1, 0])}} forEach _acre;
+            private _tf = "-";
+            {if (toUpper (_x param [0, ""]) isEqualTo toUpper _name) exitWith {_tf = format ["%1/%2", _x param [1, 0], _x param [2, 0]]}} forEach _tfar;
+            private _text = format ["%1  ACRE %2  TFAR %3", _name, _ch, _tf];
+            if (_filter isEqualTo "" || {_filter in toLower _text}) then {_rows pushBack [_text, _name]};
+        } forEach _groups;
+        _total = count _groups;
+    };
+    case "platoonradio": {
+        private _platoons = if (!isNil "ghostD_groups_fnc_orbat") then {([] call ghostD_groups_fnc_orbat) # 1} else {[]};
+        private _lr = missionNamespace getVariable ["ghostFR_radio_lrPlatoonChannel", []];
+        {
+            _x params [["_id", ""], ["_name", ""]];
+            private _ch = "the plan default";
+            {if (toUpper (_x param [0, ""]) isEqualTo toUpper _id) exitWith {_ch = str (_x param [1, 0])}} forEach _lr;
+            private _text = format ["%1  %2  LR %3", _id, _name, _ch];
+            if (_filter isEqualTo "" || {_filter in toLower _text}) then {_rows pushBack [_text, _id]};
+        } forEach _platoons;
+        _total = count _platoons;
     };
     case "operators": {
         {

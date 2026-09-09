@@ -31,12 +31,17 @@ private _sel = 0;
     private _i = _combo lbAdd _label;
     _combo lbSetData [_i, _id];
     if (_id isEqualTo GVAR(mgSection)) then {_sel = _i};
+// THE WEBSITE'S ORDER, and its wording. Common first - who the unit is - then
+// the four in the order they have to be filled in: a squad cannot sit on a net
+// that does not exist, and a platoon cannot list a squad that does not.
 } forEach [
     ["log", "ACTION LOG"],
+    ["faction", "ORBAT - COMMON"],
     ["squads", "ORBAT - SQUADS AND SLOTS"],
-    ["platoons", "ORBAT - PLATOON TABS"],
+    ["squadradio", "ORBAT - SQUAD CHANNELS"],
+    ["platoons", "ORBAT - PLATOONS"],
+    ["platoonradio", "ORBAT - PLATOON LONG RANGE"],
     ["radionets", "ORBAT - SHARED RADIO NETS"],
-    ["faction", "ORBAT - FACTION"],
     ["operators", "OPERATOR FILES"]
 ];
 _combo lbSetCurSel _sel;     // fires manageSection

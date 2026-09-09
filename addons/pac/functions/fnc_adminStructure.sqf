@@ -47,7 +47,7 @@ if (isNull _caller || {!([_caller] call ghostD_adminpanel_fnc_isAdmin)}) exitWit
     WARNING_2("adminStructure refused: %1 is not an admin (%2)",name _caller,_section);
     false
 };
-if !(_section in ["ranks", "skills", "awards", "statuses", "admins", "roles", "nets", "promotion", "trainings"]) exitWith {false};
+if !(_section in ["ranks", "skills", "awards", "statuses", "admins", "roles", "nets", "promotion", "trainings", "traits"]) exitWith {false};
 
 private _fnc_tell = {
     params ["_msg", "_bad"];
@@ -86,6 +86,17 @@ switch (_op) do {
             private _v = _rec get _field;
             switch (_kind) do {
                 case "a": {
+                    // A ROLE'S ARRAYS ARE NOT ALL FLAT. nets and tiles are
+                    // pairs, traits and variables triples, the loadout nested -
+                    // splitting any of those on commas gives a role with a net
+                    // called "[C2", which is a net nobody is on and nothing
+                    // says so. FUNC(roleFieldParse) reads what
+                    // FUNC(roleFieldText) wrote; the old rows go in so a row's
+                    // third value (a trait's custom flag, a variable's global
+                    // flag) survives somebody editing the list.
+                    if (_v isEqualType "" && _section isEqualTo "roles") then {
+                        _v = [_field, _v, _clean getOrDefault [_field, []]] call FUNC(roleFieldParse);
+                    };
                     if (_v isEqualType "") then {_v = ((_v splitString ",") apply {trim _x}) select {_x isNotEqualTo ""}};
                     if !(_v isEqualType []) then {_v = []};
                 };
@@ -99,6 +110,13 @@ switch (_op) do {
             };
             _clean set [_field, _v];
         } forEach _fields;
+        if (_section isEqualTo "traits") then {
+            // bool or number, nothing else - a kind the role editor does not
+            // know how to draw is a trait nobody can set.
+            private _kindV = toLower (_clean getOrDefault ["kind", "bool"]);
+            _clean set ["kind", ["bool", "number"] select (_kindV isEqualTo "number")];
+            if ((_clean getOrDefault ["label", ""]) isEqualTo "") then {_clean set ["label", _id]};
+        };
         if (_section isEqualTo "ranks" && {!((toUpper (_clean get "armaRank")) in ARMA_RANKS)}) exitWith {
             ["armaRank must be one of PRIVATE CORPORAL SERGEANT LIEUTENANT CAPTAIN MAJOR COLONEL.", true] call _fnc_tell;
         };

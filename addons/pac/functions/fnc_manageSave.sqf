@@ -60,6 +60,14 @@ switch (_section) do {
     case "faction": {
         [player, "faction", "set", "faction", _values] remoteExec [QFUNC(adminOrbat), 2];
     };
+    case "squadradio": {
+        if (_id isEqualTo "") exitWith {["TAC//PAC", "Pick a squad first.", [0.831, 0.267, 0.267, 1]] call EFUNC(notify,notify)};
+        [player, "squadRadio", "set", _id, _values] remoteExec [QFUNC(adminOrbat), 2];
+    };
+    case "platoonradio": {
+        if (_id isEqualTo "") exitWith {["TAC//PAC", "Pick a platoon first.", [0.831, 0.267, 0.267, 1]] call EFUNC(notify,notify)};
+        [player, "platoonRadio", "set", _id, _values] remoteExec [QFUNC(adminOrbat), 2];
+    };
     case "operators": {
         if (GVAR(editUid) isEqualTo "" || {count GVAR(editRecord) isEqualTo 0}) exitWith {};
         private _sent = 0;

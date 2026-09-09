@@ -30,5 +30,26 @@ private _sel = 0;
     private _i = _combo lbAdd _label;
     _combo lbSetData [_i, _id];
     if (_id isEqualTo GVAR(structSection)) then {_sel = _i};
-} forEach [["ranks", "RANKS"], ["skills", "SKILLS"], ["awards", "AWARDS"], ["statuses", "STATUSES"], ["roles", "ROLES"], ["nets", "NETS"], ["promotion", "PROMOTION"], ["trainings", "TRAINING"], ["admins", "ADMINS"]];
+// ONE SECTION, ONE SCREEN - and a role is eight screens, the same eight the
+// website has. They all read and write the "roles" section; FUNC(structBase)
+// is what maps the screen id back to it.
+} forEach [
+    ["ranks", "RANKS"],
+    ["skills", "SKILLS"],
+    ["awards", "AWARDS"],
+    ["statuses", "STATUSES"],
+    ["nets", "NETS"],
+    ["traits", "CUSTOM TRAITS"],
+    ["roles", "ROLE - IDENTITY"],
+    ["roles_gates", "ROLE - WHO MAY TAKE IT"],
+    ["roles_nets", "ROLE - MESSAGING NETS"],
+    ["roles_tiles", "ROLE - TAC//PAD TILES"],
+    ["roles_traits", "ROLE - TRAITS"],
+    ["roles_vars", "ROLE - CUSTOM VARIABLES"],
+    ["roles_loadout", "ROLE - DEFAULT LOADOUT"],
+    ["roles_arsenal", "ROLE - ARSENAL"],
+    ["promotion", "PROMOTION"],
+    ["trainings", "TRAINING"],
+    ["admins", "ADMINS"]
+];
 _combo lbSetCurSel _sel;     // fires structSection

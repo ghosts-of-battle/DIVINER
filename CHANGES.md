@@ -18,6 +18,393 @@ contract and are spelled the same in both repos. Never rewrite them.
 
 ## Unreleased
 
+### `currentArsenal` - which common arsenal a mission uses
+**Sync:** `yes` - rewrite `ghostD_` to `ghost_`. Opt-in: unset behaves exactly
+as before.
+
+A unit keeps more than one common arsenal - a bare-bones `Framework` one and a
+set named for the camo an operation is in (`Ghost_OCP`, `Ghost_MTP`,
+`Ghost_Tropical`, `Ghost_Woodland`, `Ghost_Desert`) - and nothing could pick
+between them. Variants were only ever reached through a role's `groupArsenal`,
+so the five camo sets were documents nobody read. Found by auditing the
+database, not by anybody reporting it.
+
+- `addons/pac/functions/fnc_svcStructure.sqf` - after the arsenal and its
+  variants are fetched, the `currentArsenal` setting names one and its lists
+  become the common lists. **It REPLACES them**, it does not add to them: the
+  point of a camo set is that a man cannot draw the other four. Matched without
+  case. Unset, or naming a version that is not there, leaves the common
+  document alone and logs a warning in the second case. Same arrangement as
+  `currentOrbat` naming an ORBAT and `currentOpord` an order.
+
+The website sets it: Templates -> Common arsenal -> **In use**.
+
+**Checked:** `hemtt check` clean.
+
+---
+
+**Ported 2026-09-09.** Every entry above this line has been carried into
+`DIVINER_alive` (prefix `ghostDA`) and `ghost` (prefix `ghost`) mechanically -
+`ghostD_` to the destination prefix, `z\ghostD\` to its path - and both were
+verified with `hemtt check` afterwards: DIVINER_alive 1169 SQF, ghost 1328 SQF,
+both clean. Before each file was overwritten it was checked to be byte-equal to
+DIVINER's committed version once both prefixes were flattened, so nothing of
+either repo's own was destroyed; there were no conflicts. `ghostFR_*` and
+`GHOST_Nets` were not rewritten - they are the mission contract and are spelled
+the same everywhere.
+
+### The in-game editors get what the website has: a role in eight screens, squad and platoon channels, the unit's own traits
+**Sync:** `yes` - rewrite `ghostD_` to `ghost_`. `ghost_radio_*` stays spelled
+that way in both repos. Additive: every existing screen is where it was and
+does what it did; the new ones are extra entries in the two section combos.
+
+Asked 2026-09-09: "make sure all web abilties are also in game in the pac ui",
+"and again the same in the game ui as on the web site", and "would love for
+each section to be a page to it self to make it easier to read and again the
+same in game and on web".
+
+#### The structure editor - a role is eight screens on one section
+
+The screen has three edit boxes and a role has twenty properties, so it used to
+show the three gates and say "everything else rides along untouched; edit it on
+the database site". That is the gap this closes.
+
+- `addons/pac/functions/fnc_structBase.sqf` - **new**. `ghostD_pac_fnc_structBase`
+  maps a SCREEN id to the SECTION it reads and writes: everything before the
+  first underscore, so `roles_loadout` is the `roles` section and `ranks` is
+  itself. Every section that existed before has no underscore and is unchanged.
+- `addons/pac/functions/fnc_structOpened.sqf` - the section combo now lists
+  `roles`, `roles_gates`, `roles_nets`, `roles_tiles`, `roles_traits`,
+  `roles_vars`, `roles_loadout`, `roles_arsenal`, `roles_items` as
+  `ROLE - IDENTITY` .. `ROLE - ARSENAL`, plus `traits` as `CUSTOM TRAITS`.
+- `addons/pac/functions/fnc_structFields.sqf` - the nine role screens share one
+  `case` and differ only in which three fields carry a LABEL. **Every screen
+  returns the whole field list**; an unlabelled field is not drawn and rides
+  along untouched, which is what stops somebody editing a role's tiles from
+  wiping its loadout. New `traits` case: `label`, `kind`, `help`.
+- `addons/pac/functions/fnc_structSection.sqf` - uses `FUNC(structBase)` for the
+  list, the count and the id label. **Hides the NAME box** on the seven role
+  screens that do not name the role. Repurposes the spare button
+  (`PAC_IDC_ST_ME`) as **CAPTURE** on the loadout screen and `ADD ME` on the
+  admin list. A hint per screen.
+- `addons/pac/functions/fnc_structSave.sqf` - sends `FUNC(structBase)`'s section,
+  and **only sends the NAME box when it is shown** - otherwise every save on a
+  role's tiles screen posted an empty name over the role's real one.
+- `addons/pac/functions/fnc_structSelect.sqf`, `fnc_structRemove.sqf` - the same
+  mapping.
+- `addons/pac/functions/fnc_structMe.sqf` - the spare button's second job:
+  on `roles_loadout` it puts `getUnitLoadout player` into the loadout box,
+  written as a config writes it. Finds the box through `GVAR(structFields)`
+  rather than assuming which of the three it is.
+
+#### Role fields that are not lists of words
+
+`nets` and `tiles` are `[[name, "true"], ...]`, `traits` and `customVariables`
+are triples, and `defaultLoadout` is nested ten deep. The editor's generic path
+joins an array with `", "` and splits it back on commas, which would have given
+a role a net called `"[C2"` - a net nobody is on, with nothing to say so.
+
+- `addons/pac/functions/fnc_roleFieldText.sqf` - **new**. One field, written for
+  an edit box: `C2, FIRES.cas` for nets and tiles, `UAVHacker=true` for traits
+  and variables, the config's own braces for the loadout.
+- `addons/pac/functions/fnc_roleFieldParse.sqf` - **new**. Exactly that back.
+  A trait's third element - `setUnitTrait`'s custom flag - is decided by
+  whether the name is one of the engine's seven, **not** by whoever typed it,
+  because a name with that flag wrong is thrown away without a word. An
+  existing row keeps whatever third value it had, so a variable deliberately
+  set local is not "corrected". The loadout is compiled inside try/catch.
+- `addons/pac/functions/fnc_sqfText.sqf` - **new**. An array in a config file's
+  spelling: braces, double quotes, no spaces. `str` writes SQF brackets, and
+  what CAPTURE puts in the box has to be the same text the website shows and
+  the same text somebody could paste into `config_roles.hpp`.
+- `addons/pac/functions/fnc_structSelect.sqf` - shows role fields through
+  `FUNC(roleFieldText)`.
+- `addons/pac/functions/fnc_adminStructure.sqf` - reads them back through
+  `FUNC(roleFieldParse)`, passing the stored rows so third values survive.
+  `"traits"` added to the allowed sections, with its `kind` clamped to
+  `bool`/`number` and its label defaulted to the id.
+- `addons/pac/XEH_PREP.hpp` - `PREP(roleFieldParse); PREP(roleFieldText);
+  PREP(sqfText); PREP(structBase);`
+
+#### The management window - the website's sections, in the website's order
+
+- `addons/pac/functions/fnc_manageOpened.sqf` - the combo is now `ACTION LOG`,
+  `ORBAT - COMMON`, `SQUADS AND SLOTS`, `SQUAD CHANNELS`, `PLATOONS`,
+  `PLATOON LONG RANGE`, `SHARED RADIO NETS`, `OPERATOR FILES`. Common first
+  because it is what the order of battle IS; the rest in the order they have to
+  be filled in.
+- `addons/pac/functions/fnc_manageSection.sqf` - `faction` gains a **SIDE**
+  field. New `squadradio` (ACRE CHANNEL, TFAR SHORT, TFAR LONG) and
+  `platoonradio` (LONG RANGE CHANNEL) screens, listing the squads and platoons
+  with what each is currently on. NEW and REMOVE are hidden on both: a channel
+  belongs to something that already exists, and clearing the box removes it.
+- `addons/pac/functions/fnc_manageSelect.sqf` - fills them from the **live**
+  `ghostFR_radio_srSquadChannel`, `ghostFR_radio_tfarNets` and
+  `ghostFR_radio_lrPlatoonChannel` globals, which is what the mod is actually
+  using rather than a document that may be a boot behind.
+- `addons/pac/functions/fnc_manageSave.sqf` - sends `squadRadio` / `platoonRadio`.
+- `addons/pac/functions/fnc_adminOrbat.sqf` - two new kinds, **`squadRadio`**
+  (`{acre, tfarSw, tfarLr}`) and **`platoonRadio`** (`{lr}`). They write the
+  **radio** section, not the ORBAT, because that is where the mod reads a
+  channel from, then call `FUNC(radioApply)` so the change takes effect without
+  a restart, persist `"radio"` and return before the ORBAT write-back. The
+  `faction` kind now also takes `side`, refusing anything that is not WEST,
+  EAST, GUER or CIV.
+- `addons/pac/functions/fnc_structurePersist.sqf` - the `orbat` document carries
+  `side`, written even when empty so clearing it in game clears it in the
+  database.
+
+**Checked:** `hemtt check` clean (1066 SQF). **None of it has run in Arma.**
+One bug was caught by reading rather than running: `exitWith` inside `forEach`
+ends the LOOP, not the iteration, so the first draft of `roleFieldParse` kept a
+role's first net and dropped every one after it.
+
+### A platoon's long-range channel, the ORBAT's side, and the last of the mission `config\` folders
+**Sync:** `yes` - rewrite `ghostD_` to `ghost_`. Every part is a fallback that
+only fires when the thing it falls back to is absent, so a mission that already
+works is unchanged by all of it. `ghost_radio_*` and `ghost_missionConfig_*`
+stay spelled that way in both repos - they are the mission contract.
+
+Asked 2026-09-09, in order: "plts needs ... lr radio channel"; "need a place to
+set the factions" then "add a side drop down"; and "make sure only mission with
+config folders is framework.Stratis".
+
+#### 1. `lrPlatoonChannel` - long range, per platoon
+
+Long range was one channel for the whole task force. That is right for a
+detachment net and wrong the moment two platoons want to talk among themselves
+without the other listening.
+
+- `addons/pac/functions/fnc_radioKeys.sqf` - new key `["lrPlatoonChannel", []]`,
+  rows of `[platoonId, channel]`. Default empty, so a plan that does not use it
+  behaves exactly as before.
+- `addons/players/functions/fnc_platoonOf.sqf` - **new**.
+  `ghostD_players_fnc_platoonOf` takes a squad name and answers the **id** of
+  the platoon holding it, or `""`. Distinct from `FUNC(platoonNet)`, which
+  answers the platoon's messaging NET: two platoons can share a net and still
+  want different LR channels, and a platoon can have a channel and no net.
+  Read through `ghostD_groups_fnc_orbat`, so it is the database's ORBAT when
+  the unit keeps one there and the mission's `Dynamic_Groups` otherwise.
+- `addons/players/XEH_PREP.hpp` - `PREP(platoonOf);`.
+- `addons/players/functions/fnc_getRadioChannel.sqf` - the `default` (LR) case
+  of the tier switch now asks `lrPlatoonChannel` for the man's platoon before
+  falling to `ghostFR_radio_lrDefault`. Matched case-insensitively.
+- `addons/players/functions/fnc_setRadioChannel.sqf` - the TFAR branch gained
+  `_hadRow`; when no `ghostFR_radio_tfarNets` row names the squad, the
+  platoon's `lrPlatoonChannel` sets `_lrIdx`. A squad that names its own LR
+  keeps it. **One table feeds both radio systems**, so ACRE and TFAR cannot be
+  told different things.
+
+The website writes the table: ORBAT -> Platoons -> a platoon -> Radio, picking
+from the LR channels the plan defines.
+
+#### 2. The ORBAT carries a side
+
+- `addons/groups/functions/fnc_orbat.sqf` - returns a **fifth** element,
+  `side`: `"WEST"`, `"EAST"`, `"GUER"` or `"CIV"`. Read from the database's
+  `side`, then `missionConfigFile >> "Dynamic_Groups" >> "side"`, then `"WEST"`.
+  Anything unrecognised is treated as unsaid. Existing callers use `params`, so
+  a fifth element is invisible to them.
+- `addons/pac/functions/fnc_svcStructure.sqf` - `side` rides along with
+  `faction` into the `orbat` hashmap.
+
+#### 3. The unit's own trait names
+
+`setUnitTrait`'s third argument says whether a name is a custom one; pass
+`false` for a name the engine does not have and the trait is dropped without a
+word. A unit that lists its own names lets an editor tick them and set that
+flag itself.
+
+- `addons/pac/functions/fnc_svcStructure.sqf` - `"traits"` added to the
+  `{section, items}` fetch list. `<unit>.traits` holds
+  `{items: {name: {label, kind, help}}}`, `kind` being `bool` or `number`.
+- `addons/pac/functions/fnc_structureAdopt.sqf` - `traits` added to the
+  sections that survive adoption.
+
+Nothing in the mod reads this yet - it is what the role editors offer. The
+mod's own application of `traits[]` is unchanged.
+
+#### 4. A platoon's motorpool, from the database
+
+`<unit>.motorpool.<name>` documents existed and were fetched by nobody: the
+variant loop in `svcStructure` reads `lists`-shaped documents (arsenal, radar)
+and the motorpool is `items`-shaped.
+
+- `addons/pac/functions/fnc_svcStructure.sqf` - lists the
+  `<unit>.motorpool.` prefix into a new structure key **`motorpoolVariants`**,
+  `{variantId: {category: {displayName, vehicles}}}`. The variant id IS the
+  class name the mission used, `MotorPool_Nomad`, the same rule as the arsenal.
+- `addons/pac/functions/fnc_structureAdopt.sqf` - `motorpoolVariants` added to
+  the sections that survive adoption.
+- `addons/vehicle/functions/fnc_motorpool_open.sqf` - after the common
+  database pool, merges the variant whose name matches
+  `MotorPool_<first word of the group id>` - the same derivation
+  `FUNC(motorpool_squadClass)` uses for the config path. **Matched without
+  case**: `groupId` gives `NOMAD`, the document is `MotorPool_Nomad`, and a
+  hashmap - unlike a config path - cares. Categories present in both have their
+  vehicle lists appended, not replaced. The common map is copied (`+`) before
+  merging so the structure's own hashmap is not modified in place.
+
+#### 5. A mission with no `config\` folder gets its SQF catalogues
+
+`EFUNC(init,missionConfigsReady)` already fell back to `<unit>.logistics`,
+`.pylons` and `.skill`. It is called at preInit, which is **before the database
+structure arrives**, so there was nothing to fall back to and a mission with no
+`config\` folder got empty databases with no explanation.
+
+- `addons/pac/functions/fnc_structureAdopt.sqf` - calls
+  `EFUNC(init,missionConfigsReady)` at the end, guarded with `!isNil`, and logs
+  when it did the work. That function is idempotent by design (`GVAR(configsBuilt)`),
+  so a mission that shipped the files built them already and this finds it done.
+
+**Checked:** `hemtt check` clean (1062 SQF). None of it has run in Arma.
+
+**Missions:** `frameworkmongo.Stratis`, `frameworkmongo_alive.Stratis` and
+`Task_Force_Roomba_dev.Tanoa` have had their `config\` folders **deleted**;
+`framework.Stratis` is the one mission that still ships the files. Four things
+were inlined into each `description.ext` because they cannot live in a
+database: `CfgGhostAdmins` and the `ADMINS` macros (the engine reads
+`enableDebugConsole[]` and `cba_settings_whitelist[]` before any addon runs),
+`CfgGFA_PAC` (which unit, which server, how to reach the database), `CfgSounds`
+(names audio inside the mission PBO), and the welcome class (per mission on
+purpose). `Task_Force_Roomba_dev.Tanoa` also had `sync = "off"` corrected to
+`"service"` - with its config folder gone and sync off it would have booted
+with no ORBAT, no roles and no arsenal.
+
+### Mission config moves into the database: templates for everything a `config\` folder held
+**Sync:** `yes` - rewrite `ghostD_` to `ghost_`. Additive throughout: every
+reader takes the database as an ADDITION to the mission's own config, so a
+mission that ships a full `config\` folder behaves exactly as it did. Nothing
+is removed from any mission by this entry.
+
+Asked 2026-09-09: "in the mission that use a mongo I do not want any config
+files ... what I want is a template system in both the web and the game pac",
+then "all templates will have more than one version". A mission taking its
+config from the database needs somewhere for that config to live and something
+to edit it with; this is the mod half.
+
+**THE ORDERING RULE, EVERYWHERE.** The database is read *after* the mission's
+own class and appended to it. That is what lets a unit move one config at a
+time instead of all at once, and it means turning any of this on cannot break a
+mission that already works.
+
+**Files:**
+
+- `addons/pac/functions/fnc_cfgLists.sqf` - **new**. The named lists of a
+  list-shaped document (`<unit>.arsenal`, `<unit>.radar`) as `{name: [values]}`.
+- `addons/pac/functions/fnc_cfgList.sqf` - **new**. One named list, always an
+  array. Exists so a mission can append it in one line; doing the
+  `getOrDefault` inline invites the precedence mistakes that make an array
+  quietly empty.
+- `addons/pac/functions/fnc_cfgCode.sqf` - **new**. Compiles a document held as
+  SQF (`<unit>.logistics`, `.pylons`, `.skill`). **Compiles inside try/catch**
+  and returns `{}` on failure, so text typed on a website cannot stop a mission
+  starting. Takes a prefix so the skill block gets `private _unit = _this; `.
+- `addons/pac/functions/fnc_exportClasses.sqf` - **new**. Walks `CfgWeapons`,
+  `CfgMagazines` and `CfgVehicles` at **scope 2 only** and writes
+  `<unit>.classes` through `FUNC(svcSave)`, so the web editors offer real
+  classnames. On demand, not at boot - the answer only changes with the modset.
+- `addons/pac/functions/fnc_panelExportClasses.sqf` - **new**. The EXPORT
+  CLASSES button; confirms first.
+- `addons/pac/functions/fnc_svcStructure.sqf` - fetches `<unit>.arsenal` and
+  `<unit>.radar` **and their variants** by listing the `<unit>.<doc>.` prefix,
+  the way roles and orders are found. `motorpool` joins the generic
+  `{section, items}` loop. `welcome` is fetched on its own.
+- `addons/pac/functions/fnc_structureAdopt.sqf` - `welcome`, `motorpool`,
+  `arsenal` and `radar` added to the sections the database may supply.
+- `addons/groups/functions/fnc_setupPlayer.sqf` - after the config merge,
+  appends `<unit>.arsenal`'s lists and then the variant the role's
+  `groupArsenal` names. **The variant id is the class name**
+  (`Arsenal_Banshee`), so no role needs editing.
+- `addons/vehicle/functions/fnc_motorpool_open.sqf` - merges
+  `<unit>.motorpool`'s categories into the ones built from the mission.
+- `addons/vehicle/functions/fnc_cosmeticEntries.sqf` - reads
+  `<unit>.cosmetics` first, compiling each entry's `code` defensively so one
+  bad paste cannot take the catalogue down.
+- `addons/init/functions/fnc_missionConfigsReady.sqf` - fills
+  `ghostFR_missionConfig_logistics`, `_pylons` and `_skillBlock` from the
+  database **when the mission left them empty**. Logistics and pylons are
+  tables the code returns, so the compiled code is called; the skill block is
+  handed over as code.
+- `addons/pac/ui/idcs.inc.hpp` - `PAC_IDC_EXPORT_CLASSES` 89.
+- `addons/pac/ui/dialog.inc.hpp` - the EXPORT CLASSES button.
+- `addons/pac/functions/fnc_panelStyle.sqf` - it takes the theme like the rest.
+- `addons/pac/XEH_PREP.hpp` - five PREPs.
+
+**The missions** (not this repo, recorded for the port): all four now call
+`<prefix>_pac_fnc_welcomeShow` instead of reading `GHOSTFR_Welcome` themselves -
+a mission cannot know whether a document exists, so the mod decides the source.
+`initServer.sqf` appends `["radar", "classes"] call <prefix>_pac_fnc_cfgList` to
+its own radar list. Roomba's welcome class is `GHOST_Welcome`, not
+`GHOSTFR_Welcome`, so `FUNC(welcomeShow)` accepts both names rather than making
+anyone rename a mission class.
+
+**Checked:** `hemtt check` clean, 1061 sqf compiled, no warnings. **Nothing has
+run in Arma.** Every reader here is untested against a live database: the
+arsenal merge, the motorpool merge, the cosmetics compile, the SQF fallbacks
+and the class export all want a server.
+
+### A mission whose config is in the database now refuses to boot without it, and says so where it can be seen
+**Sync:** `yes` - rewrite `ghostD_` to `ghost_`. New CBA setting and one new
+function; nothing existing changed shape. Note the setting **defaults to off**,
+so a mission that still ships a `config\` folder behaves exactly as before.
+
+Asked 2026-09-09, while moving mission config into the database: "what I want
+is a template system in both the web and the game pac ... the mission using
+mongo should have no config folder". A mission with no config folder has no
+arsenal, no nets, no roles and no ranks unless the database answers.
+
+**The failure it prevents.** `FUNC(boot)` treated a database that did not
+answer as a fallback case - it logged `service: NOT ANSWERING - running on this
+server's config and the profile` and carried on. For a mission that HAS a
+config folder that is right. For one that does not, it starts a server full of
+people with no gear and no radios, and an admin spends twenty minutes working
+out that a connection string is wrong. One loud failure at boot costs a
+restart; a quiet one costs the session.
+
+**Why it does not end the mission.** Ending it would fight `-autoInit`, which
+restarts and would fail again in a loop, and would take the server away from the
+admin trying to fix the setting. Instead `GVAR(bootFailed)` and
+`GVAR(bootFailedWhy)` are set and published, and everyone is told.
+
+**Why a block in the .rpt and not just a message on screen.** With `-autoInit`
+the server initialises the mission at startup with nobody watching. An on-screen
+message nobody is there to read is not a failure report.
+
+**Files:**
+
+- `addons/pac/functions/fnc_bootFail.sqf` - **new**. Server only. Takes the
+  reason as a string. Sets and publicVariables `GVAR(bootFailed)` /
+  `GVAR(bootFailedWhy)`, writes a bordered block to the `.rpt` findable by
+  searching for **`PAC BOOT FAILED`** (unit id, what happened, the three things
+  to check in order, and how to turn the requirement off), adds a `3/6` line to
+  `FUNC(bootLog)`, notifies every client through `ghostD_notify_fnc_notify` on
+  `0`, and raises `ERROR_1`.
+- `addons/pac/functions/fnc_boot.sqf` - the two failure branches at 3/6 now
+  check the new setting: the `default` (service not answering) branch and the
+  `structureAdopt` false (documents the wrong shape) branch. Both call
+  `FUNC(bootFail)` when it is on and log exactly as before when it is off.
+- `addons/pac/functions/fnc_boot.sqf` - **the success banner**. When
+  `GVAR(svcUp)`, a bordered ASCII block reading `DATABASE LOADED` goes to the
+  `.rpt` before the `6/6 READY` line, with the unit id, player count, structure
+  hash and the section counts. Asked for directly: "we need a banner in the
+  consol big easy to see to say the data is loaded maybe ever some aski art".
+  Drawn **only** when the service answered - a banner that appears either way
+  answers nothing.
+- `addons/pac/initSettings.inc.sqf` - new CBA setting `QGVAR(svcRequired)`,
+  CHECKBOX, category `["Ghosts of Battle PAC", "Service"]`, **default false**,
+  server-side. Labelled "Database required".
+- `addons/pac/XEH_PREP.hpp` - `PREP(bootFail);`.
+
+**Behaviour change, called out on its own:** with `svcRequired` **on**, a
+database that does not answer stops the mission being configured, where before
+it silently fell back. Off - the default - nothing changes.
+
+**Checked:** `hemtt check` clean, 1055 sqf compiled (1054 before), no warnings.
+Not tested in game: the banner's appearance in a real `.rpt`, the notify
+reaching clients, and the failure path itself all want a live server and a
+broken connection string.
+
 ### ADD OPERATOR: somebody can be put on the roster before they ever join
 **Sync:** `yes` - rewrite `ghostD_` to `ghost_`. No contract change: no existing
 function, event or config key changed shape. Two new functions and three new

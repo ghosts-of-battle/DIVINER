@@ -142,7 +142,11 @@ if (_service) then {
                 GVAR(svcUp) = true;
                 ["3/6", format ["service: config ADOPTED - %1, hash %2 (the database wins over the mission's config and the profile)", call _fnc_counts, GVAR(structureHash)]] call FUNC(bootLog);
             } else {
-                ["3/6", "service: config documents are the wrong shape - REFUSED, keeping what this server has"] call FUNC(bootLog);
+                if (missionNamespace getVariable [QGVAR(svcRequired), false]) then {
+                    ["the config documents came back in the wrong shape"] call FUNC(bootFail);
+                } else {
+                    ["3/6", "service: config documents are the wrong shape - REFUSED, keeping what this server has"] call FUNC(bootLog);
+                };
             };
         };
         case "empty": {
@@ -151,7 +155,11 @@ if (_service) then {
             ["3/6", format ["service: no config documents yet - this server's config PUSHED UP as the first, %1 document(s)", _sent]] call FUNC(bootLog);
         };
         default {
-            ["3/6", "service: NOT ANSWERING - running on this server's config and the profile"] call FUNC(bootLog);
+            if (missionNamespace getVariable [QGVAR(svcRequired), false]) then {
+                ["the database did not answer in time"] call FUNC(bootFail);
+            } else {
+                ["3/6", "service: NOT ANSWERING - running on this server's config and the profile"] call FUNC(bootLog);
+            };
         };
     };
 } else {
@@ -227,4 +235,26 @@ publicVariable QGVAR(bootLog);
 
 GVAR(ready) = true;
 publicVariable QGVAR(ready);
+// THE BANNER. The boot log is six lines among thousands in an .rpt; an admin
+// checking "did the database load?" should be able to see the answer while
+// scrolling past. Drawn only when the service actually answered - a banner that
+// appears either way answers nothing.
+if (GVAR(svcUp)) then {
+    {diag_log text _x} forEach [
+        "",
+        "    +--------------------------------------------------------+",
+        "    |  ####  #  #  ###   ###  ####       ###   ###   ###     |",
+        "    |  #     #  #  #  #  #     #  #      #  #  #  #  #       |",
+        "    |  # ##  ####  #  #   ##   #  #      ###   ###   #       |",
+        "    |  #  #  #  #  #  #     #  #  #      #     #  #  #       |",
+        "    |  ####  #  #  ###   ###   ####      #     #  #   ###    |",
+        "    |                                                        |",
+        "    |            D A T A B A S E   L O A D E D               |",
+        "    +--------------------------------------------------------+",
+        format ["      unit '%1' - %2 player(s), structure hash %3", GVAR(settings) getOrDefault ["unitId", "?"], count GVAR(players), GVAR(structureHash)],
+        format ["      config and store came from the database. %1", call _fnc_counts],
+        ""
+    ];
+};
+
 ["6/6", format ["READY - profile %1%2; %3 player(s) on the roster, structure hash %4", ["NOT WRITTEN (read-only)", "written"] select _wrote, ["", " + service"] select GVAR(svcUp), count GVAR(players), GVAR(structureHash)]] call FUNC(bootLog);

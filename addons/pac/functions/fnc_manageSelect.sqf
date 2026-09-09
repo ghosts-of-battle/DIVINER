@@ -79,7 +79,34 @@ switch (_section) do {
         [createHashMapFromArray [["net", _net], ["squads", _squads]]] call _fnc_put;
     };
     case "faction": {
-        [createHashMapFromArray [["name", _orbat # 3]]] call _fnc_put;
+        [createHashMapFromArray [
+            ["name", _orbat param [3, ""]],
+            ["side", _orbat param [4, "WEST"]]
+        ]] call _fnc_put;
+    };
+    // The channels come off the live radio globals, which is what the mod is
+    // actually using - not off a document that may be a boot behind.
+    case "squadradio": {
+        private _acre = "";
+        {
+            if (toUpper (_x param [0, ""]) isEqualTo toUpper _key) exitWith {_acre = str (_x param [1, 0])};
+        } forEach (missionNamespace getVariable ["ghostFR_radio_srSquadChannel", []]);
+        private _sw = "";
+        private _lr = "";
+        {
+            if (toUpper (_x param [0, ""]) isEqualTo toUpper _key) exitWith {
+                _sw = str (_x param [1, 0]);
+                _lr = str (_x param [2, 0]);
+            };
+        } forEach (missionNamespace getVariable ["ghostFR_radio_tfarNets", []]);
+        [createHashMapFromArray [["acre", _acre], ["tfarSw", _sw], ["tfarLr", _lr]]] call _fnc_put;
+    };
+    case "platoonradio": {
+        private _ch = "";
+        {
+            if (toUpper (_x param [0, ""]) isEqualTo toUpper _key) exitWith {_ch = str (_x param [1, 0])};
+        } forEach (missionNamespace getVariable ["ghostFR_radio_lrPlatoonChannel", []]);
+        [createHashMapFromArray [["lr", _ch]]] call _fnc_put;
     };
     case "operators": {
         GVAR(editUid) = _key;

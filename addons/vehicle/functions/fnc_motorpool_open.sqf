@@ -122,6 +122,67 @@ private _cats = [];
     } forEach ("true" configClasses _x);
 } forEach _sources;
 
+// THE DATABASE'S CATEGORIES, APPENDED THE SAME WAY. <unit>.motorpool holds
+// {items: {Cars: {displayName, vehicles[]}}}, so it merges into the category
+// names the mission already built rather than replacing them - a mission that
+// ships config_motorpool_common.hpp and one that ships none both work.
+if (!isNil "ghostD_pac_structure") then {
+    private _mp = +(ghostD_pac_structure getOrDefault ["motorpool", createHashMap]);
+
+    // AND THE SQUAD'S OWN POOL FROM THE DATABASE (2026-09-09), merged into the
+    // common one before either is read - the same two sources the config path
+    // above uses, from the other side. The variant is named exactly as the
+    // mission class was, "MotorPool_Nomad" for a group called "NOMAD 2-1", so
+    // the two paths answer the same thing for the same squad.
+    //
+    // MATCHED WITHOUT CASE. groupId gives "NOMAD", the document is
+    // "MotorPool_Nomad", and a hashmap - unlike a config path - cares.
+    private _first = ((groupId group player) splitString " -") param [0, ""];
+    if (_first isNotEqualTo "") then {
+        private _want = toLower format ["MotorPool_%1", _first];
+        private _variants = ghostD_pac_structure getOrDefault ["motorpoolVariants", createHashMap];
+        {
+            if (toLower _x isEqualTo _want) exitWith {
+                private _v = _variants get _x;
+                if (_v isEqualType createHashMap) then {
+                    {
+                        private _cat = _v get _x;
+                        if !(_cat isEqualType createHashMap) then {continue};
+                        private _at = _mp getOrDefault [_x, createHashMap];
+                        if (count _at isEqualTo 0) then {
+                            _mp set [_x, _cat];
+                        } else {
+                            // Same category in both: the vehicles add up.
+                            private _merged = +_at;
+                            _merged set ["vehicles",
+                                (_at getOrDefault ["vehicles", []]) + (_cat getOrDefault ["vehicles", []])];
+                            _mp set [_x, _merged];
+                        };
+                    } forEach (keys _v);
+                };
+            };
+        } forEach (keys _variants);
+    };
+    {
+        private _cat = _mp get _x;
+        if (_cat isEqualType createHashMap) then {
+            private _label = toUpper ([_cat getOrDefault ["displayName", _x], _x] select ((_cat getOrDefault ["displayName", ""]) isEqualTo ""));
+            private _rows = (_cat getOrDefault ["vehicles", []]) select {
+                _x isEqualType "" && {isClass (configFile >> "CfgVehicles" >> _x)}
+            };
+            if (_rows isNotEqualTo []) then {
+                private _at = _cats findIf {(_x select 0) isEqualTo _label};
+                if (_at < 0) then {
+                    _cats pushBack [_label, _rows];
+                } else {
+                    private _merged = ((_cats select _at) select 1) + _rows;
+                    (_cats select _at) set [1, _merged arrayIntersect _merged];
+                };
+            };
+        };
+    } forEach (keys _mp);
+};
+
 // ------------------------------------------------- the pad's own vehicles --
 // Listed on the init line (arg 10), sorted onto their kind's tab AFTER the
 // switch filter ran - a class named for this pad is offered whatever the

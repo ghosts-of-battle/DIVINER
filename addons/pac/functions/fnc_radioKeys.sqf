@@ -48,6 +48,12 @@ Author:
     ["lrChannels", []],
     ["lrSatChannel", 1],
     ["lrLocalChannel", 1],
+    // LONG RANGE, PER PLATOON (2026-09-09). [[platoonId, channel], ...]. Long
+    // range used to be one channel for the whole task force, which is right for
+    // a detachment net and wrong the moment two platoons want to talk among
+    // themselves. A platoon with no row here falls to lrDefault, which is how
+    // it behaved before, so a plan that does not use this is unchanged.
+    ["lrPlatoonChannel", []],
     // before a man has joined a squad
     ["srFallback", 1],
     ["mrDefault", 1],
