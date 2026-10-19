@@ -4,7 +4,7 @@ Function: ghostD_pac_fnc_adminOrbat
 
 Description:
     The one door through which the ORBAT is edited in game - the squads
-    and their slots, the platoon tabs, the shared radio nets and the
+    and their slots, the platoon tabs and the
     faction's name - by an admin, on the server, checked the way
     FUNC(adminSet) checks. The ORBAT is the structure's "orbat" section
     (the <unit>.orbat document with the service); after the edit the live
@@ -29,11 +29,88 @@ Description:
                       on the plan's fallback.
         platoonRadio  key = the platoon id; record {lr} - its long range
                       channel, empty for the plan default.
+        radio         key = a ghostFR_radio_* key (FUNC(radioKeys)); record
+                      {value} - the whole value, of the default's type
+                      (2026-09-09: the ACRE / TFAR tables and settings pages).
+    And three more on the ORBAT itself (2026-09-09, the one-dialog PAC):
+        runs          record {netsVersion, radioVersion, arsenalVersion,
+                      motorpoolVersion} - which versions this order of
+                      battle runs; the boot folds them into current<Name>.
+        newVersion    key = the name; writes <unit>.orbat.<name> as a copy of
+                      what the mission runs, and lists it.
+        squad         also keeps a 4th element, the squad's KIND (inf, air,
+                      armor ...) - record {type}.
+        radio         key = a ghostFR_radio_* key (FUNC(radioKeys)); record
+                      {value} - the whole value, of the default's type
+                      (2026-09-09: the ACRE / TFAR tables and settings pages).
+    And three more on the ORBAT itself (2026-09-09, the one-dialog PAC):
+        runs          record {netsVersion, radioVersion, arsenalVersion,
+                      motorpoolVersion} - which versions this order of
+                      battle runs; the boot folds them into current<Name>.
+        newVersion    key = the name; writes <unit>.orbat.<name> as a copy of
+                      what the mission runs, and lists it.
+        squad         also keeps a 4th element, the squad's KIND (inf, air,
+                      armor ...) - record {type}.
+        radio         key = a ghostFR_radio_* key (FUNC(radioKeys)); record
+                      {value} - the whole value, of the default's type
+                      (2026-09-09: the ACRE / TFAR tables and settings pages).
+    And three more on the ORBAT itself (2026-09-09, the one-dialog PAC):
+        runs          record {netsVersion, radioVersion, arsenalVersion,
+                      motorpoolVersion} - which versions this order of
+                      battle runs; the boot folds them into current<Name>.
+        newVersion    key = the name; writes <unit>.orbat.<name> as a copy of
+                      what the mission runs, and lists it.
+        squad         also keeps a 4th element, the squad's KIND (inf, air,
+                      armor ...) - record {type}.
+        radio         key = a ghostFR_radio_* key (FUNC(radioKeys)); record
+                      {value} - the whole value, of the default's type
+                      (2026-09-09: the ACRE / TFAR tables and settings pages).
+    And three more on the ORBAT itself (2026-09-09, the one-dialog PAC):
+        runs          record {netsVersion, radioVersion, arsenalVersion,
+                      motorpoolVersion} - which versions this order of
+                      battle runs; the boot folds them into current<Name>.
+        newVersion    key = the name; writes <unit>.orbat.<name> as a copy of
+                      what the mission runs, and lists it.
+        squad         also keeps a 4th element, the squad's KIND (inf, air,
+                      armor ...) - record {type}.
+        radio         key = a ghostFR_radio_* key (FUNC(radioKeys)); record
+                      {value} - the whole value, of the default's type
+                      (2026-09-09: the ACRE / TFAR tables and settings pages).
+    And three more on the ORBAT itself (2026-09-09, the one-dialog PAC):
+        runs          record {netsVersion, radioVersion, arsenalVersion,
+                      motorpoolVersion} - which versions this order of
+                      battle runs; the boot folds them into current<Name>.
+        newVersion    key = the name; writes <unit>.orbat.<name> as a copy of
+                      what the mission runs, and lists it.
+        squad         also keeps a 4th element, the squad's KIND (inf, air,
+                      armor ...) - record {type}.
+        radio         key = a ghostFR_radio_* key (FUNC(radioKeys)); record
+                      {value} - the whole value, of the default's type
+                      (2026-09-09: the ACRE / TFAR tables and settings pages).
+    And three more on the ORBAT itself (2026-09-09, the one-dialog PAC):
+        runs          record {netsVersion, radioVersion, arsenalVersion,
+                      motorpoolVersion} - which versions this order of
+                      battle runs; the boot folds them into current<Name>.
+        newVersion    key = the name; writes <unit>.orbat.<name> as a copy of
+                      what the mission runs, and lists it.
+        squad         also keeps a 4th element, the squad's KIND (inf, air,
+                      armor ...) - record {type}.
+        radio         key = a ghostFR_radio_* key (FUNC(radioKeys)); record
+                      {value} - the whole value, of the default's type
+                      (2026-09-09: the ACRE / TFAR tables and settings pages).
+    And three more on the ORBAT itself (2026-09-09, the one-dialog PAC):
+        runs          record {netsVersion, radioVersion, arsenalVersion,
+                      motorpoolVersion} - which versions this order of
+                      battle runs; the boot folds them into current<Name>.
+        newVersion    key = the name; writes <unit>.orbat.<name> as a copy of
+                      what the mission runs, and lists it.
+        squad         also keeps a 4th element, the squad's KIND (inf, air,
+                      armor ...) - record {type}.
 
 Parameters:
     0: Caller <OBJECT>
-    1: Kind <STRING> - "squad" | "platoon" | "radioNet" | "faction"
-                     | "squadRadio" | "platoonRadio"
+    1: Kind <STRING> - "squad" | "platoon" | "faction" | "runs" | "newVersion"
+                     | "squadRadio" | "platoonRadio" | "radio"
     2: Op <STRING> - "set" | "remove"
     3: Key <STRING>
     4: Record <HASHMAP> (set only)
@@ -78,7 +155,6 @@ private _orbat = +(GVAR(structure) getOrDefault ["orbat", createHashMap]);
 if !(_orbat isEqualType createHashMap) then {_orbat = createHashMap};
 private _groups = _orbat getOrDefault ["groups", []];
 private _platoons = _orbat getOrDefault ["platoons", []];
-private _radioNets = _orbat getOrDefault ["radioNets", []];
 private _detail = "";
 private _ok = true;
 
@@ -118,7 +194,11 @@ switch (_kind) do {
         if (_cond isEqualTo "") then {_cond = "true"};
         private _dupe = _groups findIf {toUpper (_x # 0) isEqualTo toUpper _name};
         if (_dupe >= 0 && _dupe isNotEqualTo _at) exitWith {[format ["There is already a squad called '%1'.", _name], true] call _fnc_tell; _ok = false};
-        private _row = [_name, _roles, _cond];
+        // the 4th element is the squad's kind - kept when the edit did not name one
+        private _type = ["type"] call _fnc_text;
+        if (_type isEqualTo "" && _at >= 0) then {_type = (_groups # _at) param [3, ""]};
+        if !(_type isEqualType "") then {_type = ""};
+        private _row = [_name, _roles, _cond, _type];
         if (_at >= 0) then {_groups set [_at, _row]} else {_groups pushBack _row; _at = (count _groups) - 1};
         private _pos = _rec getOrDefault ["position", 0];
         if (_pos isEqualType "") then {_pos = parseNumber _pos};
@@ -143,19 +223,58 @@ switch (_kind) do {
         if (_at >= 0) then {_platoons set [_at, _row]} else {_platoons pushBack _row};
         _detail = format ["platoon tab '%1': %2 / %3, net %4, squads [%5]", _id, _row # 1, _row # 2, _row # 3, (_row # 4) joinString ", "];
     };
-    case "radioNet": {
-        private _at = _radioNets findIf {(_x # 0) isEqualTo _key};
-        if (_op isEqualTo "remove") exitWith {
-            if (_at < 0) exitWith {[format ["No radio net '%1'.", _key], true] call _fnc_tell; _ok = false};
-            _radioNets deleteAt _at;
-            _detail = format ["radio net '%1' removed", _key];
-        };
-        private _id = ["id"] call _fnc_text;
-        if (_id isEqualTo "") then {_id = _key};
-        if (_id isEqualTo "") exitWith {["A radio net needs an id.", true] call _fnc_tell; _ok = false};
-        private _row = [_id, ["net"] call _fnc_text, ["squads"] call _fnc_list];
-        if (_at >= 0) then {_radioNets set [_at, _row]} else {_radioNets pushBack _row};
-        _detail = format ["radio net '%1': %2, squads [%3]", _id, _row # 1, (_row # 2) joinString ", "];
+    case "runs": {
+        {
+            private _v = _rec getOrDefault [_x, ""];
+            if !(_v isEqualType "") then {_v = str _v};
+            _orbat set [_x, trim _v];
+        } forEach ["netsVersion", "radioVersion", "arsenalVersion", "motorpoolVersion"];
+        // and this boot's own settings, so a reader that looks there agrees
+        {
+            _x params ["_from", "_to"];
+            GVAR(settings) set [_to, _orbat getOrDefault [_from, ""]];
+        } forEach [["netsVersion", "currentNets"], ["radioVersion", "currentRadio"], ["arsenalVersion", "currentArsenal"], ["motorpoolVersion", "currentMotorpool"]];
+        _detail = format ["runs nets '%1', radio '%2', arsenal '%3', motorpool '%4'", _orbat getOrDefault ["netsVersion", ""], _orbat getOrDefault ["radioVersion", ""], _orbat getOrDefault ["arsenalVersion", ""], _orbat getOrDefault ["motorpoolVersion", ""]];
+    };
+    case "newVersion": {
+        if (_key isEqualTo "" || {(toArray _key) findIf {!(_x isEqualTo 95 || {_x >= 48 && _x <= 57} || {_x >= 65 && _x <= 90} || {_x >= 97 && _x <= 122})} >= 0}) exitWith {["A version name is letters, digits and underscore.", true] call _fnc_tell; _ok = false};
+        if (!GVAR(svcUp)) exitWith {["A named order of battle is a database document, and this server has no database.", true] call _fnc_tell; _ok = false};
+        private _unit = GVAR(settings) getOrDefault ["unitId", ""];
+        private _doc = createHashMapFromArray [
+            ["section", "orbat"], ["faction", _orbat getOrDefault ["faction", ""]], ["side", _orbat getOrDefault ["side", ""]],
+            ["groups", _orbat getOrDefault ["groups", []]], ["platoons", _orbat getOrDefault ["platoons", []]],
+            ["exportedAt", [] call FUNC(stamp)], ["from", "edited in game"]
+        ];
+        if !([_unit + ".orbat." + _key, [_doc, ""] call FUNC(toJson)] call FUNC(svcSave)) exitWith {["The database did not take it.", true] call _fnc_tell; _ok = false};
+        private _versions = GVAR(structure) getOrDefault ["orbatVersions", []];
+        if !(_versions isEqualType []) then {_versions = []};
+        _versions pushBackUnique _key;
+        _versions sort true;
+        GVAR(structure) set ["orbatVersions", _versions];
+        GVAR(structureSvc) = GVAR(structure);
+        publicVariable QGVAR(structureSvc);
+        ["structure"] call FUNC(hostRefresh);
+        [getPlayerUID _caller, name _caller, "orbat", _key, format ["order of battle '%1' created", _key]] call FUNC(logAction);
+        [format ["Order of battle '%1' written - make it the default to run it.", _key], false] call _fnc_tell;
+    };
+    case "radio": {
+        private _radio = +(GVAR(structure) getOrDefault ["radio", createHashMap]);
+        if !(_radio isEqualType createHashMap) then {_radio = createHashMap};
+        private _known = [] call FUNC(radioKeys);
+        private _at = _known findIf {(_x # 0) isEqualTo _key};
+        if (_at < 0) exitWith {[format ["'%1' is not a radio plan key.", _key], true] call _fnc_tell; _ok = false};
+        private _default = (_known # _at) # 1;
+        private _value = _rec getOrDefault ["value", _default];
+        // the default's type, or nothing: a channel table is an array, a radio a string, a power a number
+        if (_default isEqualType 0 && _value isEqualType "") then {_value = parseNumber _value};
+        if !(_value isEqualType _default) exitWith {[format ["%1 takes %2.", _key, switch (true) do {case (_default isEqualType []): {"a list"}; case (_default isEqualType 0): {"a number"}; default {"text"}}], true] call _fnc_tell; _ok = false};
+        _radio set [_key, _value];
+        GVAR(structure) set ["radio", _radio];
+        if (!isNil QFUNC(radioApply)) then {[] call FUNC(radioApply)};
+        ["radio"] call FUNC(structurePersist);
+        _detail = format ["radio %1 written", _key];
+        [getPlayerUID _caller, name _caller, "orbat", _key, _detail] call FUNC(logAction);
+        [format ["Radio: %1.", _detail], false] call _fnc_tell;
     };
     default {
         _ok = false;
@@ -219,11 +338,14 @@ if (!_ok) exitWith {false};
 
 // A channel edit is done - it wrote the radio section and persisted it, and
 // has no business rewriting the ORBAT on the way out.
-if (_kind in ["squadRadio", "platoonRadio"]) exitWith {true};
+if (_kind in ["squadRadio", "platoonRadio", "radio", "newVersion"]) exitWith {true};
 
 _orbat set ["groups", _groups];
 _orbat set ["platoons", _platoons];
-_orbat set ["radioNets", _radioNets];
+// NO radioNets KEY WRITTEN BACK. "Shared radio nets" are not a thing (user,
+// 2026-09-09) - radio channels are the ACRE and TFAR plans and messaging nets
+// are mailboxes. An ORBAT document that still carries the old key keeps it
+// untouched and unread; nothing writes a new one.
 GVAR(structure) set ["orbat", _orbat];
 
 // the live slot table, the platoon tags, the persistence, the log

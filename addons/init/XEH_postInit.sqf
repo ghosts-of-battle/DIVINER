@@ -20,4 +20,12 @@ call FUNC(playerpost);
 // `teleport`. This was the odd one out.
 call FUNC(zenModuels);
 
+// THE RADAR NETWORK (2026-09-09). Server only, and it says so itself. Here
+// rather than in the mission's initServer.sqf, which is where these twenty
+// lines used to be copied into every mission - the classes are a CBA setting
+// now, so the mod owns the wiring too.
+if (isServer) then {
+    call FUNC(radarNetwork);
+};
+
 INFO("postInit","Initialization completed.");

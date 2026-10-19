@@ -64,7 +64,12 @@ private _totals = createHashMap;
         _rec getOrDefault ["skillIds", []],
         _rec getOrDefault ["awards", []],
         _rec getOrDefault ["updatedAt", ""],
-        _totals getOrDefault [_x, [0, 0]]
+        _totals getOrDefault [_x, [0, 0]],
+        // the website's roster columns the row lacked (2026-09-09): the
+        // operator id, and whether a Discord id is on file - the id itself
+        // stays on the server
+        _rec getOrDefault ["operatorId", ""],
+        (_rec getOrDefault ["discordId", ""]) isNotEqualTo ""
     ];
 } forEach GVAR(players);
 
@@ -79,6 +84,22 @@ _out = _byName apply { _x # 1 };
 GVAR(roster) = _out;
 publicVariable QGVAR(roster);
 
+// WHO IS DUE A PROMOTION, worked out here because FUNC(promotionPoints) is
+// server-only - it reads GVAR(players), which a client does not have. The
+// website's dashboard has this block and the game's had nowhere to show it
+// (2026-09-09). One row per man: [name, rankId, nextRankId, points, needed].
+private _due = [];
+{
+    ([_x] call FUNC(promotionPoints)) params ["_pts", "", "_next", "_need"];
+    if (_next isNotEqualTo "" && _need <= 0) then {
+        _due pushBack [_y getOrDefault ["name", ""], _y getOrDefault ["rankId", ""], _next, _pts, _need, _x];
+    };
+} forEach GVAR(players);
+
+// how many have no Discord id on file - the website's "needs attention" row
+private _noDiscord = 0;
+{if ((_y getOrDefault ["discordId", ""]) isEqualTo "") then {_noDiscord = _noDiscord + 1}} forEach GVAR(players);
+
 // The live tile's numbers, kept apart from the roster so the tile does not have
 // to walk it. Phase 2 wants exactly this shape and calls it a summary struct.
 GVAR(summary) = createHashMapFromArray [
@@ -91,7 +112,17 @@ GVAR(summary) = createHashMapFromArray [
     ["opord", GVAR(settings) getOrDefault ["currentOpord", ""]],
     ["players", count GVAR(players)],
     ["window", [] call FUNC(windowCurrent)],
-    ["windowName", [[] call FUNC(windowCurrent)] call FUNC(windowName)]
+    ["windowName", [[] call FUNC(windowCurrent)] call FUNC(windowName)],
+    ["promotable", _due],
+    // the website's dashboard tiles and "needs attention" rows the game had
+    // no numbers for (2026-09-09): sessions, windows, who has no Discord id,
+    // and what the database has said since boot (-1 = not asked yet)
+    ["sessions", count GVAR(sessions)],
+    ["windows", count GVAR(windows)],
+    ["noDiscord", [_noDiscord, count GVAR(players)]],
+    ["ticketsOpen", missionNamespace getVariable [QGVAR(ticketsOpen), -1]],
+    ["applicationsNew", missionNamespace getVariable [QGVAR(applicationsNew), -1]],
+    ["docs", missionNamespace getVariable [QGVAR(docsCount), 0]]
 ];
 publicVariable QGVAR(summary);
 publicVariable QGVAR(opordArchive);

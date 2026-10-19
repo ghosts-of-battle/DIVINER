@@ -1,153 +1,127 @@
-// TAC//PAC admin page - control ids. Local to this display; nothing else
-// addresses them, so they start at 1.
+// TAC//PAC - control ids.
+//
+// ONE DIALOG (ui/pac.inc.hpp, 2026-09-09). The website is one page shell with
+// a bar across the top and the page drawn under it, and the game is the same:
+// one display, one set of controls, and every page redraws them. So there is
+// one id space here and no per-screen blocks - the three dialogs this replaced
+// (the personnel panel, EDIT STRUCTURE, MANAGE) each had their own.
+
+// ---- the shell ------------------------------------------------------------
 #define PAC_IDC_BACKGROUND      1
-#define PAC_IDC_TITLE           2
-#define PAC_IDC_SUBTITLE        3
-#define PAC_IDC_CLOSE           4
+#define PAC_IDC_BAR_BG          2
+#define PAC_IDC_BAR_LINE        3
+#define PAC_IDC_BRAND           4
+#define PAC_IDC_UNIT            5
+#define PAC_IDC_WHO             6
+#define PAC_IDC_CLOSE           7
 
-#define PAC_IDC_L_BACK          60
-#define PAC_IDC_M_BACK          61
-#define PAC_IDC_R_BACK          62
+// The nav bar - the website's, in its order. Ten slots; the pages a mission
+// without the service cannot serve are hidden and the rest close up.
+#define PAC_IDC_NAV1            10
+#define PAC_IDC_NAV2            11
+#define PAC_IDC_NAV3            12
+#define PAC_IDC_NAV4            13
+#define PAC_IDC_NAV5            14
+#define PAC_IDC_NAV6            15
+#define PAC_IDC_NAV7            16
+#define PAC_IDC_NAV8            17
+#define PAC_IDC_NAV9            18
+#define PAC_IDC_NAV10           19
+#define PAC_IDC_NAV_UL          20      // the accent underline under the page you are on
 
-#define PAC_IDC_L_TITLE         10
-#define PAC_IDC_L_FILTER        11
-#define PAC_IDC_L_UNASSIGNED    12
-#define PAC_IDC_L_LIST          13
-#define PAC_IDC_L_COUNT         14
+#define PAC_IDC_CRUMB           21
+#define PAC_IDC_PAGE_TITLE      22
+#define PAC_IDC_HINT            23
+#define PAC_IDC_FILTER          24
+#define PAC_IDC_FILTER_LABEL    25
 
-#define PAC_IDC_M_TITLE         20
-#define PAC_IDC_M_NAME          21
-#define PAC_IDC_RANK_LABEL      22
-#define PAC_IDC_RANK_COMBO      23
-#define PAC_IDC_ROLE_LABEL      24
-#define PAC_IDC_ROLE_COMBO      25
-#define PAC_IDC_STATUS_LABEL    26
-#define PAC_IDC_STATUS_COMBO    27
-#define PAC_IDC_GROUP_LABEL     28
-#define PAC_IDC_SKILLS_TITLE    31
-#define PAC_IDC_SKILLS_LIST     32
-#define PAC_IDC_AWARDS_TITLE    33
-#define PAC_IDC_AWARDS_LIST     34
-#define PAC_IDC_AWARD_COMBO     35
-#define PAC_IDC_AWARD_ADD       36
-#define PAC_IDC_AWARD_REMOVE    37
-#define PAC_IDC_NOTES_TITLE     38
-#define PAC_IDC_NOTES_LIST      39
-#define PAC_IDC_NOTE_EDIT       40
-#define PAC_IDC_NOTE_ADD        41
+// Sub-tabs - the website's .vbar of links under a page title (ORBAT's
+// platoons / squads / roles..., a config's versions).
+#define PAC_IDC_SUB1            30
+#define PAC_IDC_SUB2            31
+#define PAC_IDC_SUB3            32
+#define PAC_IDC_SUB4            33
+#define PAC_IDC_SUB5            34
+#define PAC_IDC_SUB6            35
+#define PAC_IDC_SUB7            36
+#define PAC_IDC_SUB8            37
 
-#define PAC_IDC_R_TITLE         50
-#define PAC_IDC_KICK            51
-#define PAC_IDC_BAN             52
-#define PAC_IDC_R_STATUS        53
-#define PAC_IDC_ORPHANS_TITLE   54
-#define PAC_IDC_ORPHANS_LIST    55
-#define PAC_IDC_HINT            56
-#define PAC_IDC_WINDOW_TITLE    57
-#define PAC_IDC_WINDOW_NAME     58
-#define PAC_IDC_WINDOW_START    59
-#define PAC_IDC_WINDOW_STOP     63
-#define PAC_IDC_REPORT          64
-#define PAC_IDC_BACKUP_TITLE    65
-#define PAC_IDC_EXPORT          66
-#define PAC_IDC_IMPORT          67
-#define PAC_IDC_RESTORE         68
-#define PAC_IDC_STRUCTURE       69
-#define PAC_IDC_SAMPLE_ADD      70
-#define PAC_IDC_SAMPLE_REMOVE   71
-#define PAC_IDC_GROUP_COMBO     42
-#define PAC_IDC_ENLISTED_LABEL  43
-#define PAC_IDC_ENLISTED        44
-#define PAC_IDC_ENLISTED_SET    45
-#define PAC_IDC_PROMOTED_LABEL  46
-#define PAC_IDC_PROMOTED        47
-#define PAC_IDC_PROMOTED_SET    48
-#define PAC_IDC_SERVICE_LINE    49
-#define PAC_IDC_STRUCT_OPEN     72
-#define PAC_IDC_MANAGE_OPEN     73
-#define PAC_IDC_STRUCT_IMPORT   74
-#define PAC_IDC_LOG_TITLE       75
-#define PAC_IDC_LOG_LIST        76
-#define PAC_IDC_TOOLS_TITLE     77
-#define PAC_IDC_M_SAVE          78
-#define PAC_IDC_CSV_IMPORT      79
-// the TRAINING block on the player page (2026-09-05)
-#define PAC_IDC_TRAINING_TITLE  80
-#define PAC_IDC_TRAINING_LIST   81
-#define PAC_IDC_TRAIN_EDIT      82
-#define PAC_IDC_TRAIN_ADD       83
-#define PAC_IDC_TRAIN_REMOVE    84
-#define PAC_IDC_TRAIN_COMBO     85
+// The dashboard's tiles: a panel, an accent hairline along its top, the number
+// and its label.
+#define PAC_IDC_TILE_BG1        40
+#define PAC_IDC_TILE_BG2        41
+#define PAC_IDC_TILE_BG3        42
+#define PAC_IDC_TILE_BG4        43
+#define PAC_IDC_TILE_LINE1      44
+#define PAC_IDC_TILE_LINE2      45
+#define PAC_IDC_TILE_LINE3      46
+#define PAC_IDC_TILE_LINE4      47
+#define PAC_IDC_TILE_TXT1       48
+#define PAC_IDC_TILE_TXT2       49
+#define PAC_IDC_TILE_TXT3       50
+#define PAC_IDC_TILE_TXT4       51
+#define PAC_IDC_TILE_BG5        52
+#define PAC_IDC_TILE_BG6        53
+#define PAC_IDC_TILE_LINE5      54
+#define PAC_IDC_TILE_LINE6      55
+#define PAC_IDC_TILE_TXT5       56
+#define PAC_IDC_TILE_TXT6       57
 
-// ADD OPERATOR on the roster column (2026-09-09) - somebody who has never
-// joined, put on the roster before they do.
-#define PAC_IDC_L_ADD_UID       86
-#define PAC_IDC_L_ADD_NAME      87
-#define PAC_IDC_L_ADD           88
+// The form: sixteen rows of label / edit / combo. A page shows the rows it
+// needs and hides the rest; the edit is multi-line capable, so a row that
+// holds prose is simply given more height.
+#define PAC_IDC_FORM_BASE       60
+#define PAC_IDC_FORM_ROWS       16
+#define PAC_IDC_FORM_LABEL(n)   (PAC_IDC_FORM_BASE + 3 * (n))
+#define PAC_IDC_FORM_EDIT(n)    (PAC_IDC_FORM_BASE + 3 * (n) + 1)
+#define PAC_IDC_FORM_COMBO(n)   (PAC_IDC_FORM_BASE + 3 * (n) + 2)
+// 60 .. 107 are the form rows
 
-// EXPORT CLASSES (2026-09-09) - writes what this server has loaded to
-// <unit>.classes, so the web manager's editors can offer real classnames.
-#define PAC_IDC_EXPORT_CLASSES  89
+// The actions row along the foot: BACK, then up to six page buttons.
+#define PAC_IDC_BACK            110
+#define PAC_IDC_BTN1            111
+#define PAC_IDC_BTN2            112
+#define PAC_IDC_BTN3            113
+#define PAC_IDC_BTN4            114
+#define PAC_IDC_BTN5            115
+#define PAC_IDC_BTN6            116
+
+// "Are you sure?" - every delete on the website asks, so every delete here
+// asks, in the same words, in a box over the page.
+#define PAC_IDC_CONFIRM_DIM     120
+#define PAC_IDC_CONFIRM_BOX     121
+#define PAC_IDC_CONFIRM_TEXT    122
+#define PAC_IDC_CONFIRM_YES     123
+#define PAC_IDC_CONFIRM_NO      124
+
+// The tables and the text blocks a page is built from.
+#define PAC_IDC_LIST            150
+#define PAC_IDC_LIST_HEAD       151
+#define PAC_IDC_LIST2           152
+#define PAC_IDC_LIST2_HEAD      153
+#define PAC_IDC_LIST3           154
+#define PAC_IDC_LIST3_HEAD      155
+#define PAC_IDC_TEXT            156
+#define PAC_IDC_TEXT_HEAD       157
+#define PAC_IDC_BIGEDIT         158
+#define PAC_IDC_BIGEDIT_HEAD    159
 
 // The boot screen (ui/bootscreen.hpp) - RscTitles, its own idc space
 #define PAC_IDC_BS_LOGO         200
 #define PAC_IDC_BS_TITLE        201
 #define PAC_IDC_BS_BAR          202
 #define PAC_IDC_BS_STEP         203
+#define PAC_IDC_BS_DOC0         210     // 210-239: the 3 x 10 document grid
+#define PAC_IDC_BS_DOCLINE      240
 
-// The structure editor (ui/structure.inc.hpp)
-#define PAC_IDC_ST_BACKGROUND   100
-#define PAC_IDC_ST_TITLE        101
-#define PAC_IDC_ST_SUBTITLE     102
-#define PAC_IDC_ST_CLOSE        103
-#define PAC_IDC_ST_L_BACK       104
-#define PAC_IDC_ST_R_BACK       105
-#define PAC_IDC_ST_SECTION      106
-#define PAC_IDC_ST_LIST         107
-#define PAC_IDC_ST_COUNT        108
-#define PAC_IDC_ST_ID_LABEL     110
-#define PAC_IDC_ST_ID           111
-#define PAC_IDC_ST_NAME_LABEL   112
-#define PAC_IDC_ST_NAME         113
-#define PAC_IDC_ST_F1_LABEL     114
-#define PAC_IDC_ST_F1           115
-#define PAC_IDC_ST_F2_LABEL     116
-#define PAC_IDC_ST_F2           117
-#define PAC_IDC_ST_F3_LABEL     118
-#define PAC_IDC_ST_F3           119
-#define PAC_IDC_ST_HINT         120
-#define PAC_IDC_ST_NEW          121
-#define PAC_IDC_ST_SAVE         122
-#define PAC_IDC_ST_REMOVE       123
-#define PAC_IDC_ST_ME           124
-
-// The management window (ui/manage.inc.hpp)
-#define PAC_IDC_MG_BACKGROUND   130
-#define PAC_IDC_MG_TITLE        131
-#define PAC_IDC_MG_SUBTITLE     132
-#define PAC_IDC_MG_CLOSE        133
-#define PAC_IDC_MG_L_BACK       134
-#define PAC_IDC_MG_R_BACK       135
-#define PAC_IDC_MG_SECTION      136
-#define PAC_IDC_MG_FILTER       137
-#define PAC_IDC_MG_LIST         138
-#define PAC_IDC_MG_COUNT        139
-#define PAC_IDC_MG_ID_LABEL     140
-#define PAC_IDC_MG_ID           141
-#define PAC_IDC_MG_F1_LABEL     142
-#define PAC_IDC_MG_F1           143
-#define PAC_IDC_MG_F2_LABEL     144
-#define PAC_IDC_MG_F2           145
-#define PAC_IDC_MG_F3_LABEL     146
-#define PAC_IDC_MG_F3           147
-#define PAC_IDC_MG_F4_LABEL     148
-#define PAC_IDC_MG_F4           149
-#define PAC_IDC_MG_F5_LABEL     150
-#define PAC_IDC_MG_F5           151
-#define PAC_IDC_MG_F6_LABEL     152
-#define PAC_IDC_MG_F6           153
-#define PAC_IDC_MG_HINT         154
-#define PAC_IDC_MG_NEW          155
-#define PAC_IDC_MG_SAVE         156
-#define PAC_IDC_MG_REMOVE       157
-#define PAC_IDC_MG_EXPORT       158
+// ---- the layout grid ------------------------------------------------------
+// Safezone fractions. The content column is what a page draws in; the bar,
+// the title and the sub-tab row are above it, the flash line and the actions
+// row below.
+#define PAC_UI_X        0.012
+#define PAC_UI_W        0.976
+#define PAC_UI_TOP      0.186
+#define PAC_UI_BOTTOM   0.900
+#define PAC_UI_ROW      0.032
+#define PAC_UI_GAP      0.006
+#define PAC_UI_LABEL_W  0.170

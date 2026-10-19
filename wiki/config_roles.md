@@ -6,9 +6,9 @@
 > reads roles through `ghostD_groups_fnc_role`, which answers the structure's copy
 > when there is one and this file's class otherwise. This file is the **seed**: a
 > mission that ships it pushes it up on a first boot and keeps working as before;
-> `frameworkmongo.Stratis` has no role files at all - only the arsenals
-> ([config_arsenal_common](config_arsenal_common) and one `Arsenal_*` per element,
-> included from `config_arsenal.hpp`). The gates - `minRank`, `requiredSkills`,
+> `frameworkmongo.Stratis` has no role files at all - only the common arsenal
+> ([config_arsenal_common](config_arsenal_common)); the narrower ones are
+> documents, not files. The gates - `minRank`, `requiredSkills`,
 > `uids` - are edited in game; everything else on the site. See [TAC-PAC](TAC-PAC).
 
 An include list, and nothing else. It assembles `class Dynamic_Roles` from the

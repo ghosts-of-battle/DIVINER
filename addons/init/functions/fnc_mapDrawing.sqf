@@ -3,9 +3,14 @@
  * Author: YonV
  * Restricts marking on the vanilla map:
  *  - Players may draw and place icons in the DIRECT channel only (personal, close-proximity).
- *  - Markers in any other channel (global/side/command/group/vehicle) must be placed
- *    through a cTab (cTabIRL tacmap, name contains "/tacmap") or by an admin
- *    (admin panel list or logged-in server admin, e.g. importing map data).
+ *  - Markers in any other channel (global/side/command/group/vehicle) are
+ *    deleted, unless the player is an admin (the admin panel's list or a
+ *    logged-in server admin, e.g. importing map data). Sharing a marker is
+ *    TAC//PAD's job.
+ *
+ * THERE IS NO cTab. This used to let a cTab device through by name and the
+ * comment outlived the code by a month (2026-09-09); the check below has not
+ * mentioned one for as long.
  * Script/Zeus markers (not "_USER_DEFINED") are never touched.
  *
  * Example:

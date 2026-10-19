@@ -15,19 +15,17 @@ console, the CBA settings whitelist, and TAC//ADMIN.
     "76561198000000001"  /* Someone else */
 
 /* Nothing to edit below here. */
-#define DEBUG_ADMINS ADMINS
-#define CBA_ADMINS ADMINS
 
-class CfgGhostAdmins {
-    admins[] = {ADMINS};
+/* CfgGhostAdmins was here. It is gone: a name in description.ext is not a
+   grant of the admin console - see <unit>.admins. */
 };
 ```
 
 Then in `description.ext`:
 
 ```cpp
-enableDebugConsole[] = {DEBUG_ADMINS};
-cba_settings_whitelist[] = {CBA_ADMINS};
+enableDebugConsole[] = {ADMINS};
+cba_settings_whitelist[] = {ADMINS};
 ```
 
 > **Include it first** in `description.ext` — the arrays below expand its macros.

@@ -47,7 +47,7 @@ class RscTitles {
                 idc = PAC_IDC_BS_TITLE;
                 text = "";
                 x = "0.25 * safezoneW + safezoneX"; y = "0.420 * safezoneH + safezoneY";
-                w = "0.50 * safezoneW"; h = "0.090 * safezoneH";
+                w = "0.50 * safezoneW"; h = "0.115 * safezoneH";
             };
 
             // The rule under the title, and the progress bar drawn over its
@@ -73,8 +73,199 @@ class RscTitles {
             class Step: RscStructuredText {
                 idc = PAC_IDC_BS_STEP;
                 text = "";
-                x = "0.22 * safezoneW + safezoneX"; y = "0.555 * safezoneH + safezoneY";
-                w = "0.56 * safezoneW"; h = "0.380 * safezoneH";
+                x = "0.18 * safezoneW + safezoneX"; y = "0.555 * safezoneH + safezoneY";
+                w = "0.64 * safezoneW"; h = "0.245 * safezoneH";
+            };
+
+            // THE DOCUMENTS, three rows of ten (user, 2026-09-10: "make a bit
+            // more structured 3 rows to 10 columns evening spaces") - a cell
+            // each, so the columns line up, which one block of text cannot do.
+            // Idcs 210-239, row-major; the line under them is 240.
+            class Doc00: RscStructuredText {
+                idc = 210;
+                text = "";
+                x = "0.1800 * safezoneW + safezoneX"; y = "0.812 * safezoneH + safezoneY";
+                w = "0.064 * safezoneW"; h = "0.024 * safezoneH";
+            };
+            class Doc01: RscStructuredText {
+                idc = 211;
+                text = "";
+                x = "0.2440 * safezoneW + safezoneX"; y = "0.812 * safezoneH + safezoneY";
+                w = "0.064 * safezoneW"; h = "0.024 * safezoneH";
+            };
+            class Doc02: RscStructuredText {
+                idc = 212;
+                text = "";
+                x = "0.3080 * safezoneW + safezoneX"; y = "0.812 * safezoneH + safezoneY";
+                w = "0.064 * safezoneW"; h = "0.024 * safezoneH";
+            };
+            class Doc03: RscStructuredText {
+                idc = 213;
+                text = "";
+                x = "0.3720 * safezoneW + safezoneX"; y = "0.812 * safezoneH + safezoneY";
+                w = "0.064 * safezoneW"; h = "0.024 * safezoneH";
+            };
+            class Doc04: RscStructuredText {
+                idc = 214;
+                text = "";
+                x = "0.4360 * safezoneW + safezoneX"; y = "0.812 * safezoneH + safezoneY";
+                w = "0.064 * safezoneW"; h = "0.024 * safezoneH";
+            };
+            class Doc05: RscStructuredText {
+                idc = 215;
+                text = "";
+                x = "0.5000 * safezoneW + safezoneX"; y = "0.812 * safezoneH + safezoneY";
+                w = "0.064 * safezoneW"; h = "0.024 * safezoneH";
+            };
+            class Doc06: RscStructuredText {
+                idc = 216;
+                text = "";
+                x = "0.5640 * safezoneW + safezoneX"; y = "0.812 * safezoneH + safezoneY";
+                w = "0.064 * safezoneW"; h = "0.024 * safezoneH";
+            };
+            class Doc07: RscStructuredText {
+                idc = 217;
+                text = "";
+                x = "0.6280 * safezoneW + safezoneX"; y = "0.812 * safezoneH + safezoneY";
+                w = "0.064 * safezoneW"; h = "0.024 * safezoneH";
+            };
+            class Doc08: RscStructuredText {
+                idc = 218;
+                text = "";
+                x = "0.6920 * safezoneW + safezoneX"; y = "0.812 * safezoneH + safezoneY";
+                w = "0.064 * safezoneW"; h = "0.024 * safezoneH";
+            };
+            class Doc09: RscStructuredText {
+                idc = 219;
+                text = "";
+                x = "0.7560 * safezoneW + safezoneX"; y = "0.812 * safezoneH + safezoneY";
+                w = "0.064 * safezoneW"; h = "0.024 * safezoneH";
+            };
+            class Doc10: RscStructuredText {
+                idc = 220;
+                text = "";
+                x = "0.1800 * safezoneW + safezoneX"; y = "0.838 * safezoneH + safezoneY";
+                w = "0.064 * safezoneW"; h = "0.024 * safezoneH";
+            };
+            class Doc11: RscStructuredText {
+                idc = 221;
+                text = "";
+                x = "0.2440 * safezoneW + safezoneX"; y = "0.838 * safezoneH + safezoneY";
+                w = "0.064 * safezoneW"; h = "0.024 * safezoneH";
+            };
+            class Doc12: RscStructuredText {
+                idc = 222;
+                text = "";
+                x = "0.3080 * safezoneW + safezoneX"; y = "0.838 * safezoneH + safezoneY";
+                w = "0.064 * safezoneW"; h = "0.024 * safezoneH";
+            };
+            class Doc13: RscStructuredText {
+                idc = 223;
+                text = "";
+                x = "0.3720 * safezoneW + safezoneX"; y = "0.838 * safezoneH + safezoneY";
+                w = "0.064 * safezoneW"; h = "0.024 * safezoneH";
+            };
+            class Doc14: RscStructuredText {
+                idc = 224;
+                text = "";
+                x = "0.4360 * safezoneW + safezoneX"; y = "0.838 * safezoneH + safezoneY";
+                w = "0.064 * safezoneW"; h = "0.024 * safezoneH";
+            };
+            class Doc15: RscStructuredText {
+                idc = 225;
+                text = "";
+                x = "0.5000 * safezoneW + safezoneX"; y = "0.838 * safezoneH + safezoneY";
+                w = "0.064 * safezoneW"; h = "0.024 * safezoneH";
+            };
+            class Doc16: RscStructuredText {
+                idc = 226;
+                text = "";
+                x = "0.5640 * safezoneW + safezoneX"; y = "0.838 * safezoneH + safezoneY";
+                w = "0.064 * safezoneW"; h = "0.024 * safezoneH";
+            };
+            class Doc17: RscStructuredText {
+                idc = 227;
+                text = "";
+                x = "0.6280 * safezoneW + safezoneX"; y = "0.838 * safezoneH + safezoneY";
+                w = "0.064 * safezoneW"; h = "0.024 * safezoneH";
+            };
+            class Doc18: RscStructuredText {
+                idc = 228;
+                text = "";
+                x = "0.6920 * safezoneW + safezoneX"; y = "0.838 * safezoneH + safezoneY";
+                w = "0.064 * safezoneW"; h = "0.024 * safezoneH";
+            };
+            class Doc19: RscStructuredText {
+                idc = 229;
+                text = "";
+                x = "0.7560 * safezoneW + safezoneX"; y = "0.838 * safezoneH + safezoneY";
+                w = "0.064 * safezoneW"; h = "0.024 * safezoneH";
+            };
+            class Doc20: RscStructuredText {
+                idc = 230;
+                text = "";
+                x = "0.1800 * safezoneW + safezoneX"; y = "0.864 * safezoneH + safezoneY";
+                w = "0.064 * safezoneW"; h = "0.024 * safezoneH";
+            };
+            class Doc21: RscStructuredText {
+                idc = 231;
+                text = "";
+                x = "0.2440 * safezoneW + safezoneX"; y = "0.864 * safezoneH + safezoneY";
+                w = "0.064 * safezoneW"; h = "0.024 * safezoneH";
+            };
+            class Doc22: RscStructuredText {
+                idc = 232;
+                text = "";
+                x = "0.3080 * safezoneW + safezoneX"; y = "0.864 * safezoneH + safezoneY";
+                w = "0.064 * safezoneW"; h = "0.024 * safezoneH";
+            };
+            class Doc23: RscStructuredText {
+                idc = 233;
+                text = "";
+                x = "0.3720 * safezoneW + safezoneX"; y = "0.864 * safezoneH + safezoneY";
+                w = "0.064 * safezoneW"; h = "0.024 * safezoneH";
+            };
+            class Doc24: RscStructuredText {
+                idc = 234;
+                text = "";
+                x = "0.4360 * safezoneW + safezoneX"; y = "0.864 * safezoneH + safezoneY";
+                w = "0.064 * safezoneW"; h = "0.024 * safezoneH";
+            };
+            class Doc25: RscStructuredText {
+                idc = 235;
+                text = "";
+                x = "0.5000 * safezoneW + safezoneX"; y = "0.864 * safezoneH + safezoneY";
+                w = "0.064 * safezoneW"; h = "0.024 * safezoneH";
+            };
+            class Doc26: RscStructuredText {
+                idc = 236;
+                text = "";
+                x = "0.5640 * safezoneW + safezoneX"; y = "0.864 * safezoneH + safezoneY";
+                w = "0.064 * safezoneW"; h = "0.024 * safezoneH";
+            };
+            class Doc27: RscStructuredText {
+                idc = 237;
+                text = "";
+                x = "0.6280 * safezoneW + safezoneX"; y = "0.864 * safezoneH + safezoneY";
+                w = "0.064 * safezoneW"; h = "0.024 * safezoneH";
+            };
+            class Doc28: RscStructuredText {
+                idc = 238;
+                text = "";
+                x = "0.6920 * safezoneW + safezoneX"; y = "0.864 * safezoneH + safezoneY";
+                w = "0.064 * safezoneW"; h = "0.024 * safezoneH";
+            };
+            class Doc29: RscStructuredText {
+                idc = 239;
+                text = "";
+                x = "0.7560 * safezoneW + safezoneX"; y = "0.864 * safezoneH + safezoneY";
+                w = "0.064 * safezoneW"; h = "0.024 * safezoneH";
+            };
+            class DocLine: RscStructuredText {
+                idc = PAC_IDC_BS_DOCLINE;
+                text = "";
+                x = "0.18 * safezoneW + safezoneX"; y = "0.892 * safezoneH + safezoneY";
+                w = "0.64 * safezoneW"; h = "0.050 * safezoneH";
             };
         };
     };

@@ -19,7 +19,7 @@ INFO("InitEventHandlers","Creating Global EventHandlers");
 if (GVAR(isPlayer)) then {
     INFO("InitEventHandlers","Creating Client EventHandlers");
 
-    // Map drawing restriction (cTab required, admins exempt)
+    // Map drawing restriction: DIRECT channel only, admins exempt
     call EFUNC(init,mapDrawing);
 
     // ACM Events

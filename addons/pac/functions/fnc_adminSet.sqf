@@ -180,6 +180,7 @@ switch (_field) do {
     // THE OPERATOR FIELDS - what only a person can know
     case "milsimName";
     case "discordId";
+    case "email";
     case "clearance";
     case "company";
     case "reportsTo": {

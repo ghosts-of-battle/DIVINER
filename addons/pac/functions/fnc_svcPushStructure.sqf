@@ -41,7 +41,7 @@ private _settings = +GVAR(settings);
 
 {
     [_unit + "." + _x, createHashMapFromArray [["section", _x], ["items", GVAR(structure) getOrDefault [_x, createHashMap]]]] call _fnc_push;
-} forEach ["ranks", "skills", "awards", "statuses", "nets", "radio", "templates", "schemes", "promotion", "trainings"];
+} forEach ["ranks", "skills", "awards", "statuses", "nets", "radio", "templates", "schemes", "promotion", "trainings", "motorpool", "cosmetics"];
 
 {
     [_unit + ".role." + _x, createHashMapFromArray [["section", "role"], ["id", _x], ["role", _y]]] call _fnc_push;
@@ -52,8 +52,7 @@ private _orbat = GVAR(structure) getOrDefault ["orbat", createHashMap];
     ["section", "orbat"],
     ["faction", _orbat getOrDefault ["faction", ""]],
     ["groups", _orbat getOrDefault ["groups", []]],
-    ["platoons", _orbat getOrDefault ["platoons", []]],
-    ["radioNets", _orbat getOrDefault ["radioNets", []]]
+    ["platoons", _orbat getOrDefault ["platoons", []]]
 ]] call _fnc_push;
 
 private _admins = GVAR(structure) getOrDefault ["admins", createHashMap];

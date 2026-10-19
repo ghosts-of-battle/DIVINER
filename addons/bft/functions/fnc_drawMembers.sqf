@@ -47,7 +47,10 @@ private _colors = createHashMapFromArray [
         MEMBER_SIZE,
         MEMBER_SIZE,
         getDirVisual _x,
-        name _x,
+        // NUMBERED THE SAME AS THE PHONE. FUNC(memberNumber) is the only
+        // place the number comes from, so "3 OKAFOR" here is "3" on the
+        // handset's squad list and map dot too.
+        format ["%1 %2", [_x] call FUNC(memberNumber), name _x],
         1,
         0.035,
         "RobotoCondensed",

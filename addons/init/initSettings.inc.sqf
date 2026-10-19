@@ -222,3 +222,36 @@ private _YMFsettings = "Ghosts of Battle";
     {},
     true
 ] call CBA_fnc_addSetting;
+
+// THE RADAR NETWORK, AS A SETTING (2026-09-09). It used to be twenty lines in
+// every mission's initServer.sqf reading config\config_radar.hpp, so adding a
+// radar to the datalink was a mission repack. The mission class and the
+// database list are still added to whatever is typed here - see
+// ghostD_init_fnc_radarNetwork - so nothing that worked before stops working.
+[
+    QEGVAR(Settings,radarNetwork),
+    "CHECKBOX",
+    ["Radar network", "Put the vehicle classes below on their side's sensor network at mission start. Off means no vehicle is touched, whatever is listed."],
+    [_YMFsettings, "Radar"],
+    true,
+    true,
+    {},
+    true
+] call CBA_fnc_addSetting;
+
+[
+    QEGVAR(Settings,radarClasses),
+    "EDITBOX",
+    ["Vehicle classes", "Classnames, separated by commas or new lines. Each one joins its side's datalink the moment it exists, including vehicles spawned an hour in. A class this server has not loaded is skipped and named once in the .rpt."],
+    [_YMFsettings, "Radar"],
+    "",
+    true,
+    {},
+    true
+] call CBA_fnc_addSetting;
+
+// AI SKILL, AS SLIDERS (2026-09-09). Every number config\config_skill.hpp used
+// to set is a setting now; the file itself is gone from the missions that take
+// their config from the database. Kept in its own file because it is twenty-two
+// settings and they would bury everything else in here.
+#include "aiSkillSettings.inc.sqf"

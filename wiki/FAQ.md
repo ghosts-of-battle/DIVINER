@@ -60,9 +60,10 @@ live slot table at once; nobody seated is thrown out. Or edit the
 **How do I add a role?**
 Copy an existing role document (`<unitId>.role.teamleadBanshee`) to a new
 `_id` and `id`, change `name`, `nets`, `tiles`, `defaultLoadout`, the
-arsenal arrays and the gates, then put the class in a squad's SLOTS. The
-role's `groupArsenal` must name an `Arsenal_*` class the mission carries -
-the arsenals stay on disk. Without a database: a file under the element
+arsenal arrays and the gates, then put the class in a squad's SLOTS. A
+whole arsenal for that role alone is the document
+`<unit>.arsenal.role_<CLASS>` - the name comes from the class, so creating
+it is all there is to do. Without a database: a file under the element
 folder, included in `config_roles.hpp` ([Roles](Roles)).
 
 **How do I lock a slot to a rank, a skill, or a person?**

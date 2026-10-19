@@ -21,3 +21,4 @@ PREP(roleFields);
 PREP(roleFromConfig);
 PREP(role);
 PREP(roles);
+PREP(groupKind);

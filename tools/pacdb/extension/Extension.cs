@@ -53,7 +53,7 @@ namespace GhostD.PacDb;
 public static class Extension
 {
     const string Name = "ghostd_pacdb";
-    const string Version = "0.4.0";
+    const string Version = "0.5.0";   // 0.5.0: the database name comes from the connection string
     const int Chunk = 7000;
 
     static unsafe class Cb { public static delegate* unmanaged[Stdcall]<IntPtr, IntPtr, IntPtr, int> Ptr; }
@@ -192,7 +192,12 @@ public static class Extension
             settings.ConnectTimeout = TimeSpan.FromSeconds(15);
             settings.ServerSelectionTimeout = TimeSpan.FromSeconds(15);
             var client = new MongoClient(settings);
-            _mongo = client.GetDatabase("ghostd").GetCollection<BsonDocument>("pac");
+            // THE DATABASE IS THE CONNECTION STRING'S (2026-10-08). A second unit on
+            // the same cluster keeps its own database - mongodb+srv://user:pw@host/jmsb
+            // - with a user that can reach that one alone. No name in the string is
+            // the original single-unit setup, and still means "ghostd".
+            var dbName = MongoUrl.Create(_url).DatabaseName;
+            _mongo = client.GetDatabase(string.IsNullOrEmpty(dbName) ? "ghostd" : dbName).GetCollection<BsonDocument>("pac");
             _mongoFor = _url;
             return _mongo;
         }

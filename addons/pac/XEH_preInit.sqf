@@ -57,8 +57,49 @@ ADDON = true;
 // back what it had just read would be a write per open.
 GVAR(editUid) = "";
 GVAR(editRecord) = createHashMap;
-GVAR(panelFilling) = false;
-GVAR(panelUnassigned) = false;
+
+// THE ONE DIALOG's state (2026-09-09): where it is, where it has been, what
+// the server has sent it, and the working copies a page keeps until SAVE.
+GVAR(uiHistory) = [];
+GVAR(uiPage) = "dashboard";
+GVAR(uiArgs) = createHashMap;
+GVAR(uiData) = createHashMap;
+GVAR(uiWaiting) = [];
+GVAR(uiLive) = false;
+GVAR(uiFilling) = false;
+GVAR(uiFilterable) = false;
+GVAR(uiFilterText) = "";
+GVAR(uiFormKeys) = [];
+GVAR(uiFormNext) = 0;
+GVAR(uiConfirmCode) = {};
+GVAR(uiConfirmArg) = [];
+GVAR(uiSel) = createHashMap;
+GVAR(uiSelKey) = "";
+GVAR(uiLogAskedAt) = -100;
+// a member's own PAC requests, for the tacpad tile
+GVAR(myTickets) = [];
+GVAR(myTicketsOk) = true;
+GVAR(myTicketsAt) = -1;
+GVAR(myTicketsSeen) = false;
+// the tile's RAISE A PAC REQUEST form, kept across redraws
+GVAR(reqKind) = 0;
+GVAR(reqAbout) = 0;
+GVAR(reqSubject) = "";
+GVAR(reqBody) = "";
+GVAR(reqOpen) = "";
+GVAR(reqReply) = "";
+// the tile's APPLICATION tab (settings newPlayers = "apply")
+GVAR(applyQuestions) = [];
+GVAR(myApplication) = createHashMap;
+GVAR(applyAnswers) = createHashMap;
+GVAR(applyAt) = -1;
+GVAR(applySeen) = false;
+GVAR(ticketKinds) = createHashMap;
+// what the database has said since boot (server), -1 = not asked
+GVAR(ticketsOpen) = -1;
+GVAR(applicationsNew) = -1;
+GVAR(docsCount) = 0;
+GVAR(docCache) = createHashMap;
 
 // Whether the current OPORD has been posted to C2 messaging this mission - the
 // server flips it when it picks the admin who posts (FUNC(opordAsk)).
@@ -90,19 +131,15 @@ GVAR(svcMissing) = false;
 // The boot sequence as lines, for the log and the page.
 GVAR(bootLog) = [];
 GVAR(bootStep) = 0;
+GVAR(bootDocs) = [];
 GVAR(testUid) = "";
 
 // Sections edited in game - what the profile keeps so an edit outlives a restart
 // on a server with no database. The editor's own state follows.
 GVAR(structureEdited) = createHashMap;
-GVAR(structSection) = "ranks";
-GVAR(structId) = "";
 
 // THE ACTION LOG - server-held rows (FUNC(logAction)); a client holds what
-// FUNC(adminLog) last sent it. And the management window's own state.
+// FUNC(adminLog) last sent it.
 GVAR(log) = [];
 GVAR(logRows) = [];
 GVAR(logTotal) = 0;
-GVAR(mgSection) = "log";
-GVAR(mgKey) = "";
-GVAR(mgFields) = [];

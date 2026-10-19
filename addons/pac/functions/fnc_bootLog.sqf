@@ -37,7 +37,12 @@ GVAR(bootLog) pushBack _line;
 if (isServer) then {
     private _parts = _step splitString "/";
     if (count _parts >= 2) then {
-        GVAR(bootStep) = (parseNumber (_parts # 0)) / ((parseNumber (_parts # 1)) max 1);
+        // HALFWAY THROUGH THE STEP THE LINE NAMES, and never backwards: a line
+        // is logged as a step starts or as it ends, and step three's own
+        // progress (FUNC(bootDoc)) fills its share one document at a time.
+        private _n = parseNumber (_parts # 0);
+        private _of = (parseNumber (_parts # 1)) max 1;
+        GVAR(bootStep) = (missionNamespace getVariable [QGVAR(bootStep), 0]) max ((_n - 0.5) / _of);
         publicVariable QGVAR(bootStep);
     };
     publicVariable QGVAR(bootLog);

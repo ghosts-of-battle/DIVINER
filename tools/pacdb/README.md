@@ -14,11 +14,15 @@ admin's PC   --clipboard-->  pac_sync.py / push_config.py  --HTTP-->  pacdb-serv
 
 ## Quick start (hosted Linux server, Atlas)
 
-1. **Atlas, once.** Database Access: a user for this database only - role
-   `readWrite` on database `ghostd` - with a password of its own. Network
+1. **Atlas, once.** Pick your unit's database name - `ghostd` if you leave
+   it out, or your own (`mydb`). Database Access: a user for that database
+   only - role `readWrite` on it - with a password of its own. Network
    Access: add the game server's public IP (and only that; the string is
    then useless from anywhere else). Database > Connect > Drivers: copy the
-   `mongodb+srv://user:password@cluster.../` string.
+   `mongodb+srv://user:password@cluster.../` string, and put your database
+   name after the host: `mongodb+srv://user:password@cluster.../mydb`.
+   Several units can share one cluster this way, each in its own database
+   with its own user.
 2. **The mod** on the server, from `.hemttout/release` - `ghostd_pacdb_x64.so`
    (Linux) and `ghostd_pacdb_x64.dll` (Windows) are in its root.
 3. **The mission** with `sync = "service"` and the `unitId` the documents
@@ -33,16 +37,18 @@ Or the server's `cba_settings.sqf`: `force ghostD_pac_serviceUrl = "mongodb+srv:
 
 **Know what a CBA server setting is:** it is sent to every client, so the
 connection string is on every player's machine. Step 1 is what makes that
-harmless - a user that can touch nothing but `ghostd`, from the game
-server's IP alone.
+harmless - a user that can touch nothing but its own database, from the
+game server's IP alone.
 
 ## The extension (`extension/`)
 
 A native library the **server** calls - never a client - with the MongoDB
 driver built in. Verbs: `configure address [key]` (the mod hands it the CBA
 setting), `get key`, `list prefix`, `put.begin/chunk/end key`, `ping`. A
-`mongodb+srv://` or `mongodb://` address is spoken to directly - database
-`ghostd`, collection `pac`, one document per key with real BSON fields; an
+`mongodb+srv://` or `mongodb://` address is spoken to directly - the
+database named in the string (`.../mydb`; `ghostd` when there is none, which
+is every string written before 0.5.0), collection `pac`, one document per key
+with real BSON fields; an
 `http://` address is the pacdb service. Every call but `configure` returns
 `queued` at once and answers through `ExtensionCallback` on its own thread,
 so a server frame never waits on the network. `ping` reports the address it

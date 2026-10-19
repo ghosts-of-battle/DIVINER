@@ -51,6 +51,10 @@ if (!isClass (missionConfigFile >> "CfgGFA_PAC")) exitWith {
 };
 
 GVAR(bootLog) = [];
+GVAR(bootDocs) = [];
+GVAR(bootStep) = 0;
+publicVariable QGVAR(bootDocs);
+publicVariable QGVAR(bootStep);
 private _service = (GVAR(settings) getOrDefault ["sync", "off"]) isEqualTo "service";
 private _unit = GVAR(settings) getOrDefault ["unitId", ""];
 
@@ -71,6 +75,9 @@ private _fnc_counts = {
 // The radio plan is read off the globals the mission's own preInit set - or
 // did not: a mission whose plan lives in the database sets none.
 [] call FUNC(radioFromMission);
+
+// The mission's own contribution was recorded by FUNC(loadStructure), before
+// this function merged anything over it - see GVAR(fromMission) there.
 GVAR(structureHash) = [] call FUNC(structureHash);
 ["1/6", format ["structure from mission config: %1, hash %2, unit '%3'", call _fnc_counts, GVAR(structureHash), _unit]] call FUNC(bootLog);
 
@@ -243,11 +250,11 @@ if (GVAR(svcUp)) then {
     {diag_log text _x} forEach [
         "",
         "    +--------------------------------------------------------+",
-        "    |  ####  #  #  ###   ###  ####       ###   ###   ###     |",
-        "    |  #     #  #  #  #  #     #  #      #  #  #  #  #       |",
-        "    |  # ##  ####  #  #   ##   #  #      ###   ###   #       |",
-        "    |  #  #  #  #  #  #     #  #  #      #     #  #  #       |",
-        "    |  ####  #  #  ###   ###   ####      #     #  #   ###    |",
+        "    |  ####  #  #  ####  ####  ####      ####  ####  ####    |",
+        "    |  #     #  #  #  #  #      ##       #  #  #  #  #       |",
+        "    |  # ##  ####  #  #  ####   ##       ####  ####  #       |",
+        "    |  #  #  #  #  #  #     #   ##       #     #  #  #       |",
+        "    |  ####  #  #  ####  ####   ##       #     #  #  ####    |",
         "    |                                                        |",
         "    |            D A T A B A S E   L O A D E D               |",
         "    +--------------------------------------------------------+",

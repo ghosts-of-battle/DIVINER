@@ -52,13 +52,21 @@ disableSerialization;
 if (!isNil "ghostD_pac_fnc_whenReady" && {!(missionNamespace getVariable ["ghostD_pac_ready", false])} && {count ([] call FUNC(roles)) isEqualTo 0} && {isNil QGVAR(waitedForPac)}) exitWith {
     GVAR(waitedForPac) = true;
     hintSilent "TAC//PAC - waiting for the unit's roles from the server ...";
-    [{[] call ghostD_groups_fnc_initGroupMenu}, 60] call ghostD_pac_fnc_whenReady;
+    // AND CLEAR IT AGAIN. hintSilent stays on screen until something replaces
+    // it, so this message sat there long after the boot screen had said READY
+    // and the menu had opened - it looked like the wait had never ended (seen
+    // in game 2026-09-09: "should not have to wait again after the splash
+    // screen says ready").
+    [{
+        hintSilent "";
+        [] call ghostD_groups_fnc_initGroupMenu;
+    }, 60] call ghostD_pac_fnc_whenReady;
 };
 
 private _display = createDialog ["YMF_groupMenu",true];
 private _tree = _display displayCtrl 1500;
 
-private _factionName = ([] call FUNC(orbat)) # 3;
+private _factionName = ([] call FUNC(orbat)) # 2;
 (_display displayCtrl 1000) ctrlSetText toUpper format ["%1  ROLE SELECTION",_factionName];
 
 // Set by the style pass in the display's onLoad, which has already run by here.

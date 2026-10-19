@@ -8,6 +8,11 @@
         initServer.sqf built the table from Dynamic_Groups before PAC could
         say anything.
 
+        A ROW IS [name, roles, condition, group, units, kind] - the mission's
+        initServer.sqf seeds five-element rows from Dynamic_Groups (no kind);
+        the sixth is the squad's KIND from the ORBAT (inf, mech_inf, air ...),
+        the blue force tracker's icon, read with `param [5, ""]`.
+
         NOBODY IS THROWN OUT OF A SLOT. A man already seated stays where he
         is by squad name and slot index when the new table has that slot;
         a slot that no longer exists sends him back to the menu. At boot the
@@ -27,15 +32,22 @@ if (isNil "YMF_dynamicGroups") exitWith {false};
 if (_groups isEqualTo []) exitWith {false};
 
 // same names, same roles, same order - nothing to do
-private _now = YMF_dynamicGroups apply {[_x # 0, _x # 1, _x # 2]};
-private _new = _groups apply {[_x # 0, _x # 1, _x # 2]};
+// The KIND (the fourth element, 2026-09-10) is part of what can change: a
+// squad turned from infantry to air with nothing else touched still applies.
+private _now = YMF_dynamicGroups apply {[_x # 0, _x # 1, _x # 2, _x param [5, ""]]};
+private _new = _groups apply {[_x # 0, _x # 1, _x # 2, _x param [3, ""]]};
 if (_now isEqualTo _new) exitWith {false};
 
 private _table = [];
 {
-    _x params ["_name", "_roles", ["_cond", "true"]];
+    _x params ["_name", "_roles", ["_cond", "true"], ["_kind", ""]];
+    if !(_kind isEqualType "") then {_kind = ""};
     private _old = YMF_dynamicGroups select {toUpper (_x # 0) isEqualTo toUpper _name};
     private _group = if (_old isEqualTo []) then {grpNull} else {(_old # 0) # 3};
+    // A squad that already has its group gets its kind at once - the blue
+    // force tracker's icon changes the moment the ORBAT does. A squad with
+    // no group yet is stamped when FUNC(assignPlayer) makes one.
+    [_group, _kind] call FUNC(groupKind);
     private _units = _roles apply {objNull};
     if (_old isNotEqualTo []) then {
         private _oldUnits = (_old # 0) # 4;
@@ -44,7 +56,7 @@ private _table = [];
             if (!isNull _u) then {_units set [_i, _u]};
         };
     };
-    _table pushBack [_name, +_roles, _cond, _group, _units];
+    _table pushBack [_name, +_roles, _cond, _group, _units, _kind];
 } forEach _groups;
 
 YMF_dynamicGroups = _table;

@@ -43,7 +43,7 @@ Fourteen files take this path. In `description.ext`:
 ```
 
 > **Include order matters once.** `config_admins.hpp` must come first, because it
-> `#define`s `DEBUG_ADMINS` and `CBA_ADMINS`, which the arrays below it expand.
+> `#define`s `ADMINS`, which the two arrays below it expand.
 
 `config_groups.hpp` pulls in `config_roles.hpp`, the common arsenal and the
 per-element arsenals at its own foot, so one include carries the whole roster.

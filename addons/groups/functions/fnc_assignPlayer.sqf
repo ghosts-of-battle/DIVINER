@@ -47,6 +47,8 @@ if (isNull _selectedGroup) then {
     _selectedGroup = createGroup [side _unit,true];
     _selectedGroup setGroupIdGlobal [_groupToUpdate select 0];
     _groupToUpdate set [3,_selectedGroup];
+    // the squad's kind from the ORBAT - the tracker's icon (2026-09-10)
+    [_selectedGroup, _groupToUpdate param [5, ""]] call FUNC(groupKind);
 };
 
 if !(_unit in (units _selectedGroup)) then {

@@ -52,8 +52,45 @@ Every entry above is written up in `CHANGES.md` with a sync verdict.
   config.
 - **`media`** came over whole (285 MB) and wants pruning.
 - **Tech debt pass** on `common` and `main`.
+- **`ghostD_vehicle_fnc_setRadio` does nothing on TFAR.** The ACRE half
+  programmes every rack in the vehicle; the TFAR half is
+  `if (usesTFAR) exitWith { /* TODO: Code goes here */ }`, so on a TFAR server a
+  vehicle's rack radios are left as they spawn and nothing says so. The other
+  two markers in the tree are upstream's and cosmetic: a cursor on the loading
+  screen (`main_menu`) and the vanilla unconscious state (`spectator`).
+- **The three mods are in sync (2026-09-09).** Everything DIVINER has that is
+  not ALiVE's is in `DIVINER_alive` (`ghostDA`) and `ghost` (`ghost`): the whole
+  of `pac` and `adminpanel` (164 + 105 files, identical apart from the prefix),
+  the messaging server functions, the tacpad compose screens, TAC//SUPPORT's
+  request window, the AI skill settings, the radar network, the ORBAT's
+  coefficients in `groups/fnc_setupPlayer`, and the vehicle cosmetics entries.
+  `hemtt check` clean in both - 1182 and 1341 SQF.
+
+  **What is deliberately still different, and why - 36 files.** In every one of
+  them the OTHER repo is ahead, because it holds an ALiVE integration DIVINER
+  does not have:
+
+  | Files | Why |
+  |---|---|
+  | `hacking/*` (7), `uas/*` (7), `jamming/*` (4) | the intel, cache and jammer producers read ALiVE's objectives through `adapter_alive` |
+  | `tacpad_apps/fnc_appSupport.sqf`, `fnc_tileData.sqf`, `dialog.hpp`, `XEH_postInit.sqf`, `initSettings.inc.sqf`, `XEH_PREP.hpp` | TAC//SUPPORT there is ALiVE's ATO and NEO through the adapter; DIVINER's is Simplex only |
+  | `bft/*` (2), `antiship/fnc_launcherInit.sqf`, `common/fnc_taorGate.sqf`, `curator/XEH_preInit.sqf` | ALiVE markers, TAOR gates and Zeus modules |
+  | `messaging/initSettings.inc.sqf`, `messaging/XEH_PREP.hpp` | `srvForward` and its setting exist there only |
+  | `init/XEH_preInit.sqf`, `init/fnc_skillAdjustment.sqf` | the ALiVE boot hook, and the `difficulty` addon DIVINER dropped |
+  | `main/script_mod.hpp`, `main/script_version.hpp` | the mod's own name and build number |
+
+  Porting any of those from DIVINER would DELETE an ALiVE feature. They are the
+  divergence, not a backlog.
 
 ## Dropped
+
+- **`<unit>.radar` as a source of the radar network** (2026-09-09). The network
+  is the CBA settings `ghostD_Settings_radarNetwork` and
+  `ghostD_Settings_radarClasses`, plus a mission's own `Radar_Network` class.
+  The document is not fetched and `currentRadar` is ignored.
+- **The numeric traits on a role.** `audibleCoef`, `camouflageCoef`, `loadCoef`
+  and `staminaDrainCoef` are set once for everybody, on the ORBAT (`coefs`); a
+  role carries the four booleans the engine has and nothing else.
 
 - **The hackphone and soldiertab models.** Their texture paths were baked into
   the `.p3d` at the old prefix, and a binary model cannot be re-pathed by a text

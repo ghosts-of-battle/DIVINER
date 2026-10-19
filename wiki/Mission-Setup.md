@@ -119,13 +119,11 @@ config/
     alpha_1-1/                  one squad
         config_teamlead.hpp
         config_recon.hpp
-        config_arsenal.hpp
         config_motorpool.hpp
     nomad_2/                    four crews, one set of role classes
         config_tc.hpp
         config_driver.hpp
         config_crew.hpp
-        config_arsenal.hpp
 ```
 
 The reference mission uses `ghost_6`, `banshee`, `nomad_2`, `talon_3`,

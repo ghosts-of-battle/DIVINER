@@ -38,7 +38,9 @@ Ten tabs maximum, five to a row.
 3. Add its class name to that squad's role list in `group_setup[]` — once per
    slot it should occupy.
 4. Gate it in `Role_Access` if it needs a rank.
-5. Give it `groupArsenal = "Arsenal_<Element>";` to match its folder.
+5. Gear only that role may draw goes in its own arsenal document,
+   `<unit>.arsenal.role_<CLASS>` - the name is derived from the class, so
+   there is nothing to point at.
 
 ---
 
@@ -46,10 +48,12 @@ Ten tabs maximum, five to a row.
 
 Add the class to `weapons[]` in `arsenal\common\weapons.hpp`. Nothing else.
 
-## Add a weapon only one element can draw
+## Add a weapon only one platoon, squad or role can draw
 
-Add it to that element's `config_arsenal.hpp` `weapons[]`. Confirm every role in
-that folder carries the matching `groupArsenal`.
+Add it to `weapons[]` in that layer's own arsenal - `<unit>.arsenal.plt_<PLT>`,
+`.sqd_<SQD>` or `.role_<CLASS>`. The name is derived from the platoon id, squad
+name or role class, so the document is the whole of it: nothing points at it and
+nothing has to be kept in step. Edit it on that platoon, squad or role page.
 
 ---
 

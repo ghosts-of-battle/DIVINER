@@ -1,16 +1,31 @@
 # Arsenal
 
-Three sources merge into the ACE arsenal when a player takes a slot, in this
-order:
+Everything merges into the ACE arsenal when a player takes a slot, narrowest
+last:
 
 ```
-Common_Arsenal            everyone, always
-  + Arsenal_<Element>     his element's own, via the role's groupArsenal
-  + the role's own        arsenalWeapons / Magazines / Items / Backpacks
+Common_Arsenal                  the mission file, everyone always
+  + <unit>.arsenal              the database's common lists, everyone
+  + <unit>.arsenal.plt_<PLT>    everyone in that platoon
+  + <unit>.arsenal.sqd_<SQD>    everyone in that squad
+  + <unit>.arsenal.role_<CLASS> that role only
+  + the role's own              arsenalWeapons / Magazines / Items / Backpacks
 ```
+
+They **add up**. No layer takes anything away.
 
 That merge is `ghostD_groups_fnc_setupPlayer`, which hands the result to
 `ace_arsenal_fnc_addVirtualItems`.
+
+> **The narrower names are DERIVED, never stored (2026-09-09).** A role used to
+> carry `groupArsenal = "Arsenal_Banshee";` - a class name typed by hand, which
+> could name a class that did not exist, and on the reference unit all five of
+> them named empty documents. There is no such property now. `plt_`, `sqd_` and
+> `role_` are built from the platoon id, the squad name and the role class
+> (upper case, anything else an underscore), so **creating one of these
+> arsenals is creating the document and nothing else** - nothing to point at,
+> nothing to spell wrong. The website computes the same name with the same
+> rule.
 
 ---
 
@@ -68,45 +83,30 @@ you cannot scan is a list with duplicates in it.
 
 ---
 
-## Per-element arsenals
+## The narrower arsenals
 
-One file per element folder, for gear only that element may draw.
+Gear only one platoon, one squad or one role may draw. Each is a document, and
+its id says who it belongs to:
 
-```cpp
-// config\banshee\config_arsenal.hpp
-class Arsenal_Banshee {
-    weapons[] = {};
-    magazines[] = {};
-    backpacks[] = {};
-    items[] = {};
-};
-```
+| Document | Who draws from it | Where it is edited |
+| --- | --- | --- |
+| `<unit>.arsenal.plt_<PLATOON>` | everyone in that platoon | the platoon page |
+| `<unit>.arsenal.sqd_<SQUAD>` | everyone in that squad | the squad page |
+| `<unit>.arsenal.role_<CLASS>` | that role only | the role page, ARSENAL |
 
-Two things to get right:
+The id is the platoon id, squad name or role class in upper case with anything
+else an underscore - `BANSHEE 1-1` is `sqd_BANSHEE_1_1`, `atlWraith` is
+`role_ATLWRAITH`. `ghostD_groups_fnc_setupPlayer` builds those names as it
+merges, and `Templates > Common arsenal` on the website lists the common
+versions only, because these three are edited where their name comes from.
 
-**1. Every role in the folder points at it.**
-
-```cpp
-groupArsenal = "Arsenal_Banshee";
-```
-
-Omit the property and that role sees only the common arsenal.
-
-**2. It must be a top-level class.** It is looked up as
-`missionConfigFile >> "Arsenal_Banshee"`, so include it beside the common
-arsenal at the **foot of `config_groups.hpp`** — *outside* `Dynamic_Roles`:
-
-```cpp
-#include "config_roles.hpp"
-#include "arsenal\config_arsenal_common.hpp"
-
-#include "ghost_6\config_arsenal.hpp"
-#include "banshee\config_arsenal.hpp"
-#include "nomad_2\config_arsenal.hpp"
-```
-
-Nest it inside `Dynamic_Roles` by mistake and the lookup finds nothing, with no
-error — the role just gets the common arsenal.
+**A class in a mission file still works for the common arsenal.**
+`missionConfigFile >> "Common_Arsenal"` is read first and the database adds to
+it, so a mission that ships `config\arsenal\` keeps working and one that ships
+none gets everything from `<unit>.arsenal`. There is no per-element class any
+more - the old `Arsenal_<Element>` classes are read by nothing, and the
+`groupArsenal` property that named them has been removed from the role
+contract, from TAC//PAC's role editor and from the website.
 
 ---
 

@@ -218,7 +218,7 @@ an admin.
 
 **Every `Dynamic_Roles` role is a PAC role by itself, whole** - same class
 name, every property the role file declares (name, description, icon, nets,
-tiles, traits, customVariables, defaultLoadout, groupArsenal, the four
+tiles, traits, customVariables, defaultLoadout, the four
 arsenal arrays), `slotTag` = the class - so there is nothing to list here
 and the roster, auto-slot, the seeded record and the group menu all read
 one record. In the database it is one document per role. Declare a role in

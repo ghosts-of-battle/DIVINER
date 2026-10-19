@@ -25,7 +25,6 @@
     ["traits", "a"],
     ["customVariables", "a"],
     ["defaultLoadout", "a"],
-    ["groupArsenal", "t"],
     ["arsenalWeapons", "a"],
     ["arsenalMagazines", "a"],
     ["arsenalItems", "a"],

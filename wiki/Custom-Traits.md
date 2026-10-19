@@ -43,7 +43,12 @@ class ISR_Operator {
 ### `traits[] = { {name, value, custom} }`
 
 - **name** — the trait. Engine traits are `Medic`, `Engineer`,
-  `ExplosiveSpecialist`, `UAVHacker`, `audibleCoef`, `camouflageCoef`.
+  `explosiveSpecialist`, `UAVHacker`. **Those four and no more (2026-09-09):**
+  they describe the JOB, so they belong to a role. The engine's numeric
+  coefficients — `audibleCoef`, `camouflageCoef`, `loadCoef` and
+  `staminaDrainCoef` — describe the UNIT and are set once for everybody on the
+  ORDER OF BATTLE (`<unit>.orbat` > `coefs`, edited on the order of battle's
+  own page), not on a role.
 - **value** — `"true"` or `"false"` are compiled to booleans. Anything else is
   passed through as written, which is how `audibleCoef` takes a number.
 - **custom** — `"true"` makes it a *custom* trait, one the engine stores but does

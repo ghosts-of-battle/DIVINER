@@ -1,6 +1,6 @@
 # Element folder files
 
-Each element folder holds up to three kinds of file. Name the folder for the
+Each element folder holds up to two kinds of file. Name the folder for the
 element it serves; where several elements share one set of role classes, name it
 for the group that shares them.
 
@@ -10,7 +10,6 @@ config/
         config_teamlead.hpp
         config_atl.hpp
         config_recon.hpp
-        config_arsenal.hpp
         config_motorpool.hpp
 ```
 
@@ -36,8 +35,6 @@ class reconBanshee {
 
     defaultLoadout[] = { /* a setUnitLoadout array */ };
 
-    groupArsenal = "Arsenal_Banshee";
-
     arsenalWeapons[] = {};
     arsenalMagazines[] = {};
     arsenalItems[] = {};
@@ -52,36 +49,34 @@ class reconBanshee {
 | `traits[]` | Engine traits: `medic`, `engineer`, `explosiveSpecialist`, `UAVHacker` |
 | `customVariables[]` | `isLeader` is the one other systems key off |
 | `defaultLoadout[]` | Build it in the Arsenal, export, paste |
-| `groupArsenal` | Must name a **top-level** `Arsenal_<X>` class |
 
 Full detail: [Roles](Roles).
 
 ---
 
-## `config_arsenal.hpp` — the element's own gear
+## `config_arsenal.hpp` - GONE (2026-09-09)
 
-**Loads:** `#include`d at the **foot of** [config_groups](config_groups),
-outside `Dynamic_Roles`.
-**Declares:** `Arsenal_<Element>`.
+A folder used to carry `Arsenal_<Element>`, and every role in it a
+`groupArsenal` naming that class. **Both are gone.** The property is no longer
+part of the role contract, TAC//PAC's role editor no longer offers it and the
+website no longer writes it - a name typed by hand could name a class that did
+not exist, and on the reference unit all five of them named empty documents.
 
-```cpp
-class Arsenal_Banshee {
-    weapons[] = {};
-    magazines[] = {};
-    backpacks[] = {};
-    items[] = {};
-};
-```
+Gear narrower than the common arsenal is a **document named after what it
+belongs to**:
 
-Two things to get right:
+| Document | Who draws from it | Edited on |
+| --- | --- | --- |
+| `<unit>.arsenal.plt_<PLATOON>` | everyone in that platoon | the platoon page |
+| `<unit>.arsenal.sqd_<SQUAD>` | everyone in that squad | the squad page |
+| `<unit>.arsenal.role_<CLASS>` | that role only | the role page, ARSENAL |
 
-1. **Every role in the folder points at it** — `groupArsenal = "Arsenal_Banshee";`
-2. **It must be top-level.** It is looked up as
-   `missionConfigFile >> "Arsenal_Banshee"`. Nest it inside `Dynamic_Roles` by
-   mistake and the lookup finds nothing, with no error — the role just gets the
-   common arsenal.
+The id is the platoon id, squad name or role class UPPER CASE with anything
+else an underscore, so **creating one is creating the document and nothing
+else**. `Common_Arsenal` in a mission file still works and is still read first;
+the database adds to it. See [Arsenal](Arsenal).
 
-The same array-name contract applies: `weapons`, `magazines`, `backpacks`,
+The array-name contract is unchanged: `weapons`, `magazines`, `backpacks`,
 `items*`.
 
 ---
@@ -112,16 +107,16 @@ no class at all. Delete it rather than keeping it as a placeholder.
 
 ## The reference mission's folders
 
-Every file in every element folder is one of the three kinds above.
+Every file in every element folder is one of the two kinds above.
 
-| Folder | Serves | Role files | Arsenal | Motorpool |
-|---|---|---|---|---|
-| `ghost_6\` | GHOST 6 | `config_co`, `config_xo`, `config_jtac`, `config_medical`, `config_isr`, `config_security` | `Arsenal_Ghost6` | `MotorPool_Ghost` |
-| `banshee\` | BANSHEE 1-1 … 1-4 | `config_teamlead`, `config_atl`, `config_medical`, `config_demo`, `config_jfo`, `config_isr`, `config_recon` | `Arsenal_Banshee` | — common pool |
-| `nomad_2\` | NOMAD 2-1 … 2-4 | `config_tc`, `config_driver`, `config_crew` | `Arsenal_Nomad` | `MotorPool_Nomad` |
-| `talon_3\` | TALON 3-1 … 3-4 | `config_pilot`, `config_copilot`, `config_crew` | `Arsenal_Talon` | `MotorPool_Talon` |
-| `wraith_4-1\` | WRAITH 4-1 | `config_teamlead`, `config_atl`, `config_medical`, `config_jfo`, `config_isr`, `config_support` | `Arsenal_Wraith41` | `MotorPool_Wraith` |
-| `wraith_4-2\` | WRAITH 4-2 | the same six | `Arsenal_Wraith42` | — shares 4-1's |
+| Folder | Serves | Role files | Motorpool |
+|---|---|---|---|
+| `ghost_6\` | GHOST 6 | `config_co`, `config_xo`, `config_jtac`, `config_medical`, `config_isr`, `config_security` | `MotorPool_Ghost` |
+| `banshee\` | BANSHEE 1-1 … 1-4 | `config_teamlead`, `config_atl`, `config_medical`, `config_demo`, `config_jfo`, `config_isr`, `config_recon` | — common pool |
+| `nomad_2\` | NOMAD 2-1 … 2-4 | `config_tc`, `config_driver`, `config_crew` | `MotorPool_Nomad` |
+| `talon_3\` | TALON 3-1 … 3-4 | `config_pilot`, `config_copilot`, `config_crew` | `MotorPool_Talon` |
+| `wraith_4-1\` | WRAITH 4-1 | `config_teamlead`, `config_atl`, `config_medical`, `config_jfo`, `config_isr`, `config_support` | `MotorPool_Wraith` |
+| `wraith_4-2\` | WRAITH 4-2 | the same six | — shares 4-1's |
 
 Two things to read off that table:
 

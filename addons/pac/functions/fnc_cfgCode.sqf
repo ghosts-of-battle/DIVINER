@@ -46,7 +46,9 @@ if (_text isEqualTo "") exitWith {{}};
 private _code = {};
 private _ok = false;
 try {
-    _code = compile (_wrap + _text);
+    // COMMENTS OUT FIRST. `compile` is not the preprocessor and chokes on the
+    // first // or /* in the text - which every hand-written config has.
+    _code = compile (_wrap + ([_text] call FUNC(stripComments)));
     _ok = true;
 } catch {
     ERROR_2("<unit>.%1 will not compile - keeping the mission's own file. %2",_doc,_exception);

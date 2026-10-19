@@ -1,5 +1,14 @@
 # Roster and squads
 
+<!-- coefs, 2026-09-09 -->
+
+> **The order of battle sets the engine's coefficients for everybody.**
+> `<unit>.orbat` carries **`coefs`** - `audibleCoef`, `camouflageCoef`,
+> `loadCoef` and `staminaDrainCoef` - and `ghostD_groups_fnc_setupPlayer`
+> applies them to every player as he takes a slot. They are numbers that
+> describe the unit, not the job, so they are not on a role. Edited on the
+> order of battle's own page on the website.
+
 > **In storage since 2026-09-05.** The whole of `Dynamic_Groups` is the
 > `<unitId>.orbat` document when TAC//PAC holds it - see
 > [config_groups](config_groups). The shape below is the shape of the document's

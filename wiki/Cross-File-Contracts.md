@@ -17,7 +17,6 @@ If you read one page on this wiki before shipping a mission, read this one.
 | `nets[]` in a role file | a net declared in `GHOST_Nets` | The role reads a mailbox that does not exist |
 | Role classes in `group_setup` | classes included by `config_roles.hpp` | Empty slot, no card beside it |
 | `Role_Access` class names | role class names | The gate gates nothing |
-| `groupArsenal` value | a top-level `Arsenal_<X>` class | The role gets only the common arsenal |
 | First word of a group id | `MotorPool_<Callsign>` | The element gets the common pool (usually fine) |
 | A messaging line's `name` | the field keys the reader card and the OPORD / METT-TC autofills read (`Line1.A`, `S.A`, `Callsign.A`) | A renamed line is a field nothing finds — it validates, and is never drawn or filled |
 
@@ -87,7 +86,8 @@ against your `config\` folder can confirm, in one pass:
 - every net in a role's `nets[]` is declared in `GHOST_Nets`
 - every `Platoons` and `RadioNets` `net` has an `ghost_radio_mrChannels` entry
 - every squad has an `ghost_radio_srSquadChannel` row
-- every role carries a `groupArsenal` naming a class that exists
+- every squad and platoon named by an arsenal document still exists (a
+  `sqd_`/`plt_`/`role_` arsenal whose owner was renamed is drawn by nobody)
 
 The reference mission is checked this way after every roster change, and it
 catches something roughly half the time.

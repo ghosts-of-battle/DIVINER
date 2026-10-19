@@ -358,17 +358,23 @@ class GVAR(console) {
             onButtonClick = "[] call admp_fnc_toggleServerLock;";
         };
 
-        // TAC//PAC - the personnel page. Shares LOCK SERVER's row; the button
-        // is only useful with the pac addon loaded, and does nothing without it.
+        // TAC//PAC - the website's pages in game. In the box under the vehicle
+        // column, beside WAKE UP / HEAL FULL and their height (user,
+        // 2026-09-10: "move the TAC/PAC button and make the size of the green
+        // box"); it only does anything with the pac addon loaded.
         class ADMIN_PAC: RscADMPButton {
             idc = IDC_ADMINPANEL_ADMIN_PAC;
-            text = "PAC ROSTER";
-            tooltip = "TAC//PAC - the personnel roster: ranks, roles, skills, awards, notes, attendance.";
-            x = "0.096 * safezoneW + safezoneX";
-            y = "0.680 * safezoneH + safezoneY";
-            w = "0.082 * safezoneW";
-            h = "0.032 * safezoneH";
-            onButtonClick = "if (!isNil 'ghostD_pac_fnc_panelOpen') then {[] call ghostD_pac_fnc_panelOpen};";
+            text = "TAC//PAC";
+            tooltip = "TAC//PAC - the website's pages in game: dashboard, roster, applications, PAC actions, orders, configs, templates, ORBAT, Mongo docs, backup.";
+            font = "RobotoCondensedBold";
+            sizeEx = "1.1 * (0.025 * safezoneH)";
+            x = "0.702 * safezoneW + safezoneX";
+            y = "0.892 * safezoneH + safezoneY";
+            w = "0.143 * safezoneW";
+            h = "0.070 * safezoneH";
+            // ONE DIALOG (2026-09-09), opening on the dashboard as the website
+            // does, with the website's nav bar along its top.
+            onButtonClick = "if (!isNil 'ghostD_pac_fnc_uiOpen') then {[] call ghostD_pac_fnc_uiOpen}";
         };
 
         class ADMIN_ROLEACCESS: RscADMPButton {

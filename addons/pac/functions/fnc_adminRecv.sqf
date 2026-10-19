@@ -4,7 +4,8 @@ Function: ghostD_pac_fnc_adminRecv
 
 Description:
     The answer to FUNC(adminGet), arriving on the admin's machine. Keeps the
-    record and, if the PAC page is open on that player, fills it.
+    record and hands it to the one dialog, which redraws the player page if
+    that is what is waiting for it.
 
 Parameters:
     0: UID <STRING>
@@ -23,6 +24,5 @@ if (!hasInterface) exitWith {};
 
 GVAR(editUid) = _uid;
 GVAR(editRecord) = _rec;
-
-[] call FUNC(panelFill);
-[] call FUNC(manageFill);
+// the player page asked for it under this name (FUNC(uiAsk))
+["record:" + _uid, _rec] call FUNC(uiRecv);

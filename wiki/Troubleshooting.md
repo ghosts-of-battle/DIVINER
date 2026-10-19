@@ -57,7 +57,7 @@ above it in the RPT. Nothing else on this page matters until that line is clean.
 | Symptom | Look at |
 |---|---|
 | An arsenal list is ignored | The array is not named `weapons`, `magazines`, `backpacks` or `items*` |
-| A per-element arsenal is ignored | The `Arsenal_<X>` class is nested inside `Dynamic_Roles` instead of being top-level, or `groupArsenal` is missing from the role |
+| A platoon's, squad's or role's arsenal is ignored | The document id does not match the derived name. It is the platoon id, squad name or role class UPPER CASE with anything else an underscore - `BANSHEE 1-1` is `sqd_BANSHEE_1_1`, not `sqd_Banshee_1-1`. Nothing points at these documents, so a mistyped one is simply never read |
 | A man spawns with a rifle and no ammunition | His `defaultLoadout[]` pairs a weapon with a magazine it does not take — check after any weapon swap |
 | A man spawns without his suppressor or optic | The attachment is not compatible with the weapon class in `defaultLoadout[]` |
 

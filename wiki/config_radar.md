@@ -5,7 +5,14 @@ datalink.
 
 **Loads:** `#include`d in [description.ext](description-ext).
 **Declares:** `Radar_Network`.
-**Read by:** `initServer.sqf`.
+**Read by:** `ghostD_init_fnc_radarNetwork`.
+
+> **The setting is the place now (2026-09-09).** The network is switched on with
+> the CBA setting **`ghostD_Settings_radarNetwork`** and the classes are typed
+> into **`ghostD_Settings_radarClasses`** — comma or newline separated — in
+> Addon Options. This file still works and is added to what the setting says,
+> so a mission that ships it keeps working. **The database is not a source:**
+> `<unit>.radar` is no longer fetched or read. Delete it.
 
 ---
 

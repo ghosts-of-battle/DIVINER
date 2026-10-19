@@ -163,11 +163,9 @@ private _platoons = [];
     _platoons pushBack [configName _x, getText (_x >> "name"), getText (_x >> "callsign"), getText (_x >> "net"), getArray (_x >> "squads")];
 } forEach (configProperties [missionConfigFile >> "Dynamic_Groups" >> "Platoons", "isClass _x", true]);
 _orbat set ["platoons", _platoons];
-private _radioNets = [];
-{
-    _radioNets pushBack [configName _x, getText (_x >> "net"), getArray (_x >> "squads")];
-} forEach (configProperties [missionConfigFile >> "Dynamic_Groups" >> "RadioNets", "isClass _x", true]);
-_orbat set ["radioNets", _radioNets];
+// NO RadioNets CLASS (user, 2026-09-09: "if there is acre use the fucking acre
+// tab to configure all radios, if there is tfar use tfar tab"). A squad's
+// channel is the radio plan's business and nothing else decides it.
 _orbat set ["faction", getText (missionConfigFile >> "Dynamic_Groups" >> "faction_name")];
 GVAR(structure) set ["orbat", _orbat];
 
@@ -249,6 +247,34 @@ private _opords = createHashMap;
 } forEach ("true" configClasses (_cfg >> "opords"));
 
 GVAR(structure) set ["opords", _opords];
+
+// ---- WHAT THIS MISSION'S FILES FEED ---------------------------------------
+// Recorded here, which is the last moment the config's own contribution stands
+// alone: FUNC(boot) merges the profile's in-game edits over it at 2/6 and the
+// service's documents at 3/6, and after that there is no telling a file's rank
+// from a document's.
+//
+// HERE AND NOT IN FUNC(boot), because boot exits early on a client
+// (`if (!isServer) exitWith`) and the section menu this feeds is drawn on a
+// client. This function runs on every machine, from XEH_postInit.
+//
+// Without a database, a section on this list has no editable screen: the game
+// cannot write config\, so an editor for one could only save into the profile
+// and be overruled by the file at the next start. FUNC(fileFed) is that test.
+// "radio" is on the list for completeness; it has no screen of its own.
+GVAR(fromMission) = [];
+{
+    private _v = GVAR(structure) getOrDefault [_x, createHashMap];
+    private _has = if (_x isEqualTo "orbat") then {
+        count (_v getOrDefault ["groups", []]) > 0
+    } else {
+        count _v > 0
+    };
+    if (_has) then {GVAR(fromMission) pushBack _x};
+} forEach ["ranks", "skills", "awards", "statuses", "promotion", "trainings",
+           "traits", "admins", "roles", "nets", "radio", "templates", "schemes",
+           "motorpool", "cosmetics", "arsenal", "logistics", "pylons", "skill",
+           "orbat", "welcome", "opords"];
 
 GVAR(structureHash) = [] call FUNC(structureHash);
 

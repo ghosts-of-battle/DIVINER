@@ -18,8 +18,8 @@ respawnButton = 1;
 skipLobby = 1;
 disabledAI = 1;
 
-enableDebugConsole[] = {DEBUG_ADMINS};
-cba_settings_whitelist[] = {CBA_ADMINS};
+enableDebugConsole[] = {ADMINS};
+cba_settings_whitelist[] = {ADMINS};
 
 /* Class configs - reached by name through missionConfigFile */
 #include "config\config_groups.hpp"          // Dynamic_Groups, Dynamic_Roles, arsenals
@@ -46,8 +46,8 @@ class Extended_PreInit_EventHandlers {
 
 ## Rules
 
-- **`config_admins.hpp` goes first.** It `#define`s `DEBUG_ADMINS` and
-  `CBA_ADMINS`; the arrays below expand them. Put it lower and the file will not
+- **`config_admins.hpp` goes first.** It `#define`s `ADMINS`; the two arrays
+  below expand it. Put it lower and the file will not
   parse.
 - **`config_groups.hpp` carries the roster, the roles and every arsenal.** It
   includes `config_roles.hpp` and the arsenal files at its own foot, so one line

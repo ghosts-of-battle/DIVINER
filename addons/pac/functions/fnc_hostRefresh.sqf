@@ -11,7 +11,10 @@ Description:
     back through a direct reply (FUNC(adminRecv)); the roster list, the
     summary block, the structure editor and the management window did not
     (user, 2026-09-05: "the admin panel is not showing my rank change after
-    it's made in PAC, and it is showing in game").
+    it's made in PAC, and it is showing in game"). Since 2026-09-09 there is
+    one dialog and one redraw, FUNC(uiRefresh). Since 2026-09-09 there is
+    one dialog and one redraw, FUNC(uiRefresh). Since 2026-09-09 there is
+    one dialog and one redraw, FUNC(uiRefresh).
 
     Called by every server function right after it publishes. On a dedicated
     server (no interface) or on a client it does nothing.
@@ -19,7 +22,7 @@ Description:
     WHY NOT FUNC(applyOnClient) FOR THE ROSTER. The remote handler calls it,
     and it asks the server for slotting, loadouts and the OPORD - round trips
     that on the host would run FUNC(seedFromUnit) and publish again, and this
-    again. FUNC(panelReapply) is the local half - the host's own rank and
+    again. FUNC(reapplyLocal) is the local half - the host's own rank and
     skills off the roster row - which is all a publish should change.
 
 Parameters:
@@ -38,14 +41,11 @@ if (!isServer || !hasInterface) exitWith {};
 
 switch (_what) do {
     case "roster": {
-        [] call FUNC(panelReapply);
-        [] call FUNC(panelFillRoster);    // no-op unless the admin page is open
-        [] call FUNC(manageSection);      // the operator list in the management window
+        [] call FUNC(reapplyLocal);
+        ["roster"] call FUNC(uiRefresh);      // the one dialog, if a table page is open
     };
     case "structure": {
         [] call FUNC(takeServer);
-        [] call FUNC(structSection);      // no-op unless the editor is open
-        [] call FUNC(panelOpened);        // combos on the roster page re-list too
-        [] call FUNC(manageSection);      // the ORBAT lists in the management window
+        ["structure"] call FUNC(uiRefresh);
     };
 };

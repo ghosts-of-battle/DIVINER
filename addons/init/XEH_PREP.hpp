@@ -7,6 +7,8 @@ PREP(missionConfigsReady);
 PREP(message);
 PREP(playerpost);
 PREP(pylons);
+PREP(aiSkill);
+PREP(radarNetwork);
 PREP(skillAdjustment);
 PREP(staging);
 PREP(vehicle);

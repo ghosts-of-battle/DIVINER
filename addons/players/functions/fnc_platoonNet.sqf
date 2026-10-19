@@ -15,11 +15,11 @@
  * ghostD_groups_fnc_orbat, so the rows are the database's when TAC//PAC holds
  * the ORBAT there and the mission's Dynamic_Groups otherwise.
  *
- * TWO TABLES, ASKED IN ORDER. The shared radio nets first (Dynamic_Groups >>
- * RadioNets, or the ORBAT's radioNets), because a net can cross a platoon
- * boundary - GROUND 1 is a rifle squad and the crew that carries it, which is
- * one element of 1st PLT and one of 2nd - and a platoon tab cannot say that.
- * Platoons second, for the squads no finer table names.
+ * ONE TABLE. The platoon a squad belongs to, and the net on that platoon.
+ * There was a "shared radio nets" table asked first; it is gone, and so is
+ * the idea (user, 2026-09-09: "noi fucking shared nets ... acre and tfar tab
+ * only for fucking radios"). Radio channels are the ACRE and TFAR plans;
+ * messaging nets are mailboxes on the messaging tab.
  *
  * A platoon with no net, a unit with no platoons, or a squad in no platoon all
  * answer "" and leave the caller on its default.
@@ -42,7 +42,7 @@ if (_squad isEqualTo "") exitWith {""};
 if (isNil "ghostD_groups_fnc_orbat") exitWith {""};
 _squad = toUpper _squad;
 
-([] call ghostD_groups_fnc_orbat) params ["", "_platoons", "_radioNets"];
+([] call ghostD_groups_fnc_orbat) params ["", "_platoons"];
 
 // rows, the index of the net in a row, the index of the squad list in a row
 private _fnc_lookup = {
@@ -58,7 +58,12 @@ private _fnc_lookup = {
     _hit
 };
 
-private _net = [_radioNets, 1, 2] call _fnc_lookup;
-if (_net isEqualTo "") then {_net = [_platoons, 3, 4] call _fnc_lookup};
+// THE PLATOON'S NET, AND NOTHING ELSE. There was a "shared nets" table asked
+// first - rows pairing squads across a platoon boundary onto one net - and it
+// is gone (user, 2026-09-09: "no fucking shared nets ... if there is acre use
+// the acre tab to configure all radios, if there is tfar use the tfar tab").
+// A squad's channel is the radio plan's business: ACRE matches this name
+// against an MR channel label, TFAR reads the squad's own row.
+private _net = [_platoons, 3, 4] call _fnc_lookup;
 
 _net

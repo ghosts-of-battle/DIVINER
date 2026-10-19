@@ -138,6 +138,7 @@ Ghost's part is the port and the plumbing around it:
 - `ghost_bft_fnc_describeGroup`
 - `ghost_bft_fnc_draw`
 - `ghost_bft_fnc_drawMembers`
+- `ghost_bft_fnc_memberNumber` - the member number the map and the phone share (1 = leader, group unit order)
 - `ghost_bft_fnc_findGroups`
 - `ghost_bft_fnc_getGroupMarkerShape`
 - `ghost_bft_fnc_getGroupPosition`

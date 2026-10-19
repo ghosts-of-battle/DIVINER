@@ -38,7 +38,7 @@ These are the per-file reference you look up while editing.
 | File | Instructions | Declares |
 |---|---|---|
 | `arsenal\config_arsenal_common.hpp` | [config_arsenal_common](config_arsenal_common) | `Common_Arsenal` |
-| `<element>\config_arsenal.hpp` | [Element Folder Files](Element-Folder-Files#config_arsenalhpp--the-elements-own-gear) | `Arsenal_<Element>` |
+| `<unit>.arsenal.plt_/sqd_/role_<ID>` | [Arsenal](Arsenal#the-narrower-arsenals) | a platoon's, squad's or role's own gear - documents, not files |
 
 ## Vehicles
 
@@ -56,7 +56,7 @@ These are the per-file reference you look up while editing.
 |---|---|---|
 | `config_logistics.sqf` | [config_logistics](config_logistics) | Crate contents. **SQF** |
 | `config_skill.hpp` | [config_skill](config_skill) | AI skill. **SQF statements**, not data |
-| `config_admins.hpp` | [config_admins](config_admins) | `CfgGhostAdmins` + the `ADMINS` macro |
+| `config_admins.hpp` | [config_admins](config_admins) | the `ADMINS` macro - the debug console and the CBA whitelist only |
 | `config_tacpad.hpp` | [config_tacpad](config_tacpad) | `GHOST_TacpadSchemes` |
 | `config_welcome.hpp` | [config_welcome](config_welcome) | `GHOST_Welcome` |
 | `config_pac.hpp` | [config_pac](config_pac) | `CfgGFA_PAC` — TAC//PAC personnel: ranks, skills, roles, OPORDs |
@@ -93,7 +93,6 @@ Every role file declares one class with these thirteen properties.
 | `traits[]` | `{trait, value}` | Engine unit traits |
 | `customVariables[]` | `{name, value, global}` | ACE and mod variables |
 | `defaultLoadout[]` | array | A full `setUnitLoadout` array |
-| `groupArsenal` | string | The element's `Arsenal_<X>` class |
 | `arsenalWeapons[]` | array | The role's own arsenal additions |
 | `arsenalMagazines[]` | array | ” |
 | `arsenalItems[]` | array | ” |

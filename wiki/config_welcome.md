@@ -55,3 +55,30 @@ take a slot, because that is the question they have while the box is open.
 **To turn it off:** delete the whole class. Nothing is shown.
 
 Related: [Other Systems](Other-Systems#the-welcome-screen)
+
+---
+
+## In the database it is one block of text
+
+`<unit>.welcome` (and `<unit>.welcome.<id>`, named by `currentWelcome`) holds
+**`text`** — one block of Arma structured text, typed with its own returns:
+
+```
+<t size='1.15' color='#cc4331'>SITUATION</t>
+China has invaded eastern Tanoa and the southeast island...
+
+<t size='1.15' color='#4caf50'>GREEN ZONE</t>
+Home turf of the Simple Life Front...
+```
+
+The returns become `<br/>` when the panel is drawn, and the tags are the game's
+own — `<t>`, `<br/>`, `<img>`, `<a href>`. See
+[Structured Text](https://community.bistudio.com/wiki/Structured_Text).
+
+A document written before that holds **`lines`** instead — one record per line,
+each with a size, a colour and an alignment. Both are read;
+`text` wins when both are set. The website converts `lines` to `text` the first
+time such a welcome is saved.
+
+**Edited:** on the website (Templates > Welcome screen) and in game
+(TAC//PAC > EDIT STRUCTURE > WELCOME SCREEN).

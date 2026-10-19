@@ -14,7 +14,7 @@
 
 ["admin.list", "who this mission lets into TAC//ADMIN", {
     private _ids = missionNamespace getVariable ["admp_authorisedIDs", []];
-    if (_ids isEqualTo []) exitWith {"no admin list - see CfgGhostAdmins in description.ext"};
+    if (_ids isEqualTo []) exitWith {"empty - admin is the database list (<unit>.admins) plus anything GRANT ADMIN handed out this mission"};
     format ["%1 uid(s): %2", count _ids, _ids joinString ", "]
 }] call EFUNC(common,addDebugCommand);
 

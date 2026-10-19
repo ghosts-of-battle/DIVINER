@@ -18,8 +18,8 @@ Description:
                                  right.
         <unit>.radio             { section: "radio",     items: {key: value} }
                                  - config_radio.hpp's globals by name
-        <unit>.orbat             { section: "orbat", faction, groups,
-                                   platoons, radioNets }
+        <unit>.orbat             { section: "orbat", faction, side, groups,
+                                   platoons }
         <unit>.role.<class>      { section: "role", id, role: {...} }  - the
                                  whole role, config_roles.hpp's shape plus
                                  PAC's gates; {deleted: true} is skipped
@@ -53,105 +53,200 @@ private _settings = createHashMap;
 private _found = 0;
 private _errors = 0;
 
+// ---- every section the database holds, from ONE table --------------------
+// FUNC(svcSections) is the contract: section, shape, and the setting a mission
+// uses to name which version it runs. A section absent from that table is a
+// document nobody reads, which is what had happened to cosmetics, logistics,
+// pylons and the skill block until 2026-09-09.
+//
+// SETTINGS FIRST, because the version settings live in it and every other
+// section may be steered by one.
+private _fnc_key = {
+    params ["_section", "_setting"];
+    private _key = _unit + "." + _section;
+    if (_setting isEqualTo "") exitWith {_key};
+    private _want = _settings getOrDefault [_setting, ""];
+    if (_want isEqualType "" && _want isNotEqualTo "") then {
+        _key = _unit + "." + _section + "." + _want;
+    };
+    _key
+};
+
+// A named version that is not there falls back to the common document rather
+// than leaving the mission without that config at all - and says so, because a
+// silent fallback is how a mission runs the wrong arsenal for a month.
+private _fnc_load = {
+    params ["_section", "_setting"];
+    private _key = [_section, _setting] call _fnc_key;
+    [_section, "run", 0, 1, _key] call FUNC(bootDoc);
+    ([_key] call FUNC(svcLoad)) params ["_doc", "_status"];
+    if (_status isNotEqualTo "ok" && _key isNotEqualTo (_unit + "." + _section)) then {
+        WARNING_2("%1 names a version that is not there - the common %2 is used",_setting,_section);
+        ([_unit + "." + _section] call FUNC(svcLoad)) params ["_doc", "_status"];
+    };
+    [_section, _status, 1, 1, _key] call FUNC(bootDoc);
+    [_doc, _status]
+};
+
+// THE BOOT SCREEN'S CHECKLIST (2026-09-10): every document this read will ask
+// for, listed up front so the screen shows what is still to come, and ticked
+// by FUNC(bootDoc) as each lands. The families (roles, orders, the variants)
+// count their members, so the bar moves one document at a time.
+GVAR(bootDocs) = [];
+{["" + (_x # 0), "wait"] call FUNC(bootDoc)} forEach ([] call FUNC(svcSections));
+{[_x, "wait"] call FUNC(bootDoc)} forEach ["orbat", "orbat versions", "welcome", "arsenal versions", "motorpool versions", "roles", "orders"];
+
+// SETTINGS AND THE ORBAT BEFORE THE REST. The version settings live in the
+// settings document, and the ORDER OF BATTLE names two of them itself - its
+// messaging nets and its radio plan - so both have to be read before any
+// section that a version setting can steer. Getting this order wrong is silent:
+// the fetch simply uses the default and nothing says why.
 {
-    private _section = _x;
-    ([_unit + "." + _section] call FUNC(svcLoad)) params ["_doc", "_status"];
+    _x params ["_section", "_shape", "_setting"];
+    if !(_section in ["settings"]) then {continue};
+    ([_section, _setting] call _fnc_load) params ["_doc", "_status"];
+    if (_status isEqualTo "ok") then {
+        private _items = _doc getOrDefault ["items", createHashMap];
+        if (_items isEqualType createHashMap) then {_settings = _items};
+    };
+} forEach ([] call FUNC(svcSections));
+
+["orbat", "run", 0, 1, _unit + ".orbat"] call FUNC(bootDoc);
+#include "svcOrbat.inc.sqf"
+["orbat", ["ok", "empty"] select (count ((_structure getOrDefault ["orbat", createHashMap]) getOrDefault ["groups", []]) isEqualTo 0), 1, 1, ""] call FUNC(bootDoc);
+
+{
+    _x params ["_section", "_shape", "_setting"];
+    if (_section isEqualTo "settings") then {continue};
+    ([_section, _setting] call _fnc_load) params ["_doc", "_status"];
+
     switch (_status) do {
         case "ok": {
-            private _items = _doc getOrDefault ["items", createHashMap];
-            if !(_items isEqualType createHashMap) then {_items = createHashMap};
-            // The admin document is edited on the database's own site as a plain
-            // list of Steam ids ("ids"); anyone in that list is an admin, named
-            // or not. The map ("items") carries names the in-game editor set.
-            if (_section isEqualTo "admins") then {
-                private _ids = _doc getOrDefault ["ids", []];
-                if (_ids isEqualType []) then {
-                    {
-                        private _uid = if (_x isEqualType "") then {_x} else {str _x};
-                        if !(_uid in _items) then {_items set [_uid, createHashMapFromArray [["id", _uid], ["name", ""]]]};
-                    } forEach _ids;
+            switch (_shape) do {
+                case "code": {
+                    // A block of SQF - logistics, pylons, the AI skill block.
+                    private _code = _doc getOrDefault ["code", ""];
+                    if (_code isEqualType "" && _code isNotEqualTo "") then {
+                        _structure set [_section, createHashMapFromArray [["code", _code]]];
+                        _found = _found + 1;
+                    };
+                };
+                case "lists": {
+                    private _l = _doc getOrDefault ["lists", createHashMap];
+                    if (_l isEqualType createHashMap) then {
+                        private _rec = _structure getOrDefault [_section, createHashMap];
+                        _rec set ["lists", _l];
+                        _structure set [_section, _rec];
+                        _found = _found + 1;
+                    };
+                };
+                default {
+                    private _items = _doc getOrDefault ["items", createHashMap];
+                    if !(_items isEqualType createHashMap) then {_items = createHashMap};
+                    // The admin document is edited on the database's own site as
+                    // a plain list of Steam ids ("ids"); anyone in that list is
+                    // an admin, named or not. The map ("items") carries names
+                    // the in-game editor set.
+                    if (_section isEqualTo "admins") then {
+                        private _ids = _doc getOrDefault ["ids", []];
+                        if (_ids isEqualType []) then {
+                            {
+                                private _uid = if (_x isEqualType "") then {_x} else {str _x};
+                                if !(_uid in _items) then {_items set [_uid, createHashMapFromArray [["id", _uid], ["name", ""]]]};
+                            } forEach _ids;
+                        };
+                    };
+                    if (_section isEqualTo "settings") then {_settings = _items} else {_structure set [_section, _items]};
+                    _found = _found + 1;
                 };
             };
-            if (_section isEqualTo "settings") then {_settings = _items} else {_structure set [_section, _items]};
-            _found = _found + 1;
         };
         case "empty": {
-            if (_section isNotEqualTo "settings") then {_structure set [_section, createHashMap]};
+            if (_section isNotEqualTo "settings" && _shape isEqualTo "items") then {
+                _structure set [_section, createHashMap];
+            };
         };
         default {_errors = _errors + 1};
     };
-} forEach ["admins", "settings", "ranks", "skills", "awards", "statuses", "nets", "radio", "templates", "schemes", "promotion", "trainings", "motorpool", "traits"];
+} forEach ([] call FUNC(svcSections));
 
-// the ORBAT document. A unit may keep more than one - <unit>.orbat.<id> -
-// and the "currentOrbat" setting names which this mission wants; empty means
-// the common one. Same arrangement as currentOpord picking an order.
-private _orbatKey = _unit + ".orbat";
-private _wantOrbat = _settings getOrDefault ["currentOrbat", ""];
-if (_wantOrbat isEqualType "" && _wantOrbat isNotEqualTo "") then {
-    _orbatKey = _unit + ".orbat." + _wantOrbat;
+// WHICH ORDERS OF BATTLE EXIST. The structure carries the one this mission
+// runs; the editors need the names of all of them to offer a choice, and only
+// the server can list the database. Ids only - the documents themselves are
+// fetched when one is switched to.
+private _orbatIds = [];
+["orbat versions", "run", 0, 1, _unit + ".orbat.*"] call FUNC(bootDoc);
+([_unit + ".orbat.", "list"] call FUNC(svcLoad)) params ["_okeys", "_okstatus"];
+["orbat versions", ["ok", "error"] select (_okstatus isEqualTo "error"), 1, 1, format ["%1 listed", [0, count _okeys] select (_okeys isEqualType [])]] call FUNC(bootDoc);
+if (_okstatus isNotEqualTo "error" && _okeys isEqualType []) then {
+    {
+        private _id = _x select [count (_unit + ".orbat."), 99];
+        if (_id isNotEqualTo "") then {_orbatIds pushBackUnique _id};
+    } forEach _okeys;
 };
-([_orbatKey] call FUNC(svcLoad)) params ["_odoc", "_ostatus"];
-// A named ORBAT that is not there falls back to the common one rather than
-// leaving the mission with no order of battle at all.
-if (_ostatus isNotEqualTo "ok" && _orbatKey isNotEqualTo (_unit + ".orbat")) then {
-    ([_unit + ".orbat"] call FUNC(svcLoad)) params ["_odoc", "_ostatus"];
-};
-if (_ostatus isEqualTo "error") exitWith {[createHashMap, "error"]};
-if (_ostatus isEqualTo "ok") then {
-    private _g = _odoc getOrDefault ["groups", []];
-    private _p = _odoc getOrDefault ["platoons", []];
-    private _r = _odoc getOrDefault ["radioNets", []];
-    private _f = _odoc getOrDefault ["faction", ""];
-    private _s = _odoc getOrDefault ["side", ""];
-    if (_g isEqualType [] && _p isEqualType []) then {
-        if !(_r isEqualType []) then {_r = []};
-        if !(_f isEqualType "") then {_f = ""};
-        // The side the unit fights on (2026-09-09). Absent means unsaid, and
-        // ghostD_groups_fnc_orbat answers WEST for that - what every caller
-        // assumed before the field existed.
-        if !(_s isEqualType "") then {_s = ""};
-        _structure set ["orbat", createHashMapFromArray [["groups", _g], ["platoons", _p], ["radioNets", _r], ["faction", _f], ["side", _s]]];
-        _found = _found + 1;
-    };
-};
+_orbatIds sort true;
+_structure set ["orbatVersions", _orbatIds];
 
 // the WELCOME document - {title, subtitle, lines[]}, not {section, items},
 // so it is fetched on its own like the ORBAT. Absent is not an error: a unit
 // that has not written one keeps whatever the mission's config says.
-([_unit + ".welcome"] call FUNC(svcLoad)) params ["_wdoc", "_wstatus"];
+// A UNIT KEEPS MORE THAN ONE (2026-09-09). The welcome screen is per MISSION -
+// Roomba's briefing is not the framework's - and there is one <unit>.welcome
+// document, so until this the only place a mission's own text could live was
+// its description.ext. "currentWelcome" names a version, <unit>.welcome.<id>,
+// exactly as currentOrbat names an ORBAT.
+private _welcomeKey = _unit + ".welcome";
+private _wantWelcome = _settings getOrDefault ["currentWelcome", ""];
+if (_wantWelcome isEqualType "" && _wantWelcome isNotEqualTo "") then {
+    _welcomeKey = _unit + ".welcome." + _wantWelcome;
+};
+["welcome", "run", 0, 1, _welcomeKey] call FUNC(bootDoc);
+([_welcomeKey] call FUNC(svcLoad)) params ["_wdoc", "_wstatus"];
+// A named welcome that is not there falls back to the common one rather than
+// leaving the mission with no briefing at all - the ORBAT's rule.
+if (_wstatus isNotEqualTo "ok" && _welcomeKey isNotEqualTo (_unit + ".welcome")) then {
+    WARNING_1("currentWelcome names '%1' and there is no such welcome - the common one is used",_wantWelcome);
+    ([_unit + ".welcome"] call FUNC(svcLoad)) params ["_wdoc", "_wstatus"];
+};
+["welcome", _wstatus, 1, 1, _welcomeKey] call FUNC(bootDoc);
 if (_wstatus isEqualTo "error") exitWith {[createHashMap, "error"]};
 if (_wstatus isEqualTo "ok") then {
+    // THE TEXT OR THE OLD LINES. A welcome written since 2026-09-09 is one
+    // block of structured text in "text" - the writer types it the way the
+    // panel reads it. The ones written before that are a "lines" array, one
+    // record per line with its own size and colour, and they still draw.
+    // Either being present is what takes the panel off the mission's config.
+    private _wtext = _wdoc getOrDefault ["text", ""];
+    if !(_wtext isEqualType "") then {_wtext = ""};
     private _lines = _wdoc getOrDefault ["lines", []];
-    if (_lines isEqualType [] && {count _lines > 0}) then {
+    if !(_lines isEqualType []) then {_lines = []};
+    if (_wtext isNotEqualTo "" || {count _lines > 0}) then {
         _structure set ["welcome", createHashMapFromArray [
             ["title", [_wdoc getOrDefault ["title", ""], ""] select !((_wdoc getOrDefault ["title", ""]) isEqualType "")],
             ["subtitle", [_wdoc getOrDefault ["subtitle", ""], ""] select !((_wdoc getOrDefault ["subtitle", ""]) isEqualType "")],
+            ["text", _wtext],
             ["lines", _lines]
         ]];
         _found = _found + 1;
     };
 };
 
-// ---- the list-shaped config documents, and their variants ----------------
-// <unit>.arsenal is the common one; <unit>.arsenal.<name> is a variant, found
-// by listing the prefix exactly as roles and orders are. A role's
-// groupArsenal property names the variant it wants, so the variant id IS the
-// class name the mission used - "Arsenal_Banshee" stays "Arsenal_Banshee".
+// ---- the NAMED VARIANTS of the list-shaped documents ----------------------
+// The loop above fetched each one's common lists (or the version a mission
+// named). This lists the "<unit>.<doc>." prefix for the rest, because the
+// narrower arsenals are reached by name and nothing hands out that list -
+// plt_<PLATOON>, sqd_<SQUAD> and role_<CLASS>, derived from the ids.
 {
     private _doc = _x;
-    private _rec = createHashMap;
-
-    ([_unit + "." + _doc] call FUNC(svcLoad)) params ["_ldoc", "_lstatus"];
-    if (_lstatus isEqualTo "error") exitWith {};
-    if (_lstatus isEqualTo "ok") then {
-        private _l = _ldoc getOrDefault ["lists", createHashMap];
-        if (_l isEqualType createHashMap) then {_rec set ["lists", _l]};
-    };
+    private _rec = _structure getOrDefault [_doc, createHashMap];
 
     private _variants = createHashMap;
+    [_doc + " versions", "run", 0, 1, _unit + "." + _doc + ".*"] call FUNC(bootDoc);
     ([_unit + "." + _doc + ".", "list"] call FUNC(svcLoad)) params ["_vkeys", "_vstatus"];
-    if (_vstatus isNotEqualTo "error" && {_vkeys isEqualType []}) then {
+    if (_vstatus isNotEqualTo "error" && _vkeys isEqualType []) then {
+        [_doc + " versions", "run", 0, (count _vkeys) max 1, format ["%1 listed", count _vkeys]] call FUNC(bootDoc);
         {
+            [_doc + " versions", "run", _forEachIndex, (count _vkeys) max 1, _x] call FUNC(bootDoc);
             ([_x] call FUNC(svcLoad)) params ["_vdoc", "_vst"];
             if (_vst isEqualTo "ok") then {
                 private _vl = _vdoc getOrDefault ["lists", createHashMap];
@@ -165,41 +260,16 @@ if (_wstatus isEqualTo "ok") then {
             };
         } forEach _vkeys;
     };
+    [_doc + " versions", ["ok", "error"] select (_vstatus isEqualTo "error"), count _variants, (count _variants) max 1, format ["%1 read", count _variants]] call FUNC(bootDoc);
     if (count _variants > 0) then {_rec set ["variants", _variants]};
-
-    // WHICH VERSION IS THE COMMON ONE (2026-09-09). The unit keeps more than
-    // one common arsenal - a bare-bones "Framework" and a set named for the
-    // camo an operation is in, Ghost_OCP, Ghost_MTP, Ghost_Tropical ... - and
-    // until now nothing could pick between them: the variants were only ever
-    // reached by a role's groupArsenal, so the camo sets were documents nobody
-    // read. The "currentArsenal" setting names one, exactly as "currentOrbat"
-    // names an ORBAT and "currentOpord" an order.
-    //
-    // IT REPLACES THE COMMON LISTS, it does not add to them - the point of a
-    // camo set is that a man cannot draw the other four. Unset, or naming a
-    // version that is not there, leaves the common document alone, which is
-    // what every mission did before this existed.
-    if (_doc isEqualTo "arsenal") then {
-        private _want = _settings getOrDefault ["currentArsenal", ""];
-        if (_want isEqualType "" && _want isNotEqualTo "") then {
-            private _hit = "";
-            {
-                if (toLower _x isEqualTo toLower _want) exitWith {_hit = _x};
-            } forEach (keys _variants);
-            if (_hit isEqualTo "") then {
-                WARNING_1("currentArsenal names '%1' and there is no such arsenal version - the common one is used",_want);
-            } else {
-                _rec set ["lists", _variants get _hit];
-                INFO_1("common arsenal: the '%1' version",_hit);
-            };
-        };
-    };
 
     if (count _rec > 0) then {
         _structure set [_doc, _rec];
-        _found = _found + 1;
     };
-} forEach ["arsenal", "radar"];
+// The arsenal is the only list-shaped document left with named versions: the
+// radar network is a CBA setting and the vehicle spawner was removed from the
+// mod (2026-09-09).
+} forEach ["arsenal"];
 
 // ---- the motorpool's variants (2026-09-09) -------------------------------
 // The motorpool is items-shaped, so the loop above - which reads "lists"
@@ -207,9 +277,12 @@ if (_wstatus isEqualTo "ok") then {
 // nobody. <unit>.motorpool.<name> is one pool, and the variant id IS the class
 // name the mission used ("MotorPool_Nomad"), the same rule as the arsenal.
 private _mpVariants = createHashMap;
+["motorpool versions", "run", 0, 1, _unit + ".motorpool.*"] call FUNC(bootDoc);
 ([_unit + ".motorpool.", "list"] call FUNC(svcLoad)) params ["_mpKeys", "_mpStatus"];
 if (_mpStatus isNotEqualTo "error" && _mpKeys isEqualType []) then {
+    ["motorpool versions", "run", 0, (count _mpKeys) max 1, format ["%1 listed", count _mpKeys]] call FUNC(bootDoc);
     {
+        ["motorpool versions", "run", _forEachIndex, (count _mpKeys) max 1, _x] call FUNC(bootDoc);
         ([_x] call FUNC(svcLoad)) params ["_vdoc", "_vst"];
         if (_vst isEqualTo "ok") then {
             private _vitems = _vdoc getOrDefault ["items", createHashMap];
@@ -223,6 +296,7 @@ if (_mpStatus isNotEqualTo "error" && _mpKeys isEqualType []) then {
         };
     } forEach _mpKeys;
 };
+["motorpool versions", ["ok", "error"] select (_mpStatus isEqualTo "error"), count _mpVariants, (count _mpVariants) max 1, format ["%1 read", count _mpVariants]] call FUNC(bootDoc);
 if (count _mpVariants > 0) then {
     _structure set ["motorpoolVariants", _mpVariants];
     _found = _found + 1;
@@ -232,10 +306,13 @@ if (_errors > 0) exitWith {[createHashMap, "error"]};
 
 // ---- the roles, one document each ------------------------------------------
 private _roles = createHashMap;
+["roles", "run", 0, 1, _unit + ".role.*"] call FUNC(bootDoc);
 ([_unit + ".role.", "list"] call FUNC(svcLoad)) params ["_rkeys", "_rlstatus"];
-if (_rlstatus isEqualTo "error") exitWith {[createHashMap, "error"]};
+if (_rlstatus isEqualTo "error") exitWith {["roles", "error", 0, 1, "the list did not come"] call FUNC(bootDoc); [createHashMap, "error"]};
 if (_rkeys isEqualType []) then {
+    ["roles", "run", 0, (count _rkeys) max 1, format ["%1 listed", count _rkeys]] call FUNC(bootDoc);
     {
+        ["roles", "run", _forEachIndex, (count _rkeys) max 1, _x] call FUNC(bootDoc);
         ([_x] call FUNC(svcLoad)) params ["_doc", "_status"];
         if (_status isEqualTo "ok") then {
             if ((_doc getOrDefault ["deleted", false]) isEqualTo true) then {continue};
@@ -261,16 +338,22 @@ if (count _roles isEqualTo 0) then {
         };
     };
 };
+["roles", ["ok", "empty"] select (count _roles isEqualTo 0), count _roles, (count _roles) max 1, format ["%1 read", count _roles]] call FUNC(bootDoc);
 _structure set ["roles", _roles];
 
 // ---- the orders, one document each ----------------------------------------
 private _opords = createHashMap;
+["orders", "run", 0, 1, _unit + ".opord.*"] call FUNC(bootDoc);
 ([_unit + ".opord.", "list"] call FUNC(svcLoad)) params ["_keys", "_lstatus"];
-if (_lstatus isEqualTo "error") exitWith {[createHashMap, "error"]};
+if (_lstatus isEqualTo "error") exitWith {["orders", "error", 0, 1, "the list did not come"] call FUNC(bootDoc); [createHashMap, "error"]};
 if (_keys isEqualType []) then {
+    ["orders", "run", 0, (count _keys) max 1, format ["%1 listed", count _keys]] call FUNC(bootDoc);
     {
+        ["orders", "run", _forEachIndex, (count _keys) max 1, _x] call FUNC(bootDoc);
         ([_x] call FUNC(svcLoad)) params ["_doc", "_status"];
         if (_status isEqualTo "ok") then {
+            // an order removed in game is a tombstone, as a removed role is
+            if ((_doc getOrDefault ["deleted", false]) isEqualTo true) then {continue};
             private _order = _doc getOrDefault ["order", createHashMap];
             private _id = _doc getOrDefault ["id", ""];
             if (_id isEqualTo "") then {_id = _order getOrDefault ["id", ""]};
@@ -282,6 +365,7 @@ if (_keys isEqualType []) then {
         };
     } forEach _keys;
 };
+["orders", ["ok", "empty"] select (count _opords isEqualTo 0), count _opords, (count _opords) max 1, format ["%1 read", count _opords]] call FUNC(bootDoc);
 _structure set ["opords", _opords];
 
 if (_found isEqualTo 0) exitWith {[createHashMap, "empty"]};

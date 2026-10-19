@@ -1,14 +1,15 @@
 #include "script_component.hpp"
 /*
  * Author: YonV
- * TAC//PAC - the unit, as a player sees it. Three views under one tab row:
- * RECORD (their own), ROSTER (everybody), OPORD (the list and the open one).
+ * TAC//PAC - the unit, as a player sees it. Four views under one tab row:
+ * RECORD (their own), ROSTER (everybody), OPORD (the list and the open one),
+ * REQUESTS (their PAC requests, and a form to raise one - 2026-09-09).
  *
- * READ-ONLY, ON PURPOSE. Nothing here writes anything. Ranks, skills, awards
- * and status are set by admins through the admin panel, and the roster a client
- * draws is the copy the server published - see FUNC(publish). A player can
- * look at their record and cannot touch it, which is what makes the record
- * worth looking at.
+ * READ-ONLY BUT FOR ONE THING. Ranks, skills, awards and status are set by
+ * admins in TAC//PAC, and the roster a client draws is the copy the server
+ * published - see FUNC(publish). A player can look at their record and cannot
+ * touch it, which is what makes the record worth looking at. The one write is
+ * a PAC request (FUNC(ticketRaise)), which is theirs to make.
  *
  * AND ANY MAN'S RECORD, from the ROSTER tab: tap a name and the RECORD tab
  * shows his published row. NOT HIS NOTES - FUNC(publish) never sends them,
@@ -48,8 +49,9 @@ if (isNull _display) exitWith {};
 // the undefined variable, and every tab came up blank ("the my record button
 // does not work"). getVariable with a default never errors, so this is safe
 // without the braces the lint objects to.
-private _tall = (missionNamespace getVariable [QGVAR(view), "record"]) isEqualTo "opord"
-    && (missionNamespace getVariable [QGVAR(openOpord), ""]) isNotEqualTo "";
+private _view0 = missionNamespace getVariable [QGVAR(view), "record"];
+private _tall = (_view0 isEqualTo "opord" && (missionNamespace getVariable [QGVAR(openOpord), ""]) isNotEqualTo "")
+    || _view0 in ["request", "raise", "apply"];
 ([_display, "PAC", 0.62, [0.58, 0.88] select _tall] call ghostD_tacpad_fnc_appFrame) params ["", "_body"];
 if (isNull _body) exitWith {};
 
@@ -77,12 +79,36 @@ private _diag = format ["PAC app drawn: view '%1', %2 on the roster, uid %3, own
 INFO_1("%1",_diag);
 
 // ---- the tab row -------------------------------------------------------------
+// MY RECORD, ROSTER, OPORD, REQUESTS - the member's pages, the website's My
+// details and PAC requests. The dashboard and everything an admin edits are
+// TAC//PAC itself (FUNC(uiOpen)): one dialog laid out like the website,
+// opened from the admin panel (user, 2026-09-09: "pac requests need to be on
+// the live tile there is a roster and my info there, in pac a page for admins
+// to work pac requests").
+// APPLICATION INSTEAD OF MY RECORD for somebody not on the roster when the
+// unit makes new players apply (settings newPlayers = "apply", 2026-09-10).
+// Once an admin accepts them the roster carries them and MY RECORD is back.
+private _mustApply = (toLower (GVAR(settings) getOrDefault ["newPlayers", "auto"])) isEqualTo "apply"
+    && (_roster findIf {(_x # 0) isEqualTo _uid}) < 0;
+if (_mustApply && _view isEqualTo "record") then {
+    _view = "apply";
+    GVAR(view) = "apply";
+};
+if (!_mustApply && _view isEqualTo "apply") then {
+    _view = "record";
+    GVAR(view) = "record";
+};
+private _tabs = [[["record", "MY RECORD"], ["apply", "APPLICATION"]] select _mustApply, ["roster", "ROSTER"], ["opord", "OPORD"], ["requests", "REQUESTS"]];
+
 private _y = 0;
 {
     _x params ["_id", "_label"];
-    private _tw = _w / 3;
+    // DIVIDED BY HOW MANY THERE ARE, not by three. This was `_w / 3` from when
+    // there were exactly three, so the admin's fourth tab was drawn off the
+    // right-hand edge of the panel (2026-09-09).
+    private _tw = _w / (count _tabs);
     private _tx = _forEachIndex * _tw;
-    private _on = _id isEqualTo _view;
+    private _on = _id isEqualTo _view || (_id isEqualTo "requests" && _view in ["request", "raise"]);
 
     if (_on) then {
         [_body, [_tx, _y, _tw - _pad, _rowH], [_accent # 0, _accent # 1, _accent # 2, 0.14]] call ghostD_tacpad_fnc_drawFill;
@@ -107,7 +133,7 @@ private _y = 0;
         {["pac"] call ghostD_tacpad_fnc_openApp} call CBA_fnc_execNextFrame;
     }] call ghostD_tacpad_fnc_drawHit;
     _hit setVariable [QGVAR(tab), _id];
-} forEach [["record", "MY RECORD"], ["roster", "ROSTER"], ["opord", "OPORD"]];
+} forEach _tabs;
 
 _y = _y + _rowH + _padY;
 [_body, [0, _y, _w, RULE_THICK * pixelH], _ink] call ghostD_tacpad_fnc_drawFill;
@@ -389,6 +415,407 @@ switch (_view) do {
         ["SIGNAL", _cs getOrDefault ["signal", ""]] call _fnc_block;
         ["COMMAND", _cs getOrDefault ["command", ""]] call _fnc_block;
         ["ROE", _roe getOrDefault ["roeText", ""]] call _fnc_block;
+    };
+
+    // ---- REQUESTS: the website's PAC requests, on the tile ----------------------
+    // THREE SCREENS, as the website has them: the LIST of this player's
+    // requests (here), ONE request with its thread and a reply box
+    // ("request"), and the form to RAISE one ("raise") - the list first, a
+    // row opens the request, and the kind and the man it is about are
+    // dropdowns (user, 2026-09-10: "should open to a list of the players
+    // requests", "could not open that request", "drops downs please").
+    // The list is asked of the server (FUNC(ticketMine)) at most once a
+    // minute; the answer redraws whichever of the three is open.
+    case "requests": {
+        private _svc = "service" in ((missionNamespace getVariable [QGVAR(summary), createHashMap]) getOrDefault ["backend", ""]);
+        if (!_svc) exitWith {
+            [_body, [_pad, _y, _w - 2 * _pad, _rowH], "NO DATABASE", _dim, 0.8, false] call ghostD_tacpad_fnc_drawText;
+            [_body, [_pad, _y + _rowH, _w - 2 * _pad, _rowH * 2], "PAC requests are kept in the unit's database, and this server has none.", _dim, 0.65, false] call ghostD_tacpad_fnc_drawText;
+        };
+        if (GVAR(myTicketsAt) < 0 || {diag_tickTime - GVAR(myTicketsAt) > 60}) then {
+            GVAR(myTicketsAt) = diag_tickTime;
+            [player] remoteExec [QFUNC(ticketMine), 2];
+        };
+
+        [_body, [_pad, _y, _w * 0.6, _rowH], format ["MY REQUESTS  %1", count GVAR(myTickets)], _mute, 0.65, true] call ghostD_tacpad_fnc_drawText;
+        // RAISE A REQUEST, top right, where the website's card is
+        [_body, [_w * 0.72, _y, _w * 0.28 - _pad, _rowH], [_accent # 0, _accent # 1, _accent # 2, 0.14]] call ghostD_tacpad_fnc_drawFill;
+        [_body, [_w * 0.72, _y, _w * 0.28 - _pad, _rowH], _accent, RULE_THICK] call ghostD_tacpad_fnc_drawFrame;
+        [_body, [_w * 0.72, _y, _w * 0.28 - _pad, _rowH], "RAISE A REQUEST", _ink, 0.75, true, "center", true] call ghostD_tacpad_fnc_drawText;
+        [_body, [_w * 0.72, _y, _w * 0.28 - _pad, _rowH], {
+            GVAR(view) = "raise";
+            {["pac"] call ghostD_tacpad_fnc_openApp} call CBA_fnc_execNextFrame;
+        }] call ghostD_tacpad_fnc_drawHit;
+        _y = _y + _rowH + _padY;
+
+        if (GVAR(myTickets) isEqualTo []) exitWith {
+            private _said = switch (true) do {
+                case (!GVAR(myTicketsSeen)): {"Asking the server ..."};
+                case (!GVAR(myTicketsOk)): {"The database did not answer."};
+                default {"None yet - RAISE A REQUEST is how one starts."};
+            };
+            [_body, [_pad, _y, _w - 2 * _pad, _rowH], _said, _dim, 0.75, false] call ghostD_tacpad_fnc_drawText;
+        };
+
+        // the website's table: Id | Subject | Kind | State | Replies - tap a row to read it
+        [_body, [_pad, _y, _w * 0.14, _rowH], "ID", _mute, 0.6, true, "left", true] call ghostD_tacpad_fnc_drawText;
+        [_body, [_w * 0.14, _y, _w * 0.42, _rowH], "SUBJECT", _mute, 0.6, true, "left", true] call ghostD_tacpad_fnc_drawText;
+        [_body, [_w * 0.56, _y, _w * 0.18, _rowH], "KIND", _mute, 0.6, true, "left", true] call ghostD_tacpad_fnc_drawText;
+        [_body, [_w * 0.74, _y, _w * 0.14, _rowH], "STATE", _mute, 0.6, true, "left", true] call ghostD_tacpad_fnc_drawText;
+        [_body, [_w * 0.88, _y, _w * 0.12 - _pad, _rowH], "REPLIES", _mute, 0.6, true, "right", true] call ghostD_tacpad_fnc_drawText;
+        _y = _y + _rowH;
+        [_body, [_pad, _y, _w - 2 * _pad, RULE_THIN * pixelH], _line] call ghostD_tacpad_fnc_drawFill;
+        _y = _y + _padY;
+        private _kinds = GVAR(ticketKinds);
+        {
+            if (_y > _h - _rowH) exitWith {};
+            private _t = _x;
+            private _kid = _t getOrDefault ["kind", ""];
+            private _kindName = (_kinds getOrDefault [_kid, createHashMap]) getOrDefault ["label", _kid];
+            [_body, [_pad, _y, _w * 0.14, _rowH], _t getOrDefault ["id", ""], _mute, 0.7, false] call ghostD_tacpad_fnc_drawText;
+            [_body, [_w * 0.14, _y, _w * 0.42, _rowH], _t getOrDefault ["subject", ""], _ink, 0.8, false] call ghostD_tacpad_fnc_drawText;
+            [_body, [_w * 0.56, _y, _w * 0.18, _rowH], _kindName, _mute, 0.7, false] call ghostD_tacpad_fnc_drawText;
+            [_body, [_w * 0.74, _y, _w * 0.14, _rowH], toUpper (_t getOrDefault ["status", "open"]), _accent, 0.7, false] call ghostD_tacpad_fnc_drawText;
+            [_body, [_w * 0.88, _y, _w * 0.12 - _pad, _rowH], str (count (_t getOrDefault ["replies", []])), _mute, 0.7, false, "right"] call ghostD_tacpad_fnc_drawText;
+            private _hit = [_body, [_pad, _y, _w - 2 * _pad, _rowH], {
+                params ["_ctrl"];
+                GVAR(reqOpen) = _ctrl getVariable [QGVAR(id), ""];
+                GVAR(view) = "request";
+                {["pac"] call ghostD_tacpad_fnc_openApp} call CBA_fnc_execNextFrame;
+            }] call ghostD_tacpad_fnc_drawHit;
+            _hit setVariable [QGVAR(id), _t getOrDefault ["id", ""]];
+            _y = _y + _rowH;
+        } forEach GVAR(myTickets);
+    };
+
+    // ---- ONE REQUEST: what it is, the thread, a reply box ------------------------
+    case "request": {
+        private _id = GVAR(reqOpen);
+        private _found = GVAR(myTickets) select {(_x getOrDefault ["id", ""]) isEqualTo _id};
+
+        [_body, [_pad, _y, _w * 0.3, _rowH], "< BACK TO REQUESTS", _accent, 0.75, true] call ghostD_tacpad_fnc_drawText;
+        [_body, [_pad, _y, _w * 0.3, _rowH], {
+            GVAR(view) = "requests";
+            {["pac"] call ghostD_tacpad_fnc_openApp} call CBA_fnc_execNextFrame;
+        }] call ghostD_tacpad_fnc_drawHit;
+        if (_found isEqualTo []) exitWith {
+            [_body, [_w * 0.3, _y, _w * 0.7 - _pad, _rowH], "NOT ON THE LIST", _mute, 0.65, true, "right", true] call ghostD_tacpad_fnc_drawText;
+            [_body, [_pad, _y + _rowH * 1.5, _w - 2 * _pad, _rowH], "That request is not on your list any more.", _dim, 0.75, false] call ghostD_tacpad_fnc_drawText;
+        };
+        private _t = _found # 0;
+        [_body, [_w * 0.3, _y, _w * 0.7 - _pad, _rowH], format ["%1  -  %2", _id, toUpper (_t getOrDefault ["status", "open"])], _accent, 0.8, true, "right", true] call ghostD_tacpad_fnc_drawText;
+        _y = _y + _rowH * 1.2;
+
+        [_body, [_pad, _y, _w - 2 * _pad, _rowH * 1.3], _t getOrDefault ["subject", ""], _ink, 1.1, true] call ghostD_tacpad_fnc_drawText;
+        _y = _y + _rowH * 1.4;
+        private _kid = _t getOrDefault ["kind", ""];
+        ["KIND", (GVAR(ticketKinds) getOrDefault [_kid, createHashMap]) getOrDefault ["label", _kid]] call _fnc_row;
+        private _about = _t getOrDefault ["about", ""];
+        private _aboutRow = _roster select {(_x # 0) isEqualTo _about};
+        ["ABOUT", [[_about, "-"] select (_about isEqualTo ""), (_aboutRow # 0) # 1] select (_aboutRow isNotEqualTo [])] call _fnc_row;
+        ["RAISED", (_t getOrDefault ["createdAt", ""]) select [0, 16]] call _fnc_row;
+        ["UPDATED", (_t getOrDefault ["updatedAt", ""]) select [0, 16]] call _fnc_row;
+        _y = _y + _padY;
+        [_body, [0, _y, _w, RULE_THIN * pixelH], _dim] call ghostD_tacpad_fnc_drawFill;
+        _y = _y + _padY * 2;
+
+        // THE THREAD, oldest first, the reply box kept clear of at the foot.
+        private _replies = _t getOrDefault ["replies", []];
+        if !(_replies isEqualType []) then {_replies = []};
+        [_body, [_pad, _y, _w - 2 * _pad, _rowH], format ["THREAD  %1", count _replies], _mute, 0.65, true] call ghostD_tacpad_fnc_drawText;
+        _y = _y + _rowH + _padY;
+        private _foot = _h - _rowH * 4;
+        {
+            if (_y > _foot - _rowH * 2) exitWith {
+                [_body, [_pad, _y, _w - 2 * _pad, _rowH], "... more on the website", _dim, 0.65, false] call ghostD_tacpad_fnc_drawText;
+                _y = _y + _rowH;
+            };
+            private _r = _x;
+            if !(_r isEqualType createHashMap) then {continue};
+            private _head = format ["%1   %2%3", _r getOrDefault ["byName", ""], (_r getOrDefault ["at", ""]) select [0, 16],
+                ["", "   marked " + toUpper (_r getOrDefault ["status", ""])] select ((_r getOrDefault ["status", ""]) isNotEqualTo "")];
+            [_body, [_pad, _y, _w - 2 * _pad, _rowH], _head, _mute, 0.65, true] call ghostD_tacpad_fnc_drawText;
+            _y = _y + _rowH * 0.9;
+            private _text = _r getOrDefault ["text", ""];
+            if !(_text isEqualType "") then {_text = str _text};
+            if (_text isNotEqualTo "") then {["", _text] call _fnc_wrapped};
+            _y = _y + _padY;
+        } forEach _replies;
+
+        // the reply box - a real edit control in the body, its text kept
+        // across the tile's redraws in GVAR(reqReply)
+        _y = _foot max _y;
+        [_body, [_pad, _y, _labW - _pad, _rowH], "REPLY", _mute, 0.65, true, "right", true] call ghostD_tacpad_fnc_drawText;
+        private _multi = ["RscEdit", "RscEditMulti"] select (isClass (configFile >> "RscEditMulti"));
+        private _e = _display ctrlCreate [_multi, -1, _body];
+        _e ctrlSetPosition [_valX, _y, _valW, _rowH * 2];
+        _e ctrlSetBackgroundColor [_ink # 0, _ink # 1, _ink # 2, 0.08];
+        _e ctrlSetTextColor _ink;
+        _e ctrlSetFontHeight (_rowH * 0.72);
+        _e ctrlSetText GVAR(reqReply);
+        _e ctrlCommit 0;
+        _e ctrlAddEventHandler ["KeyUp", {GVAR(reqReply) = ctrlText (_this select 0); false}];
+        _y = _y + _rowH * 2 + _padY;
+        [_body, [_valX, _y, _w * 0.24, _rowH], [_accent # 0, _accent # 1, _accent # 2, 0.14]] call ghostD_tacpad_fnc_drawFill;
+        [_body, [_valX, _y, _w * 0.24, _rowH], _accent, RULE_THICK] call ghostD_tacpad_fnc_drawFrame;
+        [_body, [_valX, _y, _w * 0.24, _rowH], "SEND", _ink, 0.8, true, "center", true] call ghostD_tacpad_fnc_drawText;
+        [_body, [_valX, _y, _w * 0.24, _rowH], {
+            private _text = trim GVAR(reqReply);
+            if (_text isEqualTo "") exitWith {["TAC//PAC", "Nothing to send.", [0.831, 0.267, 0.267, 1]] call EFUNC(notify,notify)};
+            [player, GVAR(reqOpen), _text] remoteExec [QFUNC(ticketReply), 2];
+            GVAR(reqReply) = "";
+            GVAR(myTicketsAt) = -1;
+            {["pac"] call ghostD_tacpad_fnc_openApp} call CBA_fnc_execNextFrame;
+        }] call ghostD_tacpad_fnc_drawHit;
+    };
+
+    // ---- RAISE ONE: the form, with real dropdowns ---------------------------------
+    case "raise": {
+        [_body, [_pad, _y, _w * 0.3, _rowH], "< BACK TO REQUESTS", _accent, 0.75, true] call ghostD_tacpad_fnc_drawText;
+        [_body, [_pad, _y, _w * 0.3, _rowH], {
+            GVAR(view) = "requests";
+            {["pac"] call ghostD_tacpad_fnc_openApp} call CBA_fnc_execNextFrame;
+        }] call ghostD_tacpad_fnc_drawHit;
+        [_body, [_w * 0.3, _y, _w * 0.7 - _pad, _rowH], "RAISE A PAC REQUEST", _mute, 0.65, true, "right", true] call ghostD_tacpad_fnc_drawText;
+        _y = _y + _rowH * 1.4;
+
+        private _kinds = keys GVAR(ticketKinds);
+        _kinds sort true;
+        if (_kinds isEqualTo []) exitWith {
+            [_body, [_pad, _y, _w - 2 * _pad, _rowH * 2], "The unit has no request kinds yet - an admin adds them in TAC//PAC under Templates, System.", _dim, 0.7, false] call ghostD_tacpad_fnc_drawText;
+        };
+
+        // A DROPDOWN (RscCombo) in the body, drawn in the suite's colours. What
+        // is picked is kept by index in GVAR(reqKind) / GVAR(reqAbout) so a
+        // redraw puts it back.
+        private _fnc_combo = {
+            params ["_label", "_options", "_var"];
+            [_body, [_pad, _y, _labW - _pad, _rowH], _label, _mute, 0.65, true, "right", true] call ghostD_tacpad_fnc_drawText;
+            private _c = _display ctrlCreate ["RscCombo", -1, _body];
+            _c ctrlSetPosition [_valX, _y, _valW, _rowH];
+            _c ctrlSetBackgroundColor [_ink # 0, _ink # 1, _ink # 2, 0.08];
+            _c ctrlSetTextColor _ink;
+            _c ctrlSetFontHeight (_rowH * 0.72);
+            {
+                private _i = _c lbAdd (_x # 1);
+                _c lbSetData [_i, _x # 0];
+            } forEach _options;
+            private _sel = ((missionNamespace getVariable [_var, 0]) max 0) min ((count _options) - 1);
+            missionNamespace setVariable [_var, _sel];
+            _c lbSetCurSel _sel;
+            _c setVariable [QGVAR(reqVar), _var];
+            _c ctrlAddEventHandler ["LBSelChanged", {
+                params ["_ctrl", "_i"];
+                missionNamespace setVariable [_ctrl getVariable [QGVAR(reqVar), ""], _i];
+            }];
+            _c ctrlCommit 0;
+            _y = _y + _rowH + _padY;
+        };
+        ["KIND", _kinds apply {
+            private _k = GVAR(ticketKinds) get _x;
+            if !(_k isEqualType createHashMap) then {_k = createHashMap};
+            private _hint = _k getOrDefault ["hint", ""];
+            [_x, (_k getOrDefault ["label", _x]) + (["", "  -  " + _hint] select (_hint isNotEqualTo ""))]
+        }, QGVAR(reqKind)] call _fnc_combo;
+        ["ABOUT", [["", "-"]] + (_roster apply {[_x # 0, _x # 1]}), QGVAR(reqAbout)] call _fnc_combo;
+
+        // the two typed boxes - real edit controls in the body, the way the
+        // composer makes them (tacpad's composeCard)
+        private _multi = ["RscEdit", "RscEditMulti"] select (isClass (configFile >> "RscEditMulti"));
+        private _fnc_box = {
+            params ["_label", "_var", "_lines", "_class"];
+            [_body, [_pad, _y, _labW - _pad, _rowH], _label, _mute, 0.65, true, "right", true] call ghostD_tacpad_fnc_drawText;
+            private _e = _display ctrlCreate [_class, -1, _body];
+            _e ctrlSetPosition [_valX, _y, _valW, _rowH * _lines];
+            _e ctrlSetBackgroundColor [_ink # 0, _ink # 1, _ink # 2, 0.08];
+            _e ctrlSetTextColor _ink;
+            _e ctrlSetFontHeight (_rowH * 0.72);
+            _e ctrlSetText (missionNamespace getVariable [_var, ""]);
+            _e setVariable [QGVAR(reqVar), _var];
+            _e ctrlCommit 0;
+            _e ctrlAddEventHandler ["KeyUp", {
+                params ["_ctrl"];
+                missionNamespace setVariable [_ctrl getVariable [QGVAR(reqVar), ""], ctrlText _ctrl];
+                false
+            }];
+            _y = _y + _rowH * _lines + _padY;
+        };
+        ["SUBJECT", QGVAR(reqSubject), 1, "RscEdit"] call _fnc_box;
+        ["DETAILS", QGVAR(reqBody), 4, _multi] call _fnc_box;
+
+        [_body, [_valX, _y, _w * 0.24, _rowH], [_accent # 0, _accent # 1, _accent # 2, 0.14]] call ghostD_tacpad_fnc_drawFill;
+        [_body, [_valX, _y, _w * 0.24, _rowH], _accent, RULE_THICK] call ghostD_tacpad_fnc_drawFrame;
+        [_body, [_valX, _y, _w * 0.24, _rowH], "RAISE IT", _ink, 0.8, true, "center", true] call ghostD_tacpad_fnc_drawText;
+        [_body, [_valX, _y, _w * 0.24, _rowH], {
+            private _kinds = keys GVAR(ticketKinds);
+            _kinds sort true;
+            private _kid = _kinds param [GVAR(reqKind), ""];
+            private _subject = trim GVAR(reqSubject);
+            if (_subject isEqualTo "") exitWith {["TAC//PAC", "Give it a one-line subject.", [0.831, 0.267, 0.267, 1]] call EFUNC(notify,notify)};
+            private _roster = missionNamespace getVariable [QGVAR(roster), []];
+            private _about = if (GVAR(reqAbout) >= 1 && GVAR(reqAbout) <= count _roster) then {(_roster # (GVAR(reqAbout) - 1)) # 0} else {""};
+            [player, _kid, _subject, GVAR(reqBody), _about] remoteExec [QFUNC(ticketRaise), 2];
+            GVAR(reqSubject) = "";
+            GVAR(reqBody) = "";
+            GVAR(reqAbout) = 0;
+            GVAR(myTicketsAt) = -1;
+            GVAR(view) = "requests";
+            {["pac"] call ghostD_tacpad_fnc_openApp} call CBA_fnc_execNextFrame;
+        }] call ghostD_tacpad_fnc_drawHit;
+    };
+    // ---- APPLICATION: the website's Apply page, on the tile ---------------------
+    // The unit's questions (<unit>.web.questions), one control each, and SEND;
+    // what has been typed lives in GVAR(applyAnswers) across the tile's
+    // redraws. A decided application shows its decision and no form.
+    case "apply": {
+        private _svc = "service" in ((missionNamespace getVariable [QGVAR(summary), createHashMap]) getOrDefault ["backend", ""]);
+        if (!_svc) exitWith {
+            [_body, [_pad, _y, _w - 2 * _pad, _rowH], "NO DATABASE", _dim, 0.8, false] call ghostD_tacpad_fnc_drawText;
+            [_body, [_pad, _y + _rowH, _w - 2 * _pad, _rowH * 2], "Applications are kept in the unit's database, and this server has none - ask an admin to add you.", _dim, 0.65, false] call ghostD_tacpad_fnc_drawText;
+        };
+        if (GVAR(applyAt) < 0 || {diag_tickTime - GVAR(applyAt) > 60}) then {
+            GVAR(applyAt) = diag_tickTime;
+            [player] remoteExec [QFUNC(applyAsk), 2];
+        };
+        private _app = GVAR(myApplication);
+        private _status = _app getOrDefault ["status", "none"];
+        private _faction = ([] call ghostD_groups_fnc_orbat) # 2;
+
+        [_body, [_pad, _y, _w - 2 * _pad, _rowH * 1.3], format ["APPLY TO JOIN %1", toUpper ([_faction, "THE UNIT"] select (_faction isEqualTo ""))], _ink, 1.1, true] call ghostD_tacpad_fnc_drawText;
+        _y = _y + _rowH * 1.4;
+        if (!GVAR(applySeen)) exitWith {
+            [_body, [_pad, _y, _w - 2 * _pad, _rowH], "Asking the server what the unit wants to know ...", _dim, 0.75, false] call ghostD_tacpad_fnc_drawText;
+        };
+        private _said = switch (_status) do {
+            case "new": {format ["Your application is IN, sent %1 - an admin decides it. You may change your answers until then.", (_app getOrDefault ["submittedAt", ""]) select [0, 16]]};
+            case "accepted": {"ACCEPTED - your record is on its way; MY RECORD comes back when the roster carries you."};
+            case "rejected": {"Not this time. Ask an admin if you want it reopened."};
+            case "nodb": {"This server has no database."};
+            default {"You are not on the roster. Answer the unit's questions and SEND; an admin accepts you under APPLICATIONS."};
+        };
+        [_body, [_pad, _y, _w - 2 * _pad, _rowH], _said, [_mute, _accent] select (_status in ["new", "accepted"]), 0.75, false] call ghostD_tacpad_fnc_drawText;
+        _y = _y + _rowH + _padY;
+        if (_status in ["accepted", "rejected", "nodb"]) exitWith {};
+
+        private _questions = GVAR(applyQuestions);
+        if (_questions isEqualTo []) exitWith {
+            [_body, [_pad, _y, _w - 2 * _pad, _rowH * 2], "The unit has not written its questions yet - an admin sets them on the website (Applications, Edit the questions).", _dim, 0.7, false] call ghostD_tacpad_fnc_drawText;
+        };
+        [_body, [0, _y, _w, RULE_THIN * pixelH], _dim] call ghostD_tacpad_fnc_drawFill;
+        _y = _y + _padY * 2;
+
+        private _multi = ["RscEdit", "RscEditMulti"] select (isClass (configFile >> "RscEditMulti"));
+        private _drawn = 0;
+        {
+            private _q = _x;
+            private _qid = _q getOrDefault ["id", ""];
+            private _type = toLower (_q getOrDefault ["type", "text"]);
+            private _lines = [1, 3] select (_type isEqualTo "textarea");
+            // a "skills" question: an "I'm interested in" line, then the checkboxes, APPLY_SKILL_COLUMNS to a line
+            private _choices = _q getOrDefault ["choices", []];
+            if !(_choices isEqualType []) then {_choices = []};
+            if (_type isEqualTo "skills") then {_lines = 1 + ceil ((count _choices max 1) / APPLY_SKILL_COLUMNS)};
+            private _help = _q getOrDefault ["help", ""];
+            if (_y > _h - _rowH * (_lines + 3)) exitWith {
+                [_body, [_pad, _y, _w - 2 * _pad, _rowH], format ["... %1 more question(s) - the website's Apply page has them all", (count _questions) - _drawn], _dim, 0.65, false] call ghostD_tacpad_fnc_drawText;
+                _y = _y + _rowH;
+            };
+            private _label = _q getOrDefault ["label", _qid];
+            if ((_q getOrDefault ["required", false]) in [true, 1, "1", "true"]) then {_label = _label + " *"};
+            [_body, [_pad, _y, _labW - _pad, _rowH], _label, _mute, 0.65, true, "right", true] call ghostD_tacpad_fnc_drawText;
+            switch (_type) do {
+                case "skills": {
+                    // the answer is the ticked skill ids; a press ticks or unticks one and redraws the tab
+                    [_body, [_valX, _y, _valW, _rowH], "I'm interested in", _dim, 0.65, false] call ghostD_tacpad_fnc_drawText;
+                    if (_choices isEqualTo []) exitWith {
+                        [_body, [_valX, _y + _rowH, _valW, _rowH], "The unit has no skills listed yet.", _dim, 0.6, false] call ghostD_tacpad_fnc_drawText;
+                    };
+                    private _ticked = GVAR(applyAnswers) getOrDefault [_qid, []];
+                    if !(_ticked isEqualType []) then {_ticked = []};
+                    private _colW = _valW / APPLY_SKILL_COLUMNS;
+                    {
+                        _x params [["_sid", "", [""]], ["_sname", "", [""]]];
+                        private _on = _sid in _ticked;
+                        private _cell = [
+                            _valX + (_forEachIndex % APPLY_SKILL_COLUMNS) * _colW,
+                            _y + _rowH * (1 + floor (_forEachIndex / APPLY_SKILL_COLUMNS)),
+                            _colW, _rowH
+                        ];
+                        [_body, _cell, format ["%1  %2", ["[   ]", "[ X ]"] select _on, _sname], [_mute, _ink] select _on, 0.7, _on] call ghostD_tacpad_fnc_drawText;
+                        private _hit = [_body, _cell, {
+                            params ["_ctrl"];
+                            private _qid = _ctrl getVariable [QGVAR(qid), ""];
+                            private _sid = _ctrl getVariable [QGVAR(sid), ""];
+                            private _now = GVAR(applyAnswers) getOrDefault [_qid, []];
+                            if !(_now isEqualType []) then {_now = []};
+                            _now = [_now + [_sid], _now - [_sid]] select (_sid in _now);
+                            GVAR(applyAnswers) set [_qid, _now];
+                            {["pac"] call ghostD_tacpad_fnc_openApp} call CBA_fnc_execNextFrame;
+                        }] call ghostD_tacpad_fnc_drawHit;
+                        _hit setVariable [QGVAR(qid), _qid];
+                        _hit setVariable [QGVAR(sid), _sid];
+                    } forEach _choices;
+                };
+                case "select": {
+                    private _c = _display ctrlCreate ["RscCombo", -1, _body];
+                    _c ctrlSetPosition [_valX, _y, _valW, _rowH];
+                    _c ctrlSetBackgroundColor [_ink # 0, _ink # 1, _ink # 2, 0.08];
+                    _c ctrlSetTextColor _ink;
+                    _c ctrlSetFontHeight (_rowH * 0.72);
+                    private _opts = _q getOrDefault ["options", []];
+                    if !(_opts isEqualType []) then {_opts = []};
+                    _c lbAdd "-";
+                    _c lbSetData [0, ""];
+                    private _cur = GVAR(applyAnswers) getOrDefault [_qid, ""];
+                    private _sel = 0;
+                    {
+                        private _o = if (_x isEqualType "") then {_x} else {str _x};
+                        private _i = _c lbAdd _o;
+                        _c lbSetData [_i, _o];
+                        if (_o isEqualTo _cur) then {_sel = _i};
+                    } forEach _opts;
+                    _c lbSetCurSel _sel;
+                    _c setVariable [QGVAR(qid), _qid];
+                    _c ctrlAddEventHandler ["LBSelChanged", {
+                        params ["_ctrl", "_i"];
+                        GVAR(applyAnswers) set [_ctrl getVariable [QGVAR(qid), ""], _ctrl lbData _i];
+                    }];
+                    _c ctrlCommit 0;
+                };
+                default {
+                    private _e = _display ctrlCreate [[_multi, "RscEdit"] select (_lines isEqualTo 1), -1, _body];
+                    _e ctrlSetPosition [_valX, _y, _valW, _rowH * _lines];
+                    _e ctrlSetBackgroundColor [_ink # 0, _ink # 1, _ink # 2, 0.08];
+                    _e ctrlSetTextColor _ink;
+                    _e ctrlSetFontHeight (_rowH * 0.72);
+                    _e ctrlSetTooltip _help;
+                    _e ctrlSetText (GVAR(applyAnswers) getOrDefault [_qid, ""]);
+                    _e setVariable [QGVAR(qid), _qid];
+                    _e ctrlAddEventHandler ["KeyUp", {
+                        params ["_ctrl"];
+                        GVAR(applyAnswers) set [_ctrl getVariable [QGVAR(qid), ""], ctrlText _ctrl];
+                        false
+                    }];
+                    _e ctrlCommit 0;
+                };
+            };
+            _y = _y + _rowH * _lines;
+            if (_help isNotEqualTo "" && _type isNotEqualTo "textarea") then {
+                [_body, [_valX, _y, _valW, _rowH * 0.8], _help, _dim, 0.6, false] call ghostD_tacpad_fnc_drawText;
+                _y = _y + _rowH * 0.8;
+            };
+            _y = _y + _padY;
+            _drawn = _drawn + 1;
+        } forEach _questions;
+
+        private _btn = ["SEND APPLICATION", "UPDATE MY APPLICATION"] select (_status isEqualTo "new");
+        [_body, [_valX, _y, _w * 0.30, _rowH], [_accent # 0, _accent # 1, _accent # 2, 0.14]] call ghostD_tacpad_fnc_drawFill;
+        [_body, [_valX, _y, _w * 0.30, _rowH], _accent, RULE_THICK] call ghostD_tacpad_fnc_drawFrame;
+        [_body, [_valX, _y, _w * 0.30, _rowH], _btn, _ink, 0.8, true, "center", true] call ghostD_tacpad_fnc_drawText;
+        [_body, [_valX, _y, _w * 0.30, _rowH], {
+            [player, +GVAR(applyAnswers)] remoteExec [QFUNC(applySubmit), 2];
+            ["TAC//PAC", "Sending your application ...", [0.4, 0.702, 0.4, 1]] call EFUNC(notify,notify);
+        }] call ghostD_tacpad_fnc_drawHit;
     };
 };
 

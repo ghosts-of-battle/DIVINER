@@ -48,13 +48,16 @@ if (_isRespawn) then {
     private _items = +(_roleConfig getOrDefault ["arsenalItems", []]);
     private _backpacks = +(_roleConfig getOrDefault ["arsenalBackpacks", []]);
 
-    //merge the shared Common_Arsenal (config\arsenal) plus the role's group arsenal
-    //(groupArsenal property, e.g. "Arsenal_Reaper") - any array named items* counts as items
+    //merge the shared Common_Arsenal (config\arsenal) with the role's own
+    //extra gear - any array named items* counts as items
     private _arsenalSources = [missionConfigFile >> "Common_Arsenal"];
-    private _groupArsenal = _roleConfig getOrDefault ["groupArsenal", ""];
-    if (_groupArsenal isNotEqualTo "" && {isClass (missionConfigFile >> _groupArsenal)}) then {
-        _arsenalSources pushBack (missionConfigFile >> _groupArsenal);
-    };
+    // THE ROLE'S OWN ARSENAL IS NOT A NAMED CLASS ANY MORE (user, 2026-09-09:
+    // "there is no fucking Arsenal_Wraith - you were supose to make it part of
+    // the role config, and part of the squad config, and part of the plt
+    // config"). A role's extra gear is its own arsenalWeapons/Magazines/Items/
+    // Backpacks above, and the document role_<class> below - derived from the
+    // role's id the way plt_ and sqd_ are, so there is nothing to point at and
+    // nothing to spell wrong.
     {
         {
             private _name = toLower configName _x;
@@ -70,7 +73,7 @@ if (_isRespawn) then {
     // THE DATABASE ADDS TO THE MISSION'S ARSENAL, it does not replace it - so a
     // mission that ships config\arsenal keeps working and one that ships none
     // gets everything from <unit>.arsenal. The common lists first, then the
-    // variant the role's groupArsenal names.
+    // three narrower documents below.
     if (!isNil "ghostD_pac_fnc_cfgLists") then {
         private _fromDb = ["arsenal"] call ghostD_pac_fnc_cfgLists;
         private _variants = ((missionNamespace getVariable ["ghostD_pac_structure", createHashMap])
@@ -86,15 +89,30 @@ if (_isRespawn) then {
             // Built as an array and joined once: concatenating in the loop
             // reallocates the string on every character.
             private _chars = [];
+            // A RUN OF SEPARATORS IS ONE UNDERSCORE, and a leading run is
+            // nothing at all. This used to write one underscore per character,
+            // which agreed with the website only while no name held two
+            // separators together: "GHOST  6" was GHOST_6 on the website and
+            // GHOST__6 here, so the game looked up a document nobody had
+            // written and no error said so (2026-09-09). The website's rule is
+            // preg_replace("/[^A-Z0-9]+/", "_") then trim("_") - this is that,
+            // character by character.
+            private _wasSep = true;
             {
-                // 0-9, A-Z survive; everything else becomes an underscore.
                 private _ok = (_x >= 48 && _x <= 57) || (_x >= 65 && _x <= 90);
-                _chars pushBack ([95, _x] select _ok);
+                if (_ok) then {
+                    _chars pushBack _x;
+                    _wasSep = false;
+                } else {
+                    if (!_wasSep) then {
+                        _chars pushBack 95;
+                        _wasSep = true;
+                    };
+                };
             } forEach (toArray toUpper _s);
             private _out = toString _chars;
-            // No leading or trailing underscores - "1-1 SQD " must not become
-            // a name that differs from the one the website wrote.
-            while {_out select [0, 1] isEqualTo "_"} do {_out = _out select [1]};
+            // A trailing run left one underscore on the end - "1-1 SQD " must
+            // not become a name that differs from the one the website wrote.
             while {count _out > 0 && {_out select [count _out - 1, 1] isEqualTo "_"}} do {
                 _out = _out select [0, count _out - 1];
             };
@@ -124,9 +142,11 @@ if (_isRespawn) then {
             if (count _sv > 0) then {_pick pushBack _sv};
         };
 
-        if (_groupArsenal isNotEqualTo "" && {_variants isEqualType createHashMap}) then {
-            private _v = _variants getOrDefault [_groupArsenal, createHashMap];
-            if (count _v > 0) then {_pick pushBack _v};
+        // AND THE ROLE'S OWN, narrowest of all: role_<class>, by the same slug
+        // rule as the platoon's and the squad's.
+        if (_desiredRole isNotEqualTo "" && {_variants isEqualType createHashMap}) then {
+            private _rv = _variants getOrDefault ["role_" + ([_desiredRole] call _fnc_slug), createHashMap];
+            if (count _rv > 0) then {_pick pushBack _rv};
         };
         {
             private _lists = _x;
@@ -172,6 +192,23 @@ if (_isRespawn) then {
             player setUnitTrait [_trait,false];
         };
     } forEach (getAllUnitTraits player);
+
+    // THE COEFFICIENTS ARE THE ORDER OF BATTLE'S (user, 2026-09-09: "these can
+    // be set via the orbat for all players"). audibleCoef, camouflageCoef,
+    // loadCoef and staminaDrainCoef are numbers describing the UNIT, not the
+    // job - one set for everybody - so they are read off <unit>.orbat here
+    // rather than repeated on every role. A role carries the four booleans and
+    // nothing else.
+    //
+    // Applied after the reset above and before the role's own traits, so a
+    // coefficient is in place whatever the role goes on to set.
+    private _coefs = ((missionNamespace getVariable ["ghostD_pac_structure", createHashMap])
+        getOrDefault ["orbat", createHashMap]) getOrDefault ["coefs", createHashMap];
+    if (_coefs isEqualType createHashMap) then {
+        {
+            if (_y isEqualType 0) then {player setUnitTrait [_x, _y, false]};
+        } forEach _coefs;
+    };
 
     // PAC OWNS THE SKILLS. Every trait or variable a PAC skill can set is
     // skipped here - medic, engineer, EOD, isLeader, isJFO, whatever the

@@ -46,18 +46,29 @@ _selectionPath params ["_groupIndex",["_unitIndex",-1]];
 if (_unitIndex isEqualTo -1) exitWith {
     _button ctrlEnable false;
 
-    private _groupName = (YMF_dynamicGroups select _groupIndex) select 0;
+    // THE ROW MAY NOT BE THERE AT ALL. Until the ORBAT has been applied the
+    // table is empty, and reading element 4 of a row that does not exist put
+    // the word "scalar" on screen where the slot count belongs - "0 OF scalar
+    // SLOTS FILLED" (seen in game 2026-09-09, while the database was still
+    // being read). Say what is actually true instead.
+    private _row = YMF_dynamicGroups param [_groupIndex, []];
+    private _groupName = _row param [0, ""];
+    private _slots = _row param [4, []];
+    if !(_slots isEqualType []) then {_slots = []};
     private _filled = 0;
-    private _slots = (YMF_dynamicGroups select _groupIndex) param [4, []];
     {if (!isNull _x) then {_filled = _filled + 1}} forEach _slots;
 
     _textBox ctrlSetStructuredText parseText format ["
         <t font='RobotoCondensedBold' size='1.6' color='%1'>%2</t>
         <br/>
-        <t font='RobotoCondensed' size='0.9' color='%3'>%4 OF %5 SLOTS FILLED  -  PICK A ROLE FROM THE LIST</t>
+        <t font='RobotoCondensed' size='0.9' color='%3'>%4</t>
     ",
         _inkHex, toUpper _groupName,
-        _muteHex, _filled, count _slots
+        _muteHex,
+        [
+            format ["%1 OF %2 SLOTS FILLED  -  PICK A ROLE FROM THE LIST", _filled, count _slots],
+            "NO SLOTS YET - the unit's order of battle is still being read from the database"
+        ] select (_slots isEqualTo [])
     ];
 
     (ctrlPosition _textBox) params ["_x0","_y0","_w0"];

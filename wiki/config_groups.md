@@ -6,8 +6,8 @@
 > `ghostD_groups_fnc_orbat` answers `[groups, platoons, radioNets, faction]` from
 > the document, else from this file, and every reader in the mod asks it. The
 > roles moved with it ([config_roles](config_roles)); `frameworkmongo.Stratis`
-> replaces this file with `config_arsenal.hpp` - the arsenal includes that used
-> to sit at its foot, which is all of it that stays on disk.
+> replaces this file with `config_arsenal.hpp` - the common arsenal include
+> that used to sit at its foot, which is all of it that stays on disk.
 
 The roster, and the spine of the whole config tree. Everything else is a view of
 it.
@@ -33,8 +33,7 @@ class Dynamic_Groups {
 };
 
 #include "config_roles.hpp"
-#include "arsenal\config_arsenal_common.hpp"
-#include "banshee\config_arsenal.hpp"      // top-level Arsenal_ classes
+#include "arsenal\config_arsenal_common.hpp"   // top-level Common_Arsenal
 ```
 
 > The arsenal includes are **outside** `Dynamic_Groups` on purpose — they are

@@ -47,7 +47,15 @@ if (isNull _caller || {!([_caller] call ghostD_adminpanel_fnc_isAdmin)}) exitWit
     WARNING_2("adminStructure refused: %1 is not an admin (%2)",name _caller,_section);
     false
 };
-if !(_section in ["ranks", "skills", "awards", "statuses", "admins", "roles", "nets", "promotion", "trainings", "traits"]) exitWith {false};
+if !(_section in ["ranks", "skills", "awards", "statuses", "admins", "roles", "nets", "promotion", "trainings", "traits", "schemes", "motorpool", "cosmetics", "welcome", "arsenal", "logistics", "pylons", "settings"]) exitWith {false};
+
+// THE SAME RULE THE MENU DRAWS, enforced. A section this mission's config// folder feeds has no editable screen when there is no database, and a save
+// that reached here anyway would be written to the profile and then silently
+// overruled by the file at the next mission start.
+if ([_section] call FUNC(fileFed)) exitWith {
+    WARNING_2("adminStructure refused: %1 comes from this mission's config folder and there is no database (%2)",_section,name _caller);
+    false
+};
 
 private _fnc_tell = {
     params ["_msg", "_bad"];
@@ -57,7 +65,13 @@ private _fnc_tell = {
 // An id is a class name: [a-z0-9_], not empty. A ROLE's id is its
 // Dynamic_Roles class and keeps its case (teamleadBanshee); an admin's is a
 // Steam id.
-private _upperOk = _section isEqualTo "roles";
+// A LIST'S id is its NAME - "Weapons", "ground" - and keeps its case.
+// UPPER CASE IS ALLOWED where the ids are classnames or camelCase names:
+// roles, arsenal lists, cosmetics and pylons (vehicle classes), logistics
+// crates, traits (variable names), nets, motorpool headings - and the
+// settings, whose keys are autoSlot, slotMatch, savedLoadouts, autoPromote
+// (2026-09-09: the settings editor refused every one of its own ids).
+private _upperOk = _section in ["roles", "arsenal", "cosmetics", "pylons", "logistics", "traits", "motorpool", "settings", "schemes"];
 private _idOk = _id isNotEqualTo "" && {(toArray _id) findIf {!(_x in [95] || {_x >= 48 && _x <= 57} || {_x >= 97 && _x <= 122} || {_upperOk && {_x >= 65 && _x <= 90}})} < 0};
 if (_section isEqualTo "admins") then {_idOk = _id isNotEqualTo "" && {(toArray _id) findIf {!(_x >= 48 && _x <= 57)} < 0}};
 // A NET's id is its name on the rail and the radio plan - "C2.reports",
@@ -66,7 +80,45 @@ if (_section isEqualTo "admins") then {_idOk = _id isNotEqualTo "" && {(toArray 
 if (_section isEqualTo "nets") then {_idOk = _id isNotEqualTo "" && {(toArray _id) findIf {!(_x in [95, 46, 32, 45] || {_x >= 48 && _x <= 57} || {_x >= 97 && _x <= 122} || {_x >= 65 && _x <= 90})} < 0}};
 if (!_idOk) exitWith {[format ["'%1' is not a valid id (letters, digits, underscore; a Steam id for admins).", _id], true] call _fnc_tell; false};
 
-private _items = GVAR(structure) getOrDefault [_section, createHashMap];
+// The section as the editor sees it - see FUNC(structItems). For everything
+// but the welcome screen that IS the structure's own hashmap.
+// A VARIANT (2026-09-09): a platoon's, a squad's, a role's or a named
+// version of the arsenal or the motorpool - <unit>.arsenal.<v> /
+// <unit>.motorpool.<v> - edited in place under the structure's variants
+// rather than the mission's own lists. The record says which.
+private _variant = _rec getOrDefault ["variant", ""];
+if !(_variant isEqualType "") then {_variant = ""};
+_rec deleteAt "variant";
+if (_variant isNotEqualTo "" && {!(_section in ["arsenal", "motorpool"])}) exitWith {false};
+if (_section isEqualTo "arsenal" && _variant isNotEqualTo "") exitWith {
+    private _ars = +(GVAR(structure) getOrDefault ["arsenal", createHashMap]);
+    private _variants = _ars getOrDefault ["variants", createHashMap];
+    if !(_variants isEqualType createHashMap) then {_variants = createHashMap};
+    private _lists = +(_variants getOrDefault [_variant, createHashMap]);
+    if !(_lists isEqualType createHashMap) then {_lists = createHashMap};
+    if (_op isEqualTo "remove") then {
+        _lists deleteAt _id;
+    } else {
+        private _classes = _rec getOrDefault ["classes", []];
+        if (_classes isEqualType "") then {_classes = ((_classes splitString ",") apply {trim _x}) select {_x isNotEqualTo ""}};
+        if !(_classes isEqualType []) then {_classes = []};
+        _lists set [_id, _classes select {_x isEqualType ""}];
+    };
+    _variants set [_variant, _lists];
+    _ars set ["variants", _variants];
+    GVAR(structure) set ["arsenal", _ars];
+    [getPlayerUID _caller, name _caller, "structure", "", format ["%1 arsenal.%2 list '%3'", ["set", "removed"] select (_op isEqualTo "remove"), _variant, _id]] call FUNC(logAction);
+    ["arsenal", _variant] call FUNC(structurePersist);
+    [format ["Arsenal %1: list %2 %3.", _variant, _id, ["saved", "removed"] select (_op isEqualTo "remove")], false] call _fnc_tell;
+    true
+};
+
+private _items = if (_section isEqualTo "motorpool" && _variant isNotEqualTo "") then {
+    private _v = (GVAR(structure) getOrDefault ["motorpoolVariants", createHashMap]) getOrDefault [_variant, createHashMap];
+    if (_v isEqualType createHashMap) then {+_v} else {createHashMap}
+} else {
+    [_section] call FUNC(structItems)
+};
 private _fields = [["name", "t"]] + (([_section] call FUNC(structFields)) apply {[_x # 0, _x # 1]});
 private _ok = true;
 
@@ -120,6 +172,25 @@ switch (_op) do {
         if (_section isEqualTo "ranks" && {!((toUpper (_clean get "armaRank")) in ARMA_RANKS)}) exitWith {
             ["armaRank must be one of PRIVATE CORPORAL SERGEANT LIEUTENANT CAPTAIN MAJOR COLONEL.", true] call _fnc_tell;
         };
+        // THE RUNG GOES TO THE PROMOTION DOCUMENT, not onto the rank. That is
+        // where a mission's config_pac.hpp declares it and where the website
+        // reads and writes it, so putting it on the rank would be a second,
+        // disagreeing copy.
+        if (_section isEqualTo "ranks") then {
+            private _pts = _clean getOrDefault ["points", 0];
+            if (_pts isEqualType "") then {_pts = parseNumber _pts};
+            if !(_pts isEqualType 0) then {_pts = 0};
+            _clean deleteAt "points";
+            private _promo = +(["promotion"] call FUNC(structItems));
+            private _rung = +(_promo getOrDefault ["rank_" + _id, createHashMap]);
+            _rung set ["value", _pts];
+            if ((_rung getOrDefault ["name", ""]) isEqualTo "") then {
+                _rung set ["name", _clean getOrDefault ["name", _id]];
+            };
+            _promo set ["rank_" + _id, _rung];
+            GVAR(structure) set ["promotion", _promo];
+            ["promotion"] call FUNC(structurePersist);
+        };
         if (_section isEqualTo "roles") then {
             private _mr = _clean getOrDefault ["minRank", ""];
             private _bad = (_clean getOrDefault ["requiredSkills", []]) select {!(_x in (GVAR(structure) getOrDefault ["skills", createHashMap]))};
@@ -152,7 +223,84 @@ switch (_op) do {
     default {};
 };
 if (!_ok) exitWith {false};
-GVAR(structure) set [_section, _items];
+if (_section isEqualTo "motorpool" && _variant isNotEqualTo "") exitWith {
+    private _variants = +(GVAR(structure) getOrDefault ["motorpoolVariants", createHashMap]);
+    if !(_variants isEqualType createHashMap) then {_variants = createHashMap};
+    _variants set [_variant, _items];
+    GVAR(structure) set ["motorpoolVariants", _variants];
+    [getPlayerUID _caller, name _caller, "structure", "", format ["%1 motorpool.%2 '%3'", ["set", "removed"] select (_op isEqualTo "remove"), _variant, _id]] call FUNC(logAction);
+    ["motorpool", _variant] call FUNC(structurePersist);
+    [format ["Motorpool %1: %2 %3.", _variant, _id, ["saved", "removed"] select (_op isEqualTo "remove")], false] call _fnc_tell;
+    true
+};
+// ONE RECORD, NOT A LIST. The welcome screen is handed to the editor as a
+// list of one (see FUNC(structItems)) and goes back as the record it is, so
+// FUNC(welcomeShow) reads exactly what it has always read.
+if (_section isEqualTo "welcome") then {
+    private _w = +(_items getOrDefault ["welcome", createHashMap]);
+    _w deleteAt "id";
+    GVAR(structure) set ["welcome", _w];
+} else {
+    if (_section isEqualTo "arsenal") then {
+        // Back into {lists: {name: [...]}}, which is what FUNC(cfgLists) reads
+        // and what the document holds.
+        private _rec = +(GVAR(structure) getOrDefault [_section, createHashMap]);
+        private _l = createHashMap;
+        {
+            private _v = _y getOrDefault ["classes", []];
+            if (_v isEqualType []) then {_l set [_x, _v]};
+        } forEach _items;
+        _rec set ["lists", _l];
+        GVAR(structure) set [_section, _rec];
+    } else {
+        if (_section isEqualTo "settings") then {
+            // STRAIGHT INTO GVAR(settings), not the structure - that is where
+            // every reader looks. A number stays a number: autoSlot is tested
+            // with isEqualTo 0 and a "0" string would never match it.
+            {
+                private _v = _y getOrDefault ["value", ""];
+                private _num = parseNumber _v;
+                if (str _num isEqualTo _v) then {_v = _num};
+                GVAR(settings) set [_x, _v];
+            } forEach _items;
+            ["settings"] call FUNC(structurePersist);
+        } else {
+        if (_section in ["logistics", "pylons"]) then {
+            // BACK INTO THE BLOCK OF SQF the document holds - the same literal
+            // a mission's config_logistics.sqf / config_pylons.sqf returns.
+            // FUNC(structItems) took it apart; this puts it together, and the
+            // two have to stay each other's inverse.
+            private _tree = [];
+            {
+                private _id = _x;
+                private _rows = [];
+                if (_section isEqualTo "logistics") then {
+                    {
+                        private _parts = (_x splitString " ") select {_x isNotEqualTo ""};
+                        if (count _parts >= 2) then {
+                            _rows pushBack [_parts # 0, parseNumber (_parts # 1)];
+                        };
+                    } forEach (_y getOrDefault ["contents", []]);
+                } else {
+                    {
+                        private _at = _x find ":";
+                        if (_at > -1) then {
+                            private _pName = trim (_x select [0, _at]);
+                            private _mags = ((_x select [_at + 1]) splitString ",") apply {trim _x};
+                            _mags = _mags select {_x isNotEqualTo ""};
+                            if (_pName isNotEqualTo "") then {_rows pushBack [_pName, _mags]};
+                        };
+                    } forEach (_y getOrDefault ["presets", []]);
+                };
+                if (_rows isNotEqualTo []) then {_tree pushBack [_id, _rows]};
+            } forEach _items;
+            GVAR(structure) set [_section, createHashMapFromArray [["code", str _tree]]];
+        } else {
+            GVAR(structure) set [_section, _items];
+        };
+        };
+    };
+};
 // A role removed in the editor is a mission role back at the mission's own
 // (when the mission still declares it), not a hole in the slot table; a role
 // the mission never declared is simply gone. The rest of every role - nets,

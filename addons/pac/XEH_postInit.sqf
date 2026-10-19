@@ -34,21 +34,23 @@ if (hasInterface) then {
     // The boot overlay is for a mission that actually boots - not the empty
     // editor map or the main menu, which declare no CfgGFA_PAC.
     if (isClass (missionConfigFile >> "CfgGFA_PAC")) then {[] spawn FUNC(bootScreen)};
+    // THE ONE DIALOG REDRAWS ITSELF when what it reads is republished - a
+    // table page, never a form being typed into (FUNC(uiRefresh)).
     QGVAR(structureSvc) addPublicVariableEventHandler {
         [] call FUNC(takeServer);
-        [] call FUNC(structSection);      // no-op unless the editor is open
-        [] call FUNC(panelOpened);        // combos on the roster page re-list too
-        [] call FUNC(manageSection);      // the ORBAT lists in the management window
+        ["structure"] call FUNC(uiRefresh);
     };
-    QGVAR(settingsSvc) addPublicVariableEventHandler {[] call FUNC(takeServer)};
+    QGVAR(settingsSvc) addPublicVariableEventHandler {
+        [] call FUNC(takeServer);
+        ["settings"] call FUNC(uiRefresh);
+    };
 
     QGVAR(roster) addPublicVariableEventHandler {
         [] call FUNC(applyOnClient);
-        [] call FUNC(panelFillRoster);    // no-op unless the admin page is open
-        [] call FUNC(manageSection);      // the operator list in the management window
+        ["roster"] call FUNC(uiRefresh);
     };
     QGVAR(summary) addPublicVariableEventHandler {
-        [] call FUNC(panelFillRoster);
+        ["summary"] call FUNC(uiRefresh);
     };
 
     addMissionEventHandler ["EntityRespawned", {
@@ -141,9 +143,19 @@ addMissionEventHandler ["Ended", {
 // A player is seeded the moment they arrive rather than when somebody first
 // edits them, so the Unassigned filter in the admin panel is a list of people
 // who have actually been on the server.
+// NEW PLAYERS: settings newPlayers (2026-09-10). "auto" seeds a record the
+// moment they arrive, as always; "apply" does not - they apply from the
+// tacpad's PAC tile (or the website) and an admin accepts them under
+// APPLICATIONS, which is what seeds the record. Somebody already on the
+// roster is never touched by the setting.
 addMissionEventHandler ["PlayerConnected", {
     params ["", "_uid", "_name"];
-    [_uid, _name] call FUNC(record);
+    private _mode = toLower (GVAR(settings) getOrDefault ["newPlayers", "auto"]);
+    if (_mode isEqualTo "apply" && {!(_uid in GVAR(players))}) then {
+        INFO_2("%1 (%2) connected and is not on the roster - newPlayers is 'apply', no record seeded",_name,_uid);
+    } else {
+        [_uid, _name] call FUNC(record);
+    };
     [_uid, _name] call FUNC(sessionStart);
     [] call FUNC(publish);
 }];

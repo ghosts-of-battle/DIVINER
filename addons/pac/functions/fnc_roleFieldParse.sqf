@@ -37,7 +37,6 @@ Author:
 params [["_field", "", [""]], ["_text", "", [""]], ["_was", [], [[]]]];
 
 // getAllUnitTraits' names - the only ones setUnitTrait takes with custom false.
-#define ENGINE_TRAITS ["audiblecoef", "camouflagecoef", "loadcoef", "medic", "engineer", "explosivespecialist", "uavhacker"]
 
 if (_field isEqualTo "defaultLoadout") exitWith {
     private _t = trim _text;
@@ -81,12 +80,19 @@ if (_isFlag || _isPair) exitWith {
 
         // NOT exitWith. Inside forEach it ends the LOOP, not the iteration, so
         // a role would keep its first net and lose every one after it.
-        if (_isFlag) then {
+        // TRAITS ARE PAIRS. {name, value} is what a config file writes -
+        //     traits[] = { {"UAVHacker","true"} };
+        // - and the third column this used to add was setUnitTrait's "custom"
+        // flag. A trait is only ever one of the engine's four, so it was
+        // always false, and FUNC(setupPlayer) defaults it anyway. Writing it
+        // made the database disagree with the file for no gain (2026-09-09).
+        if (_isFlag || _field isEqualTo "traits") then {
             _out pushBack [_name, _val];
             continue;
         };
 
-        // A row that was there keeps whatever third value it had.
+        // customVariables IS three wide - {name, value, global}. A row that
+        // was there keeps whatever global flag it had.
         private _third = "";
         {
             if (_x isEqualType [] && {(_x param [0, ""]) isEqualTo _name}) exitWith {
@@ -95,14 +101,7 @@ if (_isFlag || _isPair) exitWith {
             };
         } forEach _was;
 
-        if (_third isEqualTo "") then {
-            _third = if (_field isEqualTo "traits") then {
-                // custom: true unless the engine already has the name
-                ["true", "false"] select ((toLower _name) in ENGINE_TRAITS)
-            } else {
-                "true"                       // customVariables: global
-            };
-        };
+        if (_third isEqualTo "") then {_third = "true"};
         _out pushBack [_name, _val, _third];
     } forEach (_text splitString ",");
     _out

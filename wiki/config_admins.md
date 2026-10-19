@@ -1,36 +1,17 @@
 # config_admins.hpp
 
-One Steam ID list, three grants: the debug console, the CBA settings whitelist,
-and TAC//ADMIN.
-
-**Loads:** `#include`d **first** in [description.ext](description-ext).
-**Declares:** `CfgGhostAdmins`, plus the `ADMINS` macro.
-**Read by:** `description.ext` macro expansion, and `ghostD_adminpanel_fnc_adminList`.
-
----
-
-## The whole file
-
-```cpp
-#define ADMINS \
-    "76561198000000000", /* You */ \
-    "76561198000000001"  /* Someone else */
-
-/* -------------------- Nothing to edit below here -------------------- */
-
-#define DEBUG_ADMINS ADMINS
-#define CBA_ADMINS ADMINS
-
-class CfgGhostAdmins {
-    admins[] = {ADMINS};
-};
-```
+> **Two lists, two jobs (2026-09-09).** `#define ADMINS` here feeds
+> `enableDebugConsole[]` and `cba_settings_whitelist[]` and **nothing else** -
+> the engine and CBA read those arrays out of description.ext before any script
+> runs. **Who may open TAC//PAC and TAC//ADMIN is `<unit>.admins`**, edited on
+> the PAC admin page or the website. The old `CfgGhostAdmins` class is read by
+> nothing and has been removed from the missions.
 
 And in `description.ext`:
 
 ```cpp
-enableDebugConsole[] = {DEBUG_ADMINS};
-cba_settings_whitelist[] = {CBA_ADMINS};
+enableDebugConsole[] = {ADMINS};
+cba_settings_whitelist[] = {ADMINS};
 ```
 
 ---

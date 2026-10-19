@@ -38,7 +38,6 @@ Every role class carries the same thirteen properties.
 | `traits[]` | `{trait, value}` | Engine unit traits |
 | `customVariables[]` | `{name, value, global}` | ACE and mod variables |
 | `defaultLoadout[]` | array | A full `setUnitLoadout` array |
-| `groupArsenal` | string | Names the element's `Arsenal_<X>` class |
 | `arsenalWeapons[]` | array | The role's own arsenal additions |
 | `arsenalMagazines[]` | array | ” |
 | `arsenalItems[]` | array | ” |
@@ -73,8 +72,6 @@ class reconBanshee {
     };
 
     defaultLoadout[] = { /* a setUnitLoadout array */ };
-
-    groupArsenal = "Arsenal_Banshee";
 
     arsenalWeapons[] = {};
     arsenalMagazines[] = {};

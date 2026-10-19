@@ -57,5 +57,11 @@
 // disconnect is closed at the last beat rather than lost.
 #define PAC_HEARTBEAT     60
 
+// Application questions: the gap between two stored "order" values (the
+// website numbers them 10, 20, ...), and how many checkboxes a "skills"
+// question puts on one line of the tile's APPLICATION tab.
+#define QUESTION_ORDER_STEP 10
+#define APPLY_SKILL_COLUMNS 2
+
 // The admin page addresses its controls by these.
 #include "ui\idcs.inc.hpp"

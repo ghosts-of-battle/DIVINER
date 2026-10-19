@@ -18,6 +18,1511 @@ contract and are spelled the same in both repos. Never rewrite them.
 
 ## Unreleased
 
+### Applications: a "skills" question - what do you want to be - and the standard set in game
+**Sync:** `yes` - rewrite `ghostD_` to `ghost_`. Applied to jmsb-custom-mod
+(`jmfsb_`) the same day.
+
+Asked 2026-10-19: "add to the applications in PAC a 'what do you want to be
+(when you do not grow up)' question with a checkbox for each skill we have;
+put 'I'm interested in' above the checkboxes".
+
+**Why:** the application form could only ask text, long text or one choice.
+And with no `<unit>.web.questions` document stored, the website asked its
+standard nine questions (`GHOSTD_DEFAULT_QUESTIONS`, DIVINER_Web
+`src/applications.php`) while the tile's APPLICATION tab asked nothing and
+said "The unit has not written its questions yet" - web and game disagreed.
+
+**Files:**
+- `addons/pac/functions/fnc_questionsLoad.sqf` - with no stored questions,
+  falls back to the website's standard set, in its order, plus the new
+  `interests` question (type `skills`, not required). Every question of type
+  `skills` is given `choices`: `[[skill id, display name], ...]`, sorted by
+  name, off `GVAR(structure)` `skills` (the unit's `<unit>.skills`), so the
+  client needs no structure to draw it and admin pages can name the ids.
+- `addons/pac/functions/fnc_app.sqf` - `case "apply"`, the per-question loop:
+  the select/edit `if` became `switch (_type)` with a new `case "skills"`:
+  the line "I'm interested in", then one `[ X ]` / `[   ]` checkbox per
+  choice, `APPLY_SKILL_COLUMNS` to a line, each a `ghostD_tacpad_fnc_drawHit`
+  carrying `QGVAR(qid)` / `QGVAR(sid)` that toggles the id in
+  `GVAR(applyAnswers)` and redraws through `ghostD_tacpad_fnc_openApp`.
+  `_lines` for a skills question is 1 + the checkbox rows.
+- `addons/pac/functions/fnc_applySubmit.sqf` - a `skills` answer is kept as
+  an ARRAY of skill ids, intersected with the question's `choices`; required
+  means at least one ticked. Other types unchanged (trimmed text, 4000 max).
+- `addons/pac/functions/fnc_pgApplication.sqf` - an answer that is an array
+  is shown as the skill names joined by ", " (the question's `choices`, else
+  `FUNC(lookup)` on `skills`), also for a removed question.
+- `addons/pac/script_component.hpp` - `QUESTION_ORDER_STEP` (10) and
+  `APPLY_SKILL_COLUMNS` (2).
+
+**Contract:** the application document's `answers.<qid>` may now be a string
+array (skill ids) for a `skills` question; the website writes the same.
+Question type `skills` is new in `<unit>.web.questions`. The in-game default
+question list must be kept in step with `GHOSTD_DEFAULT_QUESTIONS`.
+
+**Ghost notes:** none beyond the prefix - the four functions are identical
+apart from it.
+
+**Checked:** `hemtt check` - clean (1117 sqf compiled, 70 configs rapified),
+no new warnings. Not tested in game.
+
+### New players: auto-added, or made to apply - the tile's APPLICATION tab
+**Sync:** `yes` - rewrite `ghostD_` to `ghost_` (`ghostDA_` for alive). Applied
+to all three already.
+
+Asked 2026-09-10: "for new players make a setting to auto add them or to
+force an application, if application is forced they should have to go to
+the live tile the player dashboard and have an application tab there
+instead of my details".
+
+- A setting, `newPlayers`: `auto` (the default - a record is seeded the
+  moment somebody first connects, as always) or `apply` (nothing is seeded;
+  they apply and an admin accepts them under APPLICATIONS, which is what
+  seeds the record). Offered on Configs > Settings in game
+  (`fnc_structItems.sqf`) and on the website's Settings page
+  (`DIVINER_Web/src/records.php` - which also gains `autoPromote`, so the
+  two pages offer the same five). Read in `addons/pac/XEH_postInit.sqf`'s
+  `PlayerConnected` handler: with `apply`, a uid not in `GVAR(players)` is
+  logged and left alone (its session still opens for attendance).
+- `addons/pac/functions/fnc_app.sqf` - when `newPlayers` is `apply` and the
+  player is not on the roster, the tabs are APPLICATION / ROSTER / OPORD /
+  REQUESTS and the tile opens on APPLICATION: the unit's questions
+  (`<unit>.web.questions`, the website's Apply page's) one control each -
+  text, a three-line box, or a dropdown for a choice - the required ones
+  starred, SEND APPLICATION (UPDATE MY APPLICATION once it is in). A decided
+  application shows its decision and no form. Answers live in
+  `GVAR(applyAnswers)` across redraws. MY RECORD comes back the moment the
+  roster carries them.
+- `fnc_applyAsk.sqf` (server) - the questions, published as
+  `GVAR(applyQuestions)`, and the asker's own application, answered with
+  `fnc_applyRecv.sqf`. `fnc_applySubmit.sqf` (server) - writes
+  `<unit>.application.<steamId>` in the website's shape (section, steamId,
+  name, answers, status new, submittedAt kept from the first send),
+  refuses a decided one, requires the required answers, logs it, bumps the
+  dashboard's count. `fnc_questionsLoad.sqf` (server) - the shared reader
+  `adminDocs` now uses too. `XEH_preInit.sqf` declares the GVARs;
+  `XEH_PREP.hpp` gains the four.
+
+**Checked:** `hemtt check` clean on all three; `php -l` on records.php.
+Not yet in game.
+
+### Round three from the screenshots: ORBAT would not open, and four looks
+**Sync:** `yes`. Applied to all three already.
+
+- **ORBAT would not open** - `select: Type HashMap, expected Array` at
+  `fnc_pgOrbat.sqf` line 55 (03:57 .rpt). `fnc_structureAdopt.sqf` ran
+  `orbatVersions` through its "a section is a hashmap" rule and handed the
+  page an empty hashmap in place of the array of ids. The versions are now
+  taken as the array they are; the page also accepts either shape.
+- **Communications "could not scroll"** - `PacList`'s `ListScrollBar` was
+  declared with `width = 0; height = 0`, so nothing showed there was more;
+  the bar is visible now. The nets list gets half the page (there are
+  fourteen), ACRE and TFAR a quarter each; nets are listed by their ORDER,
+  as the website does, then by id.
+- **"color off in a few places"** - a destructive button (RESTORE, STRUCTURE
+  IN, every DELETE) was red text on the dark ground beside filled green
+  ones; it is filled red with dark text now (`fnc_uiButtons.sqf`), and the
+  confirm box's YES matches (`pac.inc.hpp`).
+- **The admin panel's TAC//PAC button** (`adminpanel/ui/dialog.inc.hpp`)
+  moved from LOCK SERVER's row into the empty box under the vehicle column,
+  beside WAKE UP / HEAL FULL and their two rows tall, in the bold face.
+- **The boot screen** - the clock is under the title, centred; the
+  documents are a grid of three rows by ten, one `RscStructuredText` cell
+  each (`bootscreen.hpp` idcs 210-239, `PAC_IDC_BS_DOC0`) so the columns
+  line up, with the "12 of 26 landed - reading GHOST.templates (3 of 9)"
+  line under it (`PAC_IDC_BS_DOCLINE` 240); the step list above shows the
+  running step's last two lines and a done step's last one.
+
+**Checked:** `hemtt check` clean on all three. The 03:57 .rpt holds no
+other error of ours.
+
+### The one dialog drew without a letter on it - a size macro that never expanded
+**Sync:** `yes` - rewrite `ghostD_` to `ghost_` (`ghostDA_` for alive). Applied
+to all three already.
+
+First open in game (2026-09-10, screenshot: "this is not a PAC"): the bar,
+the tiles, the lists and the buttons were all there, and none of them had
+any text. `addons/pac/ui/pac.inc.hpp` set every `sizeEx` / `size` /
+`rowHeight` through `#define PAC_SZ(f) "f * (0.025 * safezoneH)"` - and a
+macro parameter is not substituted inside a quoted string, so every control
+was told its text was `"f * ..."`, which is size 0. The fourteen uses are
+written out as literal strings now and the macro is gone. `hemtt check`
+cannot catch this: the value is a valid string.
+
+### The boot screen: coloured boxes, every line, and the escaper
+**Sync:** `yes`. Applied to all three already.
+
+Second look (2026-09-10, screenshot): "UGLY make cleaner no [X] maybe small
+colored boxes red not completed yello in progress and green complete, and i
+want more verbose MORE". And the step names were missing because the
+escaper (below) threw.
+
+- `addons/pac/functions/fnc_bootScreen.sqf` - a small coloured box per line
+  instead of a glyph, a procedural texture in an `<img>` so it needs no
+  file: red to come, yellow in progress, green done (grey skipped, red
+  error). The running step shows EVERY line it has logged, a finished step
+  its last; under step three every document has its box and its `n/m`,
+  then "reading GHOST.role.medic - 14 of 57" and "38 of 79 documents
+  landed"; the clock says "elapsed". `_fnc_esc` takes `_this param [0, ""]`
+  - it was handed `[text]` and passed the array to `CBA_fnc_replace`, 1508
+  lines in the 03:42 .rpt.
+- `addons/pac/ui/bootscreen.hpp` - the Step block is wider and taller
+  (x 0.18, w 0.64, h 0.430) for the longer list.
+
+**Checked:** `hemtt check` clean on all three. The 03:41 .rpt holds no other
+error of ours; that boot read its 57 roles in 84 s.
+
+### The boot screen is a checklist, and its bar moves
+**Sync:** `yes` - rewrite `ghostD_` to `ghost_` (`ghostDA_` for alive). Applied
+to all three already.
+
+Asked 2026-09-10 (screenshot of the boot screen sitting at half a bar for
+the whole database read): "this needs to be more verbose maybe even with
+check boxes and a moving progress bar". The screen showed the last five log
+lines and a bar that stepped once per boot step - and step three, the
+service read, is fifty-odd documents at a second and a half each, so the bar
+stood at 3/6 for two minutes.
+
+- `addons/pac/functions/fnc_bootDoc.sqf` (new, server) - `[label, state,
+  done, total, detail]`: one line of the checklist under step three, kept in
+  `GVAR(bootDocs)` and published per call; `state` is `wait | run | ok |
+  empty | error | skip`; a family (roles, orders, the variants) carries
+  `done/total`. It recomputes `GVAR(bootStep)` as `(2 + landed/planned)/6`,
+  so step three's share of the bar fills one document at a time.
+- `addons/pac/functions/fnc_svcStructure.sqf` - lists every document it
+  will ask for up front (`svcSections` + orbat, orbat versions, welcome,
+  arsenal versions, motorpool versions, roles, orders) as `wait`, marks each
+  `run` with its key before the `svcLoad` and its status after; the
+  families report `n/total` per member.
+- `addons/pac/functions/fnc_bootLog.sqf` - `GVAR(bootStep)` is now
+  `max(current, (n - 0.5)/6)`: a log line puts the bar halfway through its
+  step and never moves it backwards over what `bootDoc` filled.
+- `addons/pac/functions/fnc_boot.sqf` - clears `GVAR(bootDocs)` and
+  `GVAR(bootStep)` at the start and publishes them; `XEH_preInit.sqf`
+  declares `GVAR(bootDocs)`; `XEH_PREP.hpp` gains `PREP(bootDoc)`.
+- `addons/pac/functions/fnc_bootScreen.sqf` (rewritten drawing) - the six
+  steps as a checklist, `[x]` done in the accent, `[>]` running, `[ ]` to
+  come, each with its latest log line under it; under step three every
+  document as `[x] ranks`, `[>] roles 14/57`, `[-] empty`, `[!] error`, and
+  a "reading GHOST.role.medic ..." line; an elapsed clock. The bar creeps
+  by time toward the next document's share between two published fractions
+  (never past what is done), so it moves even while one slow document is
+  awaited. The give-up leash is now the planned documents' worth of
+  `PAC_SVC_TIMEOUT`, not 50 s - which had cut the overlay off mid-boot on a
+  real database read.
+
+**First run (03:42 .rpt):** 1508 lines of `Params: Type Array, expected
+String` from `CBA_fnc_replace` - the screen's `_fnc_esc` was called as
+`[text] call _fnc_esc` and handed the whole array on. It now takes
+`_this param [0, ""]`. Nothing else in that .rpt came from the new code.
+
+**Checked:** `hemtt check` clean on all three.
+
+### The tile's REQUESTS tab: a list first, a request opens, real dropdowns
+**Sync:** `yes` - rewrite `ghostD_` to `ghost_` (`ghostDA_` for alive). Applied
+to all three already.
+
+From the first look at it in game (2026-09-10, screenshot): "should open to
+a list of the players requests", "could not open that request", "drops downs
+please". The tab drew the list and the raise form on one screen, a row was
+not a link, and KIND / ABOUT were tap-to-cycle.
+
+- `addons/pac/functions/fnc_app.sqf` - three views under the REQUESTS tab:
+  `requests` (the list, the website's columns Id / Subject / Kind / State /
+  Replies, a row opens it; RAISE A REQUEST top right), `request` (BACK, the
+  subject, kind / about / raised / updated, the thread oldest first, a REPLY
+  box and SEND), `raise` (BACK, KIND and ABOUT as `RscCombo` dropdowns created
+  in the body, SUBJECT, DETAILS, RAISE IT - back to the list when sent). The
+  tab stays lit on the two sub-views; the frame is the tall one for them.
+  Picks and typing live in `GVAR(reqKind)`, `GVAR(reqAbout)`,
+  `GVAR(reqSubject)`, `GVAR(reqBody)`, `GVAR(reqReply)`, `GVAR(reqOpen)`
+  across the tile's redraws (`XEH_preInit.sqf`).
+- `addons/pac/functions/fnc_ticketReply.sqf` (new) - a member's reply to a
+  request they raised or are named in: the server checks that, appends the
+  reply (never a state, never private), writes the document, logs it and
+  answers with `FUNC(ticketMine)`. `XEH_PREP.hpp` gains `PREP(ticketReply)`.
+- `fnc_ticketMineRecv.sqf` redraws the tile on both `requests` and `request`.
+
+**Checked:** `hemtt check` clean on all three. Not yet in game.
+
+### A squad's KIND now reaches the blue force tracker
+**Sync:** `yes` - rewrite `ghostD_` to `ghost_` (`ghostDA_` for alive). Applied
+to all three already.
+
+Reported 2026-09-10: "on the web Kind (what it is - the icon the blue force
+tracker draws it with) does not change the inf". True: the website (and since
+last night the in-game squad page) writes the kind as the ORBAT row's fourth
+element, `[name, roles, condition, kind]`, and nothing in the game read it.
+`ghostD_groups_fnc_orbatApply` built the slot table from the first three
+elements, `ghostD_groups_fnc_assignPlayer` created the group without a marker
+type, and `ghostD_bft_fnc_draw` fell back to `"inf"` - so every squad drew as
+infantry whatever was set. Only the tacpad's BFT settings screen and the
+`bft.icon` debug command ever set `ghostD_bft_type`.
+
+- `addons/groups/functions/fnc_groupKind.sqf` (new) - `[group, kind]` sets
+  `ghostD_bft_type` on the group, public, when the kind is non-empty and is
+  one of `ghostD_bft_availableMarkerIcons` (a kind the tracker does not know
+  is refused with a WARNING). An empty kind leaves the group alone, so a
+  man's own tacpad icon choice survives an ORBAT re-apply that says nothing.
+- `addons/groups/functions/fnc_orbatApply.sqf` - the row read is
+  `[_name, _roles, _cond, _kind]`; the slot table row gains a SIXTH element,
+  `[name, roles, condition, group, units, kind]`; the "did anything change"
+  comparison includes the kind (a kind-only edit used to be a no-op); a squad
+  that already has its group is stamped at once, so the icon changes the
+  moment the ORBAT is saved.
+- `addons/groups/functions/fnc_assignPlayer.sqf` - the group made for a
+  squad's first man is stamped from `_groupToUpdate param [5, ""]`.
+- `addons/groups/XEH_PREP.hpp` - `PREP(groupKind)`.
+
+**Contract:** the mission's `initServer.sqf` still seeds five-element rows
+from `Dynamic_Groups` (which has no kind); every reader uses `select 0..4` or
+`param`, so the sixth element breaks nothing. The kind is only ever set from
+the database / profile ORBAT. `wiki/TAC-PAC.md` says so under ORBAT.
+
+**Checked:** `hemtt check` clean on all three. Not yet in game.
+
+### TAC//PAC in game is one dialog, laid out like the website, page for page
+**Sync:** `yes` - rewrite `ghostD_` to `ghost_` (`ghostDA_` for alive) and
+`z\ghostD\addons` to `z\ghost\addons`. Applied to all three already (the
+whole of `addons/pac` copied, plus the one button in `adminpanel`).
+
+Asked 2026-09-09: "start over delete all the pac in the mods and start the
+fuck over make it look as much like the web as possible", after every earlier
+attempt had been three dialogs with a nav strip bolted on ("a few buttons that
+go to pages they look like the old ones"). Answers to the questions asked
+before the night: keep the data layer and delete every screen; the nav bar is
+the website's minus Media, Branding and My details; members raise PAC requests
+on the tacpad's PAC tile and admins work them in the PAC; `hemtt release` on
+all three at the end.
+
+**What went.** `addons/pac/ui/dialog.inc.hpp` (the personnel panel, idd
+69700), `ui/structure.inc.hpp` (EDIT STRUCTURE, 69701), `ui/manage.inc.hpp`
+(MANAGE, 69702), `ui/dashboard.inc.hpp` (69703), and every function that
+drew them: `fnc_panel*` (27 files), `fnc_manage*` except `managedNames` (11),
+`fnc_structMe/New/Open/Opened/Pick/Remove/Save/Section/Select/Style` (10),
+`fnc_dashFill/dashOpen`, `fnc_pickApply/pickFill/pickList`. Their
+`GVAR(struct*)`, `GVAR(mg*)`, `GVAR(pickFilling)`, `GVAR(panelFilling)`,
+`GVAR(panelUnassigned)` state in `XEH_preInit.sqf` went with them.
+`fnc_panelReapply.sqf` is now `fnc_reapplyLocal.sqf` (same body: the host's
+own rank and skills off the roster row) because `fnc_hostRefresh.sqf` still
+needs it.
+
+**What replaced them - the shell.** `addons/pac/ui/pac.inc.hpp`, class
+`GVAR(pac)`, idd 69700: ONE display with the website's colours from
+`DIVINER_Web/public/style.css` (`PAC_C_GROUND #0b0e11`, `PANEL #12161b`,
+`LINE #242b33`, `INK #e3e9ef`, `DIM #8b97a3`, `FAINT #5c6773`,
+`ACCENT #93cf72`, `HOT #e4574a`), a bar across the top (brand, unit id, who,
+CLOSE), ten nav buttons, an accent underline under the page you are on
+(`NAV_UL`), a where-you-are line, a page title, eight sub-tab buttons, six
+tiles, three tables (`PacList: RscListNBox` - real columns, the header is row
+0), a text block, a big multi-line edit, sixteen form rows (label / edit /
+combo; the edit is `PacEditMulti`, `style = 16`, so a prose row is the same
+control taller), a flash line, BACK and six action buttons, and an "are you
+sure" box. `class RscListNBox;` is declared in `addons/pac/config.cpp`.
+The control classes are written out, not generated by macros - HEMTT will not
+take a class from a macro (`L-C01M`). `class FILTER` is a CBA macro (PE10),
+so the filter box is `FILTERBOX`. `ST_LEFT`/`ST_RIGHT` are not defined in
+this addon's config, so `style` is `0`/`1`.
+`addons/pac/ui/idcs.inc.hpp` is rewritten: one id space (1-159), the boot
+screen's 200-203 kept, and the layout grid `PAC_UI_X/W/TOP/BOTTOM/ROW/GAP/
+LABEL_W` at the end.
+
+**The runtime** (`addons/pac/functions/fnc_ui*.sqf`): `uiOpen` (admins
+only; opens on the dashboard), `uiLoaded` (onLoad), `uiGo [page, args,
+push]` (a page is `FUNC(pg<Name>)`, args a hashmap; pushed on
+`GVAR(uiHistory)`), `uiBack`, `uiSub` (replace the top of the history - a
+tab, not a step), `uiDraw` (blank every content control, then the page),
+`uiNav` (the bar; APPLICATIONS, PAC ACTIONS and MONGO DOCS only when
+`GVAR(summary) backend` names the service), `uiSubs`, `uiTitle`, `uiTiles`,
+`uiList [idc, headers, columns, rows [[cells, data, colour]], onRow, y, h,
+heading, x, w]`, `uiForm [[key, label, kind t/m/n/c/b/r, value, extra]]` and
+`uiFormRead`, `uiText`, `uiButtons [[label, code, hot]]`, `uiToggle` (the
+website's checkgrid as a table; ticks kept in `GVAR(uiSel)`), `uiConfirm
+[text, code, arg]` / `uiConfirmAnswer`, `uiHint`, `uiPlace`, `uiClick`,
+`uiListClick` (a row is a link: one click, next frame), `uiComboChange`,
+`uiFilter` / `uiFilterShow`, `uiEsc`, `uiName`, `uiSlug` (same rule as the
+website's `ghostd_slug`), `uiSectionLabel`, `uiSet` (one `adminSet` field),
+`uiAsk [what]` / `uiRecv [what, payload]` (server data by name into
+`GVAR(uiData)`; the page redraws when what it waited for lands),
+`uiRefresh` (redraw on a publish - ONLY a page that set `GVAR(uiLive)`, so a
+form being typed into is never wiped).
+**A code block on a page cannot see the page's locals when it runs later**
+(a button, a confirm) - every handler reads `GVAR(uiArgs)` / `GVAR(uiData)`
+or takes its argument through `uiConfirm`'s third parameter.
+
+**The pages** (`fnc_pg*.sqf`), each the website's page of the same name:
+`pgDashboard` (six tiles, NEEDS ATTENTION, PROMOTABLE, THE UNIT, LAST ADMIN
+ACTIONS; SAVE THE STORE, START/STOP A WINDOW, ATTENDANCE REPORT),
+`pgWindowStart`, `pgRoster` (the website's columns; filter; ADD AN OPERATOR,
+IMPORT CSV), `pgAddOperator`, `pgPlayer` (tabs DETAILS / SKILLS /
+QUALIFICATIONS / TRAINING / AWARDS / NOTES / THE REST; kick and ban under
+the rest), `pgApplications` / `pgApplication` (accept, not this time,
+reopen), `pgTickets` (Open / Accepted / Declined / Closed / All) /
+`pgTicket` (the thread, reply, private note, state), `pgOrders` /
+`pgNewOrder` / `pgOrder` (a tab a section, SAVE writes that section; MAKE IT
+CURRENT; DELETE), `pgConfigs` / `pgRecord` / `pgRecordItem` (every
+`FUNC(structItems)` section as list + form; read-only with a note when
+`FUNC(fileFed)`), `pgTemplates` (WELCOME SCREEN / COMMON ARSENAL / MOTORPOOL /
+VEHICLE COSMETICS / LOGISTICS / PYLONS / REPORT DECK / SYSTEM),
+`pgArsenalLists` / `pgArsenalList` (a version's lists; the classnames in the
+big edit), `pgDeckTemplate` / `pgDeckLine` / `pgDeckField` (the report deck,
+three pages deep as the shape is), `pgTicketKinds` / `pgTicketKind`,
+`pgOpordDef` (read only - the website edits it), `pgOrbat` (ORDERS OF
+BATTLE / COMMUNICATIONS / ROLES / SQUADS / PLATOONS / VARIABLES),
+`pgOrbatOne`, `pgOrbatNew`, `pgRadioChannels` (SR / MR / LR / TFAR tables),
+`pgRadioSettings` (ACRE / TFAR), `pgRole` (IDENTITY / WHO MAY TAKE IT / NETS /
+TILES / TRAITS / VARIABLES / LOADOUT / ARSENAL), `pgSquad` (IDENTITY / SLOTS /
+RADIO / ARSENAL / MOTORPOOL / COPY), `pgPlatoon` (IDENTITY / SQUADS / RADIO /
+ARSENAL / MOTORPOOL), `pgDocs` / `pgDoc` (the JSON, SAVE asks twice for the
+store), `pgBackup` (store and structure out to the clipboard and back).
+Every delete is a button with an "are you sure" box.
+
+**Server side, new** (`addons/pac/functions/`): `fnc_adminDocs.sqf` - the
+one road from a client to the database: `[caller, "tickets" | "applications"
+| "questions" | "ticketKinds" | "docs" | "doc:<key>" | "opordDef", args]`,
+scheduled, one `svcLoad` per document not yet in `GVAR(docCache)`, answered
+with `FUNC(uiRecv)`; also sets `GVAR(ticketsOpen)`, `GVAR(applicationsNew)`,
+`GVAR(docsCount)` and publishes `GVAR(ticketKinds)` / `GVAR(opordDef)`.
+`fnc_adminDoc.sqf` (write one document as JSON), `fnc_adminTicket.sqf`
+(reply / private / state - the website's `ghostd_ticket_reply`),
+`fnc_ticketRaise.sqf` (a member raises one: `<unit>.ticket.TKT-nnnnn`, the
+website's shape and id rule), `fnc_ticketMine.sqf` / `fnc_ticketMineRecv.sqf`
+(a member's own, private notes removed, for the tile), `fnc_adminApplication.sqf`
+(accepting seeds a record with `FUNC(record)`), `fnc_adminTicketKind.sqf`
+(`<unit>.system.ticketKinds`), `fnc_adminOpord.sqf` (`create` / `set` a
+section / `remove`; the archive the tile reads is kept), `fnc_adminTemplate.sqf`
+(the report deck, checked for the registerTemplate shape), `fnc_opordDef.sqf`
+(the sections and fields an order has: `<unit>.system.opord` when there is
+one, else the mod's own).
+
+**Server side, changed.**
+- `fnc_adminOrbat.sqf`: new kinds `runs` (netsVersion / radioVersion /
+  arsenalVersion / motorpoolVersion on the ORBAT, and the matching
+  `current*` settings), `radio` (any `FUNC(radioKeys)` key, value typed like
+  its default), `newVersion` (writes `<unit>.orbat.<name>` as a copy of the
+  running one and lists it); a squad row keeps a 4th element, its kind
+  (`type`).
+- `fnc_adminStructure.sqf`: a `variant` in the record edits
+  `<unit>.arsenal.<v>` / `<unit>.motorpool.<v>` in place (a platoon's, a
+  squad's, a role's, or a named version); **upper case is allowed in ids**
+  for cosmetics, pylons, logistics, traits, motorpool, schemes and
+  **settings** - the settings editor had refused every one of its own ids
+  (`autoSlot` has a capital S), so it never saved.
+- `fnc_structItems.sqf` settings: `autoPromote` offered beside the three
+  (the website's "Promote automatically", `<unit>.settings items.autoPromote`).
+- `fnc_structurePersist.sqf`: `opords` (one document per order,
+  `<unit>.opord.<id>`, a tombstone `{deleted: true}` for a removed one),
+  `arsenal` and `motorpool` with an id (the variant document).
+- `fnc_svcStructure.sqf`: an order document with `deleted: true` is skipped.
+- `fnc_publish.sqf`: a roster row gains `[10] operatorId` and `[11]
+  hasDiscord`; a promotable row gains `[5] uid`; the summary gains
+  `sessions`, `windows`, `noDiscord [n, of]`, `ticketsOpen`,
+  `applicationsNew` (-1 until asked), `docs`.
+- `fnc_adminSet.sqf`: `email` is a field an admin may set.
+- `fnc_adminRecv.sqf` hands the record to `uiRecv` as `record:<uid>`;
+  `fnc_logRecv.sqf` and `fnc_hostRefresh.sqf` call `uiRefresh`;
+  `XEH_postInit.sqf`'s four publicVariable handlers do the same (nothing
+  else is drawn on a publish any more).
+- `XEH_preInit.sqf`: `GVAR(ui*)`, `GVAR(myTickets*)`, `GVAR(req*)`,
+  `GVAR(ticketKinds)`, `GVAR(ticketsOpen)`, `GVAR(applicationsNew)`,
+  `GVAR(docsCount)`, `GVAR(docCache)`.
+- `XEH_PREP.hpp` regenerated; `config.cpp` includes `ui\pac.inc.hpp` only
+  (and `bootscreen.hpp`).
+- `addons/adminpanel/ui/dialog.inc.hpp`: the TAC//PAC button calls
+  `ghostD_pac_fnc_uiOpen`.
+
+**The tile** (`fnc_app.sqf`, the tacpad's PAC app): the DASHBOARD tab is
+gone (the dashboard is the dialog's); a **REQUESTS** tab lists the player's
+own PAC requests and raises one - kind and about cycle on a tap, subject and
+details are edit controls created in the body the way the composer's are,
+RAISE IT calls `FUNC(ticketRaise)`. What is typed lives in
+`GVAR(reqSubject)` / `GVAR(reqBody)` across the tile's redraws.
+
+**Contract changes a mission sees:** none in `config\`. The roster row is two
+elements longer at the end (readers use `params`, so nothing breaks).
+`<unit>.settings` may carry `autoPromote`.
+
+**First run in game (2026-09-10 02:31 .rpt):** `fnc_pgDashboard.sqf` line 87
+threw `Error >: Type Bool, expected Number` - the lint pass had taken the
+braces off `_auto isEqualType 0 && {_auto > 0}`, and without them `> 0` runs
+on the BOOL the setting holds. Now a `switch (typeName _auto)`. The same
+pass left two more traps, fixed with it: `fnc_pgPlayer.sqf` read
+`GVAR(uiSkillUid)` before it was ever set (now `getVariable` with a default),
+and `fnc_pgRadioSettings.sqf` compared against `getOrDefault [_key, nil]`
+(now `get` and an `isNil` check).
+
+**Checked:** `hemtt check` clean on all three (DIVINER 1109, alive 1215,
+ghost 1374 files); `hemtt release` staged all three (ghostD 0.1.0.1097,
+ghostDA 0.1.0.1102, ghost 0.1.0.986 - the pac PBOs hold the new files and
+none of the old). Not yet in game - the user tests in the morning.
+
+### A nav bar across the top of every TAC//PAC screen
+**Sync:** `yes` - rewrite `ghostD_` to `ghost_`. Applied to all three already.
+
+Asked 2026-09-09: "make a list of buttons to match the web do not need my
+details and branding".
+
+The dashboard had three buttons at the FOOT of one dialog. The website has a
+bar of named pages across the top of EVERY page, and being able to get from
+any screen to any other is most of what makes it feel like a site.
+
+**DASHBOARD - ROSTER - CONFIGS - TEMPLATES - ORBAT**, in the website's order
+and wording, on all three dialogs: the dashboard, the structure editor and the
+manage window.
+
+- `addons/pac/ui/dashboard.inc.hpp` - the foot strip is gone; the bar is at
+  `0.046` and everything below it moved down 0.038.
+- `addons/pac/ui/structure.inc.hpp`, `addons/pac/ui/manage.inc.hpp` - the same
+  block, content shifted down 0.032 to clear it.
+- `addons/pac/ui/idcs.inc.hpp` - `PAC_IDC_NAV_*`, 190-194. **One set reused on
+  all three**: an idc is per display, so the same numbers on three dialogs are
+  three different controls.
+- `addons/pac/functions/fnc_structOpen.sqf` - takes an optional section, so
+  CONFIGS opens at `ranks` and TEMPLATES at `welcome`. They are one editor at
+  two sections, the way the website's two pages are two lists of the same
+  documents. No section given keeps whatever was last open.
+
+**What is deliberately not on the bar:** MY DETAILS and BRANDING, as asked -
+and APPLICATIONS, PAC ACTIONS, MEDIA and MONGO DOCS, because the game has no
+screen for any of them and a button that does nothing is worse than no button.
+
+**Two layout faults caught by measuring, not by looking:**
+
+- The bar was inserted into the structure and manage dialogs without moving
+  their content, so it drew on top of `L_BACK` (y 0.056, height 0.930).
+- Shifting *everything* down then pushed the bottom button row - NEW, SAVE,
+  REMOVE, EXPORT - to a bottom edge of **1.010**, off the screen. That row was
+  already at the bottom and should never have moved; it is back at 0.946.
+
+Every control on all three now sits inside 0..1 with nothing over the bar:
+lowest bottom 0.986 on structure and manage, 0.980 on the dashboard.
+
+**`QUOTE()` cannot hold a double-quoted string.** `QUOTE(... ["ranks"] ...)`
+expands to `"... ["ranks"] ..."` and ends the string early (CCHU). The section
+names are single-quoted - SQF takes `'ranks'` just as happily.
+
+**Checked:** `hemtt check` clean, zero warnings - DIVINER 1080 sqf,
+DIVINER_alive 1186, ghost 1345; all 169 `addons/pac` files identical across the
+three. **Not seen on a screen** - the positions are arithmetic, verified by
+listing every control's top and bottom rather than by opening the dialog.
+
+### Five things the dashboard got wrong, found by opening it
+**Sync:** `yes` - rewrite `ghostD_` to `ghost_`. Applied to all three already.
+
+First run of the dashboard, 2026-09-09. Every one of these was invisible to
+`hemtt check` and to reading the code.
+
+**1. The tiles drew on top of each other.** They were ONE structured-text
+control holding four `<t align='center'>` cells - and structured text has no
+columns, so the screen read "18" with "OPERATORS57" overlapping it. They are
+four controls now, `PAC_IDC_DA_TILE1`..`TILE4`, positioned across the width.
+- `addons/pac/ui/idcs.inc.hpp`, `addons/pac/ui/dashboard.inc.hpp`,
+  `addons/pac/functions/fnc_dashFill.sqf`.
+
+**2. It told an admin there were no admins.** The test was
+`(... getOrDefault ["admins", createHashMap]) isEqualTo createHashMap` -
+comparing against a brand new hashmap, which is not the question. NEEDS
+ATTENTION said "No admins in the structure" to an admin reading a structure
+full of admins ("I AM AN ADMIN wft over"). Now `count ... isEqualTo 0`.
+
+**3. The structure hash rendered as `7.52045e+08`.** `str` on a big number
+gives scientific notation, which cannot be compared against the website's.
+Now `toFixed 0`.
+
+**4. LAST ADMIN ACTIONS was always empty.** `GVAR(logRows)` is filled by
+`FUNC(logRecv)` when the answer to `FUNC(adminLog)` arrives, and the personnel
+panel ASKS for it in `FUNC(panelOpened)`. The dashboard never asked, so it
+read an empty client-side variable and said "nothing logged yet" on a unit
+with a full log. It now sends `[player, "", 40] remoteExec [adminLog, 2]`, and
+`fnc_logRecv.sqf` redraws the dashboard when the answer lands, the same way it
+already redraws the panel and the manage window.
+
+**5. "waiting for the unit's roles from the server ..." never went away.**
+`addons/groups/functions/fnc_initGroupMenu.sqf` shows that with `hintSilent`
+while PAC boots - and **hintSilent stays on screen until something replaces
+it**. The wait ended, the boot screen said READY, the menu opened, and the
+message sat there through all of it ("should not have to wait again after the
+splash screen says ready"). The `whenReady` callback now clears it first.
+`FUNC(whenReady)` runs its callback on timeout as well, so the hint is cleared
+whether the store came up or not.
+
+**Checked:** `hemtt check` clean, zero warnings - DIVINER 1080 sqf,
+DIVINER_alive 1186, ghost 1345. **The fixes themselves have not been run** -
+they came from one screenshot of one run, and the tile positions in particular
+are arithmetic.
+
+### autoSlot had no switch in either UI - now it has one in both
+**Sync:** `yes` - rewrite `ghostD_` to `ghost_`. Applied to all three already.
+
+Asked 2026-09-09: "ok where do you change auto slot". The honest answer was
+`config_pac.hpp` line 19, or hand-editing raw JSON on the website's Mongo docs
+page. Nowhere in game at all: `settings` has no screen under EDIT STRUCTURE or
+MANAGE, and `FUNC(adminSetting)` whitelists only the `current*` version keys.
+
+**Game - EDIT STRUCTURE > SETTINGS:**
+
+- `addons/pac/functions/fnc_structItems.sqf` - `case "settings"`. The document
+  is a FLAT key/value map, not id -> record like every other section, so each
+  key becomes an item whose one field is VALUE - the shape the promotion
+  weights already use. Only `autoSlot`, `slotMatch` and `savedLoadouts` are
+  offered.
+- `fnc_structFields.sqf`, `fnc_structSection.sqf`, `fnc_structOpened.sqf` - the
+  VALUE field, the blurb and column header, the screen.
+- `fnc_adminStructure.sqf` - `settings` allowed, and its save goes **straight
+  into `GVAR(settings)`**, not the structure, because that is where every
+  reader looks. A value that looks like a number is written as one:
+  `FUNC(autoSlot)` tests `isEqualTo 0` and a `"0"` string never matches it.
+
+**Website - Configs > Settings** (DIVINER_Web, no port): `src/records.php`
+gains a `settings` record, and `ghostd_record_items` / `ghostd_record_save`
+gain the flat-document shim - same three keys, same document, same
+number-not-string rule.
+
+**What is deliberately NOT offered, in either:** `unitId`, `serverId` and
+`sync` say where the database is and who this server is - a database cannot
+tell a server where the database is, so they stay in the mission's file.
+`currentOrbat` and `currentOpord` are ticked LIVE where the thing itself is
+edited; two places to choose is one too many.
+
+**Checked by round-tripping it on the server**, not by reading it: the editor
+reads `autoSlot` as `"1"`, a save of `"0"` lands in Mongo as the **integer**
+`0`, and `currentOpord`, `opWindows` and `currentOrbat` come through the write
+untouched. Restored to 1 afterwards. `hemtt check` clean, zero warnings -
+DIVINER 1080 sqf, DIVINER_alive 1186, ghost 1345; all 169 `addons/pac` files
+identical across the three. **The in-game screen has not been opened.**
+
+### TAC//PAC opens on a dashboard, laid out like the website's
+**Sync:** `yes` - rewrite `ghostD_` to `ghost_`. Applied to all three already.
+**Behaviour change**: the admin panel's PAC button lands somewhere new.
+
+Asked for 2026-09-09: "in game, start off with a dahsboard like the web the
+make the experance as close to the web experanc eas posiable" - and, of the
+personnel panel, "not alike in any fucking way".
+
+**The dashboard I built before was in the wrong place.** It went on the tacpad
+app (`fnc_app.sqf`) as a fourth tab - a different screen from the admin panel,
+and one an admin working the roster never opens. "whaqt fucking dash board
+there is not fucking dash board" was correct.
+
+**New:** `addons/pac/ui/dashboard.inc.hpp` - its own dialog (idd 69703), the
+same way EDIT STRUCTURE and MANAGE are their own, so nothing on the personnel
+panel had to move. The website's blocks, in the website's order:
+
+- a row of **tiles** - operators, roles, orders, promotable
+- **NEEDS ATTENTION** - orphaned records, a store never written, a read-only
+  store, no admins in the structure
+- **PROMOTABLE** - name, `RANK -> NEXT`, points
+- **THE UNIT** - unit id, store backend, read-only, last write, window, hash,
+  roles, squads, orders
+- **LAST ADMIN ACTIONS** - the newest rows first
+
+Two columns under the tiles rather than one down the middle: a 16:9 screen
+read as a single narrow column wastes two thirds of itself.
+
+- **A NAV STRIP along the foot** - ROSTER / CONFIGS AND TEMPLATES / ORBAT, LOG,
+  OPERATORS. That is the website's bar of named pages, with the three screens
+  the game has. The dashboard has no button of its own because you are on it.
+- `addons/pac/functions/fnc_dashOpen.sqf`, `fnc_dashFill.sqf` - the opener
+  (admins only, as `dashboard` is an admin page on the website) and the draw.
+- `addons/pac/ui/idcs.inc.hpp` - `PAC_IDC_DA_*`, 170-184.
+- `addons/pac/config.cpp`, `addons/pac/XEH_PREP.hpp` - the include and the two
+  PREPs.
+- `addons/adminpanel/ui/dialog.inc.hpp` - the **PAC ROSTER** button is now
+  **TAC//PAC** and calls `dashOpen`, falling back to `panelOpen` if the pac
+  addon is not loaded.
+
+**The log comes from `GVAR(logRows)`** - the published tail the personnel
+panel's RECENT ACTIONS already reads (`FUNC(panelLog)`), so the two cannot
+disagree. Rows are positional: `[id, when, byUid, byName, type, targetUid,
+target, detail]`.
+
+**`class LOG` is not allowed.** CBA defines `LOG` as a macro, so the listbox is
+`ACTIONLOG` - the same trap as `class FILTER` (PE10, "attempted to use a
+function as a value").
+
+**Checked:** `hemtt check` clean, zero warnings - DIVINER 1080 sqf,
+DIVINER_alive 1186, ghost 1345; all 169 `addons/pac` files identical across the
+three, and `adminpanel/ui/dialog.inc.hpp` with them. **Not run in game** - the
+control positions are arithmetic, not something seen on a screen.
+
+### compile is not the preprocessor - three documents failed on their comments
+**Sync:** `yes` - rewrite `ghostD_` to `ghost_`. Applied to all three already.
+
+**Found by running it.** From the .rpt, 2026-09-09 20:00:49, twice each for
+three documents - logistics, pylons and the AI skill block:
+
+```
+Error in expression <[
+    //REQUIRED
+    ["crate_medicalInfantry",>
+  Error Invalid number in expression
+```
+
+**Stripping comments is the PREPROCESSOR's job.** `preprocessFile` does it;
+`compile` does not. A document kept as SQF text is compiled straight from the
+string, so the first line comment in it ends the mission's ability to read that
+document - and `config_logistics.sqf`, `config_pylons.sqf` and
+`config_skill.hpp` are all written by people and all carry comments. Every one
+of them failed the moment it lived in the database rather than on disk.
+
+**New:** `addons/pac/functions/fnc_stripComments.sqf` - takes line and block
+comments out of a block of SQF. **String literals are not touched**: a scan
+tracks whether it is inside a double- or single-quoted string and only looks
+for comment markers outside both, so a URL survives. A line comment keeps its
+newline and a block comment leaves one space, so neither can glue two tokens
+together. SQF's doubled-quote escape needs no special case - the closing quote
+flips the flag off and the doubled one flips it back on.
+
+- `addons/pac/functions/fnc_cfgCode.sqf` - `compile (_wrap + _text)` becomes
+  `compile (_wrap + ([_text] call FUNC(stripComments)))`. **This is where all
+  six .rpt errors came from** - it is the mission-start compiler for all three.
+- `addons/pac/functions/fnc_structItems.sqf` - the `logistics` and `pylons`
+  readers added earlier used raw `call compile` and would have failed
+  identically the moment either editor screen was opened.
+- `addons/pac/XEH_PREP.hpp` - `PREP(stripComments);`.
+
+**Checked by running it, not by reading it.** The stripper was transcribed and
+run over the unit's real `config_logistics.sqf` (3178 to 2404 characters) and
+`config_pylons.sqf` (2541 to 1421): no comment markers survive and both parse
+as literal arrays - 8 crates, 3 vehicles. Six adversarial cases pass, among
+them a URL inside a string, a doubled-quote escape wrapping a line-comment
+marker, and a block-comment marker inside a classname. `hemtt check` clean,
+zero warnings: DIVINER 1078 sqf, DIVINER_alive 1184, ghost 1343.
+
+**Watch for this shape again.** A block comment cannot contain its own
+terminator - writing one into this function's own header closed the header
+early and broke the parse until it was reworded.
+
+### The structure editor dropped a fourth field without saying so
+**Sync:** `yes` - rewrite `ghostD_` to `ghost_`. Applied to all three already.
+
+Found while answering "is the experance of using the ingame pac similar to the
+web experance now" - by counting, rather than by asserting.
+
+`FUNC(structSection)` takes the section's fields, **keeps the ones with a
+label**, and pads the list to THREE, because the dialog had three rows. A
+section with four labelled fields lost the fourth silently: no error, no
+warning, the box simply never drawn and the value never saved.
+
+**This had just bitten the change above it.** POINTS REQUIRED was added to
+`case "ranks"`, making abbrev / pay grade / arma rank / points - four labelled
+fields. The points box **was never drawn in game**, so that fix did nothing
+until now. (`insignia` was never affected: its label is `""`, so it is filtered
+out before the padding and has always been a stored-but-unshown field.)
+
+- `addons/pac/ui/idcs.inc.hpp` - `PAC_IDC_ST_F4_LABEL` 128, `PAC_IDC_ST_F4`
+  129, `PAC_IDC_ST_C4` 159. All three were unused; 130 was NOT free
+  (`PAC_IDC_MG_BACKGROUND`), which is why the combo is 159.
+- `addons/pac/ui/structure.inc.hpp` - `F4_LABEL`, `F4` and combo `C4` at
+  `0.264 * safezoneH`, the same 0.04 pitch as the rows above. `HINT` moves from
+  `0.270` to `0.310` and its height from `0.200` to `0.160`, so it clears the
+  new row and still ends where it did.
+- `addons/pac/functions/fnc_structSection.sqf` - pads to 4 and shows the
+  fourth row.
+- `fnc_structSelect.sqf`, `fnc_structSave.sqf` - `[PAC_IDC_ST_F4, 3]` added to
+  the read and write bindings.
+
+**Checked:** `hemtt check` clean, zero warnings, in DIVINER (1077 sqf),
+DIVINER_alive (1183), ghost (1342); all 165 `addons/pac` files identical across
+the three. **Not run in game** - the row's position is arithmetic off the
+existing pitch, not something that has been looked at on a screen.
+
+### Shared radio nets removed from the game, and two editors the game lacked
+**Sync:** `yes` - rewrite `ghostD_` to `ghost_`. Applied to all three already.
+**Behaviour change**: a screen is gone and two are new.
+
+Asked for 2026-09-09 - "fix the gaps", after a section-by-section comparison of
+what the website can edit against what the game can.
+
+**1. "Shared radio nets" are gone.** The website dropped them the same day the
+user said they were not a thing - "noi fucking shared nets ... acre and tfar
+tab only for fucking radios" - and **the mod kept the whole screen**, with
+working save, remove and select handlers. Radio channels are the ACRE and TFAR
+plans; messaging nets are mailboxes, edited under STRUCTURE > NETS.
+
+- `addons/pac/functions/fnc_manageOpened.sqf` - the
+  `["radionets", "ORBAT - SHARED RADIO NETS"]` entry is deleted.
+- `addons/pac/functions/fnc_manageSection.sqf` - its id label, tooltip, blurb,
+  list build and NEW/REMOVE visibility.
+- `fnc_manageSave.sqf`, `fnc_manageSelect.sqf`, `fnc_manageRemove.sqf`,
+  `fnc_manageNew.sqf` - its cases.
+- `addons/pac/functions/fnc_adminOrbat.sqf` - the whole `case "radioNet"`
+  branch, the `_radioNets` local, and the `radioNets` key it wrote back.
+- `fnc_structurePersist.sqf`, `fnc_svcPushStructure.sqf` - stop writing the
+  key, so a document that still has one loses it on the next save.
+- `svcOrbat.inc.sqf` - stops reading it into the structure.
+- Stale prose in `fnc_orbat.sqf`, `fnc_adminOrbat.sqf` and
+  `players/fnc_platoonNet.sqf` (whose CODE was already platoon-only).
+
+**A bug went with it.** The list build read
+`([] call ghostD_groups_fnc_orbat) # 2` as the nets. That function returns
+`[groups, platoons, faction, side]` - element 2 is the **faction name**. The
+screen had been listing the faction as though it were a table of nets.
+
+**2. LOGISTICS - CRATES and PYLONS are editable in game.** Both were website
+only. They are `code`-shaped documents - a block of SQF with no logic in it -
+so they are taken apart into cards the way the website does it:
+
+- `addons/pac/functions/fnc_structItems.sqf` - `case "logistics"` compiles the
+  document and gives the editor one item per crate, contents one
+  `classname count` per line; `case "pylons"` gives one item per vehicle,
+  presets one `preset: magazine, magazine` per line.
+- `addons/pac/functions/fnc_adminStructure.sqf` - both added to the allowed
+  sections, and the save puts the tree back together into `{code: str _tree}`.
+  **This is the exact inverse of `FUNC(structItems)` and the two have to stay
+  that way.**
+- `fnc_structFields.sqf`, `fnc_structSection.sqf`, `fnc_structOpened.sqf` -
+  the fields, the blurb and column header, and the two new screens.
+
+**Checked:** `hemtt check` clean, zero warnings, in DIVINER (1077 sqf),
+DIVINER_alive (1183), ghost (1342); all 165 `addons/pac` files byte-identical
+across the three once the prefix is normalised. **Not run in game** - in
+particular the compile/serialise round trip on a real logistics document has
+not been watched.
+
+### A DASHBOARD tab in TAC//PAC, laid out like the website's
+**Sync:** `yes` - rewrite `ghostD_` to `ghost_`. Applied to all three already.
+
+Asked for 2026-09-09: "have it go in to a dashboard and try to match the web ui
+layout as much as possiable".
+
+The website opens on `?page=dashboard`; the game opened on MY RECORD and had
+no equivalent screen at all.
+
+- `addons/pac/functions/fnc_app.sqf` - a fourth tab, `dash`, labelled
+  DASHBOARD. **Admin only and drawn first**, because the website keeps
+  `dashboard` in its admin pages and puts it first, so the two read the same
+  way round. Three blocks, in the website's order:
+  - **the tiles** - operators, roles, orders, promotable. One line each rather
+    than the website's boxes; a tacpad panel cannot carry five boxes and stay
+    readable.
+  - **PROMOTABLE** - name, `RANK -> NEXT`, points. "Nobody is over the points
+    for their next rank." when empty.
+  - **THE UNIT** - unit id, store backend, read-only, when the game last wrote,
+    the operation window, the structure hash, orphaned ids. The same rows as
+    the website's "The unit" table, minus the ones only the website can answer.
+- `addons/pac/functions/fnc_publish.sqf` - `GVAR(summary)` gains
+  `promotable`, one row per man as `[name, rankId, nextRankId, points,
+  needed]`. **Computed on the server** because `FUNC(promotionPoints)` reads
+  `GVAR(players)` and exits early off the server; the summary is already
+  publicVariable'd to every client, so the tab costs no new traffic.
+
+**Two of the website's blocks are deliberately absent.** "Needs attention" and
+"Last admin actions" are server-side lists no client holds. A thinner in-game
+version of either would be a second dashboard free to disagree with the first,
+so they are not drawn rather than half-drawn.
+
+**Checked:** `hemtt check` clean with **zero warnings** in DIVINER (1077 sqf),
+DIVINER_alive (1183), ghost (1342). **Not run in game** - the layout is written
+against the app's existing `_fnc_row` / `_fnc_wrapped` helpers but has not been
+seen on a screen.
+
+### A rank had nowhere to put its points in game
+**Sync:** `yes` - rewrite `ghostD_` to `ghost_`. Applied to all three already.
+
+Said 2026-09-09, of editing a rank: "but when you go to edit no points".
+
+**The divergence.** The website's ranks page has a **Points required** column.
+The in-game RANKS screen had ABBREV, PAY GRADE, ARMA RANK and INSIGNIA and no
+points at all - to set one you had to leave, open the PROMOTION screen, and
+hand-edit a row called `rank_private`. Same document, same field, two very
+different jobs.
+
+**Where the points live, and why they stay there.** A mission declares them in
+`config_pac.hpp`:
+
+```cpp
+class promotion {
+    class rank_private  { name = "Private";  value = 0;   };
+    class rank_corporal { name = "Corporal"; value = 40;  };
+};
+```
+
+so the storage is `promotion >> rank_<rankId> >> value` and it is not moving
+onto the rank record - that would be a second copy, free to disagree with the
+file and with the website.
+
+- `addons/pac/functions/fnc_structFields.sqf` - `case "ranks"` gains
+  `["points", "n", "POINTS REQUIRED", ...]`, between ARMA RANK and INSIGNIA,
+  which is where the website's column sits.
+- `addons/pac/functions/fnc_structSelect.sqf` - the box is filled from the
+  promotion section (`rank_<id> >> value`), not from the rank record, since
+  the rank record does not carry it.
+- `addons/pac/functions/fnc_adminStructure.sqf` - on a `set` for `ranks` the
+  value is taken back out of the record (`_clean deleteAt "points"`), written
+  to `promotion >> rank_<id>`, and the promotion section persisted. The rung
+  keeps its own `name` if it had one, else takes the rank's.
+  **After the armaRank check, not before** - a save rejected for a bad
+  armaRank must not leave the promotion document already changed.
+
+**Checked:** `hemtt check` clean in DIVINER (1077 sqf), DIVINER_alive (1183),
+ghost (1342). The reference unit's document already holds the seven rungs -
+`rank_private` 0 through `rank_colonel` 700 - and the website reads them
+correctly, so this is the in-game half catching up. **Not run in game.**
+
+### No database: the editors for file-fed sections are not shown
+**Sync:** `yes` - rewrite `ghostD_` to `ghost_`. Applied to all three already.
+**Behaviour change**, and only when `sync = "off"`.
+
+Asked for 2026-09-09: "if no mongo hide the in gsme ui elemtnes to edit fucking
+mongo for each config file", and on what survives: "you need to export the data
+save in the mission profile and be able to export it and inport it".
+
+**The problem.** `framework.Stratis` sets `sync = "off"` and drives everything
+from its `config\` folder - `config_pac.hpp` for ranks, skills, awards,
+statuses, promotion and training, `config_roles.hpp` for roles,
+`config_nets.hpp`, `config_motorpool_common.hpp`, `arsenal\`, and the rest.
+**The game cannot write a file.** TAC//ADMIN still offered an editor for every
+one of them, and a save there went into the profile and was silently overruled
+by the file at the next mission start.
+
+**New:** `addons/pac/functions/fnc_fileFed.sqf` - one test, `[section] call
+FUNC(fileFed)`. False whenever `sync` is `"service"`, because then the document
+wins over the file and an edit sticks. Otherwise true when this mission's
+config fed that section. Role sub-screens resolve through `FUNC(structBase)`,
+so `roles_gates` answers for `roles`.
+
+- `addons/pac/functions/fnc_loadStructure.sqf` - sets `GVAR(fromMission)`, the
+  list of sections the mission's config filled, at its end. **This is the only
+  moment the config's contribution stands alone** - `FUNC(boot)` merges the
+  profile's edits over it at 2/6 and the service's documents at 3/6.
+  It is here rather than in `FUNC(boot)` because **boot exits early on a
+  client** (`if (!isServer) exitWith {}`) and the section menu is drawn on a
+  client; this function runs on every machine from `XEH_postInit`.
+- `addons/pac/functions/fnc_structOpened.sqf` - the section list is now a
+  named `_sections` array filtered by `select {!([_x # 0] call FUNC(fileFed))}`
+  before it fills the combo. The array had to move ABOVE the loop that reads it.
+- `addons/pac/functions/fnc_adminStructure.sqf` - the same test on the server,
+  so this is enforced and not merely undrawn.
+- `addons/pac/XEH_PREP.hpp` - `PREP(fileFed);`.
+
+**What still works with no database.** The roster is untouched: TAC//PAC's
+MY RECORD, ROSTER and OPORD read the store, not the structure. STRUCTURE IN /
+OUT is untouched, so the profile's own data can still be exported and imported
+by clipboard - that is the bridge to the website when there is no Mongo.
+`ADMINS` keeps its editor unless the mission's config feeds it.
+
+**Checked:** `hemtt check` clean in DIVINER (1077 sqf), DIVINER_alive (1183),
+ghost (1342). Not yet run in game - the ordering was verified by reading
+`XEH_postInit` (loadStructure at line 7, `[] spawn FUNC(boot)` at 124) rather
+than by watching a mission boot.
+
+### traits[] is a PAIR, not a triple - the in-game editor was widening it
+**Sync:** `yes` - rewrite `ghostD_` to `ghost_`. Applied to all three already.
+**Contract fix**: brings the database back to the shape a mission file writes.
+
+The user put the file on screen, 2026-09-09: "this s how it was int he config
+files and how it needs to be in the storage and ui".
+
+```cpp
+traits[] = {
+    {"UAVHacker","true"}                       // TWO
+};
+customVariables[] = {
+    {"isLeader","true","true"},                // THREE - the third is global
+    {"ace_medical_medicClass",1,"true"},       // a NUMBER, not "1"
+    {"UAVHacker","true","true"}                // and yes, both lists
+};
+```
+
+`FUNC(roleFieldParse)` wrote traits as `[name, value, custom]`, filling the
+third column from a local `ENGINE_TRAITS` macro. That column is
+`setUnitTrait`'s custom flag, and since **a trait is only ever one of the
+engine's four** it was always `false`. `FUNC(setupPlayer)` already defaults it
+- `_x params ["_trait","_value",["_custom","false"]]` - so the column bought
+nothing and made the database disagree with the file.
+
+- `addons/pac/functions/fnc_roleFieldParse.sqf` - `traits` now takes the same
+  two-element branch as `nets` and `tiles`. `customVariables` keeps its three
+  (`{name, value, global}`) and still defaults the global flag to `"true"`.
+  The `ENGINE_TRAITS` `#define` at the top existed only to fill that column and
+  is deleted.
+
+**Not a data fix - a data SAVE fix.** The stored documents were already right:
+53 trait rows across the roster, every one two wide, sample
+`["UAVHacker","true"]` on `GHOST.role.coC2`; 546 customVariables rows, every
+one three wide. Nothing needed migrating. What was wrong was that the next save
+from either editor would have widened all 53.
+
+**Website** (DIVINER_Web, no port): `src/roles.php` read traits at width 3 and
+padded a third element in memory, and `src/pages/role.php` wrote
+`[$t, 'true', 'false']` - both now two. Two more from the same reading:
+a short `customVariables` row defaulted its global flag to `false` on the web
+and `"true"` in the mod, so the two ends disagreed; the web now defaults
+`true`. And `UAVHacker` had just been filtered off the variables screen for
+being an engine trait name - it is legitimately **both**, as the file above
+shows.
+
+**Checked:** round-trip on the server - `ghostd_role('coC2')` reads
+`[["UAVHacker","true"]]` and `[["isLeader","true","true"],
+["ace_medical_medicClass",1,"true"], ...]` with the 1 still an integer.
+`hemtt check` clean in DIVINER (1076), DIVINER_alive (1182), ghost (1341).
+
+### Rank insignia - 26 images in media/images/ranks
+**Sync:** `yes` - already applied to all three; the files are identical, only
+the PBO prefix in a path that names them differs.
+
+Asked for 2026-09-09: "resize theses to 512 by 512 keep the images aspect
+ration, then add them to media/images/ranks in all 3 mods as a paa".
+
+- `addons/media/images/ranks/*.paa` - **26 new files**, one per pay grade:
+  `e2-private-second-class_ca.paa`, `e3-private-first-class_ca.paa`,
+  `e4-corporal_ca.paa`, `e4-specialist_ca.paa`, `e5-sergeant_ca.paa`,
+  `e6-staff-sergeant_ca.paa`, `e7-sergeant-first-class_ca.paa`,
+  `e8-master-sergeant_ca.paa`, `e8b-first-sergeant_ca.paa`,
+  `e9-sergeant-major_ca.paa`, `e9b-command-sergeant-major_ca.paa`,
+  `o1-second-lieutenant_ca.paa` .. `o10-general_ca.paa`,
+  `w1-warrant-officer-1_ca.paa` .. `w5-chief-warrant-officer-5_ca.paa`.
+- The path a rank's `insignia` names is
+  `z\ghostD\addons\media\images\ranks\<file>` (`ghostDA`, `ghost` in the
+  other two). Nothing references them yet - the rank records still carry an
+  empty `insignia`, and which grade maps to which of this unit's seven ranks is
+  not a decision this change makes.
+
+**How they were made.** Source: `D:\Dropbox\Docs\adobe\rank`, 26 PNGs
+between 310x1000 and 1000x1050. Each was scaled to FIT INSIDE 512x512 with its
+aspect ratio kept - `min(512/w, 512/h)`, Lanczos - and centred on a transparent
+512x512 canvas. Nothing is stretched and nothing is cropped; a .paa needs
+power-of-two sides and these are not square, so the remainder is padding.
+
+**The `_ca` suffix is load-bearing.** Converted with Arma 3 Tools'
+`ImageToPAA.exe`. Without the suffix it chose DXT1 for 12 of the 26 - DXT1 has
+at most 1-bit alpha, so the transparent padding would have come back as a black
+box behind the insignia. With `_ca` (Arma's "colour + alpha" convention, the
+same as `iconManLeader_ca.paa`) all 26 are DXT5.
+
+**Checked:** every output's PAA header read back - 26 files, all DXT5, none
+unrecognised. `hemtt check` clean in all three.
+
+### The game and the website built the arsenal document's name differently
+**Sync:** `yes` - rewrite `ghostD_` to `ghost_`. Applied to all three already.
+
+Found while checking a challenge from the user, 2026-09-09: "how are you
+modifieing the arsenal and other code any not touching player set up".
+
+`plt_<PLATOON>`, `sqd_<SQUAD>` and `role_<CLASS>` are DERIVED names - nothing
+stores them - so the two ends must build the same string from the same input.
+They did not.
+
+- the website (`ghostd_slug`, DIVINER_Web `src/templates.php`):
+  `preg_replace('/[^A-Z0-9]+/', '_', ...)` - the `+` collapses a RUN of
+  separators into ONE underscore.
+- the mod (`_fnc_slug` inside `addons/groups/functions/fnc_setupPlayer.sqf`):
+  one underscore PER CHARACTER.
+
+So a name with two separators together diverged silently: `"GHOST  6"` (two
+spaces) is `GHOST_6` on the website and was `GHOST__6` in game; `"1-1 / A"` is
+`1_1_A` and was `1_1___A`. The game then looked up a document nobody had
+written, found nothing, and merged nothing - **with no error**, because a
+missing variant is a legitimate state.
+
+- `addons/groups/functions/fnc_setupPlayer.sqf` - `_fnc_slug` rewritten to
+  collapse a run of separators into one underscore and drop a leading run
+  outright, which is what `preg_replace` + `trim('_')` does. The trailing-run
+  trim is kept.
+
+**Not currently biting.** All 97 names on the reference unit - 15 squads,
+5 platoons, 57 roles across every order of battle - were checked through both
+rules and agreed. This is a trap for the next name somebody types with a double
+space, not a live fault.
+
+**Checked:** both rules transcribed into one script and run over 4011 names
+(the real ones plus adversarial and random). The old mod rule disagreed with
+the website on 292; the new one disagrees on none. `hemtt check` clean in
+DIVINER (1076 sqf), DIVINER_alive (1182) and ghost (1341); the file is
+byte-identical across the three once the prefix is normalised.
+
+### `groupArsenal` retired - a role's arsenal is its own document
+**Sync:** `yes` - rewrite `ghostD_` to `ghost_`. **Contract change**: the role
+property `groupArsenal` is REMOVED. A mission that still declares it is not an
+error - nothing reads it - but the class it names is no longer merged.
+
+Said 2026-09-09: "Group arsenal Arsenal_Wraith there is no fucking
+Arsenal_Wraith remeber you were supose to make it part of the fucking role
+config, and part of the squad config, and part of the plt config", and again
+"there are no fucking arsenals on the fucking arsnela tab".
+
+**The symptom.** The role editor's ARSENAL screen showed a GROUP ARSENAL field
+whose picker offered `Arsenal_Banshee`, `Arsenal_Ghost6`, `Arsenal_Nomad`,
+`Arsenal_Talon` and `Arsenal_Wraith`. On the reference unit all five of those
+documents held **zero entries** - 25 role documents pointed at gear that did not
+exist, and nothing anywhere said so. A hand-typed class name is a pointer that
+can be wrong and never complains.
+
+**The rule now.** A narrower arsenal is a document NAMED AFTER WHAT IT BELONGS
+TO, derived the way `plt_` and `sqd_` already were:
+
+    <unit>.arsenal.plt_<PLATOON>    everyone in that platoon
+    <unit>.arsenal.sqd_<SQUAD>      everyone in that squad
+    <unit>.arsenal.role_<CLASS>     that role only
+
+Upper case, anything else an underscore. Creating one is creating the document
+and nothing else - there is nothing to point at and nothing to spell wrong.
+
+- `addons/groups/functions/fnc_roleFields.sqf` - `["groupArsenal", "t"]`
+  deleted from the returned list. This is the mission/mod role contract, so
+  `FUNC(roleFromConfig)` stops carrying the property and every reader of
+  `FUNC(role)` stops seeing it.
+- `addons/pac/functions/fnc_structFields.sqf` - in `case "roles_arsenal"` the
+  row `["groupArsenal", ["GROUP ARSENAL", ..., "arsenals"]]` is deleted, and
+  `["groupArsenal", "t"]` is deleted from the `_all` kind table. The screen now
+  opens on WEAPONS.
+- `addons/pac/functions/fnc_structSection.sqf` - the `case "roles_arsenal"`
+  blurb no longer describes GROUP ARSENAL; it names `role_<CLASS>` instead.
+- `addons/pac/functions/fnc_pickList.sqf` - `case "arsenals"` is kept (the
+  platoon and squad screens still use it) but no longer described as feeding a
+  role.
+- `addons/groups/functions/fnc_setupPlayer.sqf`,
+  `addons/pac/functions/fnc_svcStructure.sqf`,
+  `addons/pac/functions/fnc_rolesFromMission.sqf` - comments that still
+  described the old scheme. No code: the four-layer merge (`Common_Arsenal`,
+  `<unit>.arsenal`, `plt_`, `sqd_`, `role_<CLASS>`) was already what ran.
+
+**Website** (DIVINER_Web, same behaviour, no port): `src/roles.php` stops
+reading the field into the role record; `src/pages/orbat_roles.php` shows the
+derived document id instead; `src/pages/configedit.php` no longer hides
+variants a role "owned"; `src/templates.php` drops `'variantOf' => 'groupArsenal'`
+from the arsenal registry entry.
+
+**Wiki:** `Arsenal.md` (the layer list and the whole per-element section),
+`Element-Folder-Files.md` (`config_arsenal.hpp` marked GONE, the reference
+folder table loses its Arsenal column), `Roles.md`, `Config-Reference.md`,
+`Cross-File-Contracts.md`, `Common-Tasks.md`, `FAQ.md`, `Troubleshooting.md`,
+`TAC-PAC.md`, `config_pac.md`, `config_groups.md`, `config_roles.md`,
+`Mission-Setup.md`.
+
+**Left for a human:** the 25 role documents still carry the dead
+`role.groupArsenal` field and the five empty `GHOST.arsenal.Arsenal_*`
+documents still exist. Nothing reads either. They are removed with the new
+Delete button below - the entry above this one.
+
+**Checked:** `hemtt check` (1076 sqf files compiled, clean); the website's
+ORBAT > Roles re-rendered on the server - 57 roles, each showing
+`GHOST.arsenal.role_<CLASS>`, no "Group arsenal" row, no warnings.
+
+### Every role's arsenal was one document, named after a rank
+**Sync:** `no` - website only (DIVINER_Web), no mod file touched.
+
+Found while checking the change above. `src/pages/role.php` computed the role's
+own arsenal as `ghostd_role_variant($rid)`, but `$rid` is the **rank picker's**
+loop variable from earlier in the same file
+(`foreach ((array) ($rd['items'] ?? []) as $rid => $r)`), and PHP leaves a
+foreach variable set after the loop. Every role's ARSENAL screen therefore
+resolved to `role_<LAST RANK ID>` - `GHOST.arsenal.role_COLONEL` on this unit.
+All 57 roles pointed at one document, named after a rank, and "Edit the role
+arsenal" opened that same document from every role.
+
+- `src/pages/role.php` - `$rv = ghostd_role_variant($id);`. `$id` is the role.
+  `src/pages/orbat_roles.php` was already right - there `$rid` really is the
+  role id.
+
+**Checked:** three roles re-rendered on the server - `atlWraith` gives
+`role_ATLWRAITH`, `medicalBanshee` gives `role_MEDICALBANSHEE`, `pilotTalon`
+gives `role_PILOTTALON`, and `role_COLONEL` appears on none of them.
+
+### Templates: the arsenal tab drew nothing, and versions had no Delete
+**Sync:** `no` - website only (DIVINER_Web), no mod file touched.
+
+Said 2026-09-09: "there are no fucking arsenals on the fucking arsnela tab",
+"you havce said you fixed it like 5 times fucking not fuckl".
+
+**The symptom.** `?page=config&t=arsenal` returned 7186 bytes with no arsenal
+content at all - no version list, no entry counts, nothing - while
+`?page=configedit&t=arsenal` returned 95933 bytes and was correct. Clicking the
+tab did nothing visible.
+
+**The cause.** When the arsenals had a top-level page of their own,
+`src/pages/config.php` skipped them in TWO loops: the tab bar and the section
+renderer. The tab-bar skip was removed; the section-renderer skip
+(`in_array($key, ['nets', 'traits', 'arsenal'], true)`) was not, so the tab
+appeared and drew nothing. `traits` in that list was stale as well - traits
+moved to the Configs page. The condition is now `$key === 'nets'`, which is the
+only one that really lives elsewhere (on the ORBAT, beside the radio).
+
+- `src/pages/config.php` - the section loop's skip; the version list now also
+  hides `role_*` alongside `plt_*` and `sqd_*`, since all three are edited
+  where their name comes from.
+- `src/pages/config.php` - **every version row now has an Edit and a Delete
+  button**, and Delete asks "are you sure" with the entry count in the
+  question, as every other delete on the site does. The Default row has no
+  Delete (it is what a mission gets when it names no version) and neither does
+  a `plt_`/`sqd_`/`role_` version (deleted on that platoon, squad or role).
+  The delete goes through `ghostd_doc_delete`, which copies the document to the
+  backup collection first.
+- `public/style.css` - `td.rowacts`, so Edit and Delete sit on one line.
+
+**Checked:** re-rendered on the server. `?page=config&t=arsenal` is 17056 bytes
+and lists all 15 versions with their entry counts (`GHOST.arsenal` 2629,
+`Tropical` 2415, `Ghost` 2072 ...), 14 Delete buttons, none on Default.
+
+### Two admin lists, two jobs: the console and the PAC
+**Sync:** `yes` - rewrite `ghostD_` to `ghost_`. **Behaviour change**: a name in
+a mission's `CfgGhostAdmins` no longer opens TAC//ADMIN or the TAC//PAC pages.
+
+Said 2026-09-09: "#defined admins shoudl just be for the cb and the other admin
+in the description.exe, the pac admins are for accessing the pac".
+
+- `addons/adminpanel/functions/fnc_adminList.sqf` - the
+  `missionConfigFile >> "CfgGhostAdmins" >> "admins"` block is deleted.
+  `admp_authorisedIDs` is now the mod's own `configFile >> enableDebugConsole`
+  plus whatever GRANT ADMIN handed out during the mission.
+- `addons/adminpanel/XEH_postInit.sqf` - the `#ghost admin.list` reply for an
+  empty list says where admin actually comes from.
+
+**The two lists, and what each is for:**
+
+| Where | What it does |
+|---|---|
+| `description.ext` `#define ADMINS` | `enableDebugConsole[]` and `cba_settings_whitelist[]` - read by the engine and CBA before any script runs, which is the only reason an id is written in a mission at all |
+| `<unit>.admins` | who may open TAC//PAC and TAC//ADMIN - `FUNC(isAdmin)` checks it, and it is edited on the PAC admin page or the website |
+
+**Mission side** (not in this repo): `framework.Stratis` and
+`Task_Force_Roomba.Tanoa` lost `class CfgGhostAdmins` from
+`config\config_admins.hpp`; the `#define ADMINS` stays, because the two engine
+arrays need it. The three database missions dropped the class earlier.
+
+**Getting in on a fresh unit:** `<unit>.admins` empty means nobody passes the
+PAC check. The ways in are the CBA setting "Everyone is an admin (testing)",
+ghost's own admin flag, the editor or an SP host (no Steam id), and the debug
+console - which the description.ext list still grants, and which can write the
+first admin.
+
+**Checked:** `hemtt check` clean in all three (1076, 1182, 1341 SQF). Not run in
+game.
+
+
+### The motorpool and the paint jobs are editable in game
+**Sync:** `yes` - rewrite `ghostD_` to `ghost_`. Additive: three table entries
+and a whitelist; no reader changed.
+
+Asked 2026-09-09: "the game ui and web ui need to do the same thihng" - the
+website could edit `<unit>.motorpool` and `<unit>.cosmetics` and the PAC could
+not.
+
+- `addons/pac/functions/fnc_structFields.sqf` - `case "motorpool"`: `order`
+  (n), `displayName` (t), `vehicles` (a). And `cosmetics` on TWO screens, the
+  way a role is: `cosmetics` labels `order`, `vehicle` (with the `vehicles`
+  picker) and `icon`; `cosmetics_code` labels `code` alone, because a line of
+  SQF needs the width. Both return the whole field list, so what one screen
+  does not show rides along untouched - `FUNC(structBase)` already maps
+  `cosmetics_code` to `cosmetics` by splitting on the underscore.
+- `addons/pac/functions/fnc_structOpened.sqf` - MOTORPOOL, PAINT - WHERE and
+  PAINT - CODE in the section combo.
+- `addons/pac/functions/fnc_structSection.sqf` - the row title and the help for
+  each.
+- `addons/pac/functions/fnc_adminStructure.sqf` - `"motorpool"` and
+  `"cosmetics"` added to the section whitelist, which is what lets the server
+  accept the write at all.
+- `addons/pac/functions/fnc_svcPushStructure.sqf` - both join the list a push
+  sends, so EXPORT carries them.
+
+Nothing else was needed: `FUNC(structurePersist)`'s default branch already
+writes `<unit>.<section>` as `{section, items}`, which is these two documents'
+shape.
+
+**Still web-only** and NOT fixed here - each needs a new kind of screen, not a
+table entry: the welcome text, the vehicle spawner and arsenal lists, the
+logistics crates, the pylon presets, the report deck and the operation orders.
+The branding is web-only on purpose.
+
+**Checked:** `hemtt check` clean (1075 SQF). Not opened in game.
+
+
+### The radar network is a CBA setting and nothing else
+**Sync:** `yes` - rewrite `ghostD_` to `ghost_`. **Behaviour change**: the
+database is no longer a source of radar classes.
+
+Said 2026-09-09: "Radar network and again for ther fuckteenth time this is a
+cba settings make it a fucking cba settings it should not be in pac".
+
+`FUNC(radarNetwork)` read three sources - the setting, the mission's
+`Radar_Network` class and `<unit>.radar` through `ghostD_pac_fnc_cfgList` - so
+"why is that thing on the datalink" had three possible answers.
+
+- `addons/init/functions/fnc_radarNetwork.sqf` - the `ghostD_pac_fnc_cfgList`
+  block is gone. Two sources remain: `EGVAR(Settings,radarClasses)` (the
+  editbox, comma or newline separated) and the mission's own class, which is
+  what a mission with a `config\` folder still ships.
+- `addons/pac/functions/fnc_svcSections.sqf` - the `["radar", "lists",
+  "currentRadar"]` row is removed, so the document is not fetched at all.
+
+**Dead data:** `<unit>.radar` is read by nothing now - delete it. `currentRadar`
+in a mission's `CfgGFA_PAC` settings is likewise ignored.
+
+**Web:** DIVINER_Web's Templates registry no longer lists Radar network. There
+is nothing on the site to edit because the setting is in game, which is the
+point.
+
+**Checked:** `hemtt check` clean (1075 SQF). Not run in game.
+
+
+### A role sets four traits; the coefficients belong to the order of battle
+**Sync:** `yes` - rewrite `ghostD_` to `ghost_`. **Behaviour change**: a role's
+`traits` list no longer offers the three numeric coefficients, and a new
+`coefs` block on the ORBAT document is applied to every player.
+
+Said 2026-09-09: "thesea re the only traits to set per role - Boolean engineer,
+Boolean explosiveSpecialist, Boolean medic, Boolean UAVHacker", and then
+"Number audibleCoef, Number camouflageCoef, Number loadCoef, Number
+staminaDrainCoef - these can be set via the orbat for all players".
+
+A trait that describes the JOB is the role's; a number that describes the UNIT
+is the order of battle's, set once instead of on fifteen roles.
+
+- `addons/pac/functions/fnc_pickList.sqf` - the `"traits"` picker offers
+  `medic`, `engineer`, `explosiveSpecialist`, `UAVHacker` and then the unit's
+  own custom names. `audibleCoef`, `camouflageCoef` and `loadCoef` are gone
+  from it.
+- `addons/pac/functions/fnc_structSection.sqf` - the `roles_traits` help says
+  the four, and says where the coefficients now live.
+- `addons/groups/functions/fnc_setupPlayer.sqf` - after the trait reset and
+  before the role's own traits, reads
+  `ghostD_pac_structure >> "orbat" >> "coefs"` and applies each numeric entry
+  with `player setUnitTrait [_x, _y, false]`. A missing block sets nothing, so
+  a unit that has not filled it in behaves exactly as before.
+
+**Contract:** `<unit>.orbat` (and `<unit>.orbat.<id>`) gains **`coefs`**, a
+hashmap of `{audibleCoef, camouflageCoef, loadCoef, staminaDrainCoef}` to
+numbers. `staminaDrainCoef` needs Arma 2.22; setting it on an older build is
+ignored by the engine, not an error. DIVINER_Web edits it on the order of
+battle's own page.
+
+**Old data:** a role that still carries a coefficient in its `traits` list
+keeps applying it - the reader was not changed, only what the editors offer.
+Clear those by hand if the ORBAT is to be the only place they come from.
+
+**Checked:** `hemtt check` clean (1075 SQF). Not run in game.
+
+
+### The TAC//PAD's colours are editable in game
+**Sync:** `yes` - rewrite `ghostD_` to `ghost_`. Three small edits; the section
+writes through the editor's existing generic path.
+
+Asked 2026-09-09: "the color scheems need a place ot be edited" and "make sure
+web us and the in game pac ui sync up". `<unit>.schemes` was editable on the
+website (its Colours page) and nowhere in game - the settings screen offered the
+unit's schemes as preset cards to PICK, with no way to change one.
+
+- `addons/pac/functions/fnc_structOpened.sqf` - `["schemes", "COLOURS"]` in the
+  section combo, after NETS.
+- `addons/pac/functions/fnc_structFields.sqf` - `case "schemes"`: `ground`,
+  `ink`, `accent`, all `"t"`. Three fields, which is exactly the three rows the
+  editor draws, and `name` has its own row already.
+- `addons/pac/functions/fnc_adminStructure.sqf` - `"schemes"` added to the
+  section whitelist. Nothing else was needed: the default branch of
+  `FUNC(structurePersist)` already writes `<unit>.<section>` as
+  `{section, items}`, which IS the schemes document's shape.
+
+**Known gap, not fixed here:** `ghostD_tacpad_apps_fnc_missionSchemes` caches
+its list in `GVAR(missionSchemes)` on first call and exits early on every one
+after, so a scheme edited in game does not show on the settings screen until the
+mission restarts. The document is correct immediately; only that screen is
+stale.
+
+**Checked:** `hemtt check` clean (1075 SQF). Not opened in game.
+
+
+### The welcome screen is written, not assembled
+**Sync:** `yes` - rewrite `ghostD_` to `ghost_`. Additive: a welcome document
+that still holds `lines` draws exactly as it did.
+
+Asked 2026-09-09, pointing at the website's welcome editor - a stack of
+fieldsets, one per line, each with its own size box, colour swatch and
+alignment dropdown: "insteed of all this crawp how about a simple editor that
+you can insert retuerns and set the html stuff arma uses", with the Arma
+structured text wiki page attached.
+
+The per-line records were a worse spelling of the tags the game already reads.
+`<unit>.welcome` now carries **`text`** - one block of structured text, typed
+with its own returns - and the panel gets it as a single content entry, so
+`<t size='1.15' color='#cc4331'>`, `<br/>`, `<img>` and `<a href>` all work
+because the game parses them, not because an editor grew a field for them.
+
+- `addons/pac/functions/fnc_welcomeShow.sqf` - reads `text` first and falls
+  back to `lines`; either being non-empty is what takes the panel off the
+  mission's own `GHOSTFR_Welcome` / `GHOST_Welcome` class. The writer's returns
+  become `<br/>` (`regexReplace [toString [13, 10], "<br/>"]`, then the same
+  for a lone CR or LF) because a real newline is not a line break in structured
+  text. The block goes to `EFUNC(common,modal)` as one line at size **0.9** -
+  the size the old editor gave body text - so an untagged paragraph reads as it
+  did before and a tag inside it is the writer's own.
+- `addons/pac/functions/fnc_svcStructure.sqf` - the welcome fetch carries
+  `text` into the structure and the "is there anything here" test is now
+  `_wtext isNotEqualTo "" || {count _lines > 0}`. Before this it was
+  `count _lines > 0`, so a text-only document would have been fetched, found
+  empty, and the mission's config would have drawn instead.
+
+**Contract:** `<unit>.welcome` (and `<unit>.welcome.<id>`) gains `text`
+<STRING>. `lines` is still read and is what every document written before today
+holds. DIVINER_Web writes `text` and drops `lines` on the next save; its
+`ghostd_welcome_markup()` renders the old records into the equivalent tags so
+nobody retypes a briefing.
+
+**Checked:** `hemtt check` clean (1075 SQF). Not seen in game - the panel has
+not been opened since.
+
+### A mission on the database does not repeat its admin list
+**Sync:** `yes` - rewrite `ghostD_` to `ghost_`. Comment and message only; no
+code path changed.
+
+Asked 2026-09-09, pointing at `class CfgGhostAdmins` in a mission's
+description.ext: "should be configed form storage or config files not here",
+and at the three `#define`s above it: "why so manny lines of code to fill in one
+fucking line".
+
+`FUNC(isAdmin)` has checked the unit's `admins` section of the structure - the
+`<unit>.admins` document - before `admp_authorisedIDs` since the section
+existed, so a mission on the database never needed a `CfgGhostAdmins` at all.
+What it does still need is the ONE id the engine has to be told:
+`enableDebugConsole[]` and `cba_settings_whitelist[]` are read out of
+description.ext at mission load and nothing scripted can set them.
+
+- `addons/adminpanel/functions/fnc_adminList.sqf` - header says so, and says
+  that this list stays the MISSION's and is legitimately empty on a database
+  mission.
+- `addons/adminpanel/XEH_postInit.sqf` - the `#ghost admin.list` reply for an
+  empty list was "no admin list - see CfgGhostAdmins in description.ext", which
+  reads as broken on a mission where admin comes from the database. Now: "no
+  mission list - admin is the database list (<unit>.admins); CfgGhostAdmins in
+  description.ext adds to it".
+
+**Mission side** (not in this repo): `frameworkmongo.Stratis`,
+`frameworkmongo_alive.Stratis` and `Task_Force_Roomba_dev.Tanoa` - the three
+with no `config\` folder - lost `class CfgGhostAdmins` and the
+`DEBUG_ADMINS` / `CBA_ADMINS` aliases; one `#define ADMINS` now feeds both
+engine arrays. `framework.Stratis` and `Task_Force_Roomba.Tanoa` keep
+`config\config_admins.hpp` and its `CfgGhostAdmins` - they are the
+config-file missions - but lost the two aliases as well.
+
+**Checked:** `hemtt check` clean. Not seen in game.
+
+
+### Pick, do not type; every config section actually fetched; and the orders of battle
+**Sync:** `yes` - rewrite `ghostD_` to `ghost_`. The picker work is additive -
+a field with no list to offer keeps its edit box exactly as it was. The section
+table is a **fix**, not a feature: four sections were being read by the mod and
+fetched by nobody.
+
+Asked 2026-09-09: "in the pac no fill in the blanks need drop downs, like on
+the plat all the radio freaqs"; "there needsw to be an orbat tab where differnty
+ordbats can be built and need a check box to make one default"; "then in the
+roster the roles and group need to pull form that default orbat"; "all config in
+the mongo if the mission is conected to mongo ... I want the mission config to
+define the orbat template to use, and all the common templates used in the
+mission"; and, pointing at a role's `customVariables[]`, "and theses are custom
+traits".
+
+#### 1. Four sections were read and never fetched
+
+`ghostD_pac_fnc_svcStructure` fetched thirteen sections by name. The mod reads
+`cosmetics`, `logistics`, `pylons` and `skill` from the structure as well - so
+every paint scheme, the logistics table, the pylon loadouts and the AI skill
+block were documents nobody ever loaded. The readers existed; the fetch did not.
+
+- `addons/pac/functions/fnc_svcSections.sqf` - **new**. The one table: section,
+  shape (`items` / `lists` / `code`), and the setting a mission uses to name
+  which version of it to run. **A section absent from this table is a document
+  the game never reads**, which is exactly how the four went missing.
+- `addons/pac/functions/fnc_svcStructure.sqf` - the fetch is now one loop over
+  that table, handling all three shapes. `vehicleSpawner` joins the variant
+  sweep. Also publishes **`orbatVersions`** - the ids of every
+  `<unit>.orbat.<id>` - because only the server can list the database and the
+  editors need the names.
+- `addons/pac/functions/fnc_structureAdopt.sqf` - the list of sections that
+  survive adoption comes off the same table, so adding one is a single edit.
+
+#### 2. A mission names the versions it runs
+
+- `addons/pac/functions/fnc_structureAdopt.sqf` - the settings merge skips a
+  `current*` key **when the mission itself declares it** (checked with `isText`
+  against `missionConfigFile >> "CfgGFA_PAC" >> "settings"`). The database's
+  value is the unit's DEFAULT; a mission that says otherwise keeps its own.
+  That is what lets Roomba and the framework share a unit and still brief with
+  different text and kit from different arsenals.
+- `addons/pac/functions/fnc_svcStructure.sqf` - `currentWelcome` picks a
+  welcome version, the way `currentOrbat` picks an ORBAT. A named version that
+  is not there falls back to the common one **and warns**, because a silent
+  fallback is how a mission runs the wrong arsenal for a month.
+- `addons/pac/functions/fnc_adminSetting.sqf` - **new**. The admin door for
+  setting one of those defaults from in game. Refuses any key that is not a
+  version setting; `unitId`, `serverId` and `sync` are the server's.
+
+#### 3. Pick, do not type
+
+A rank id, a net name, a role class or a channel number typed by hand is a
+value that matches nothing, with nothing in game to say so.
+
+- `addons/pac/functions/fnc_pickList.sqf` - **new**. What a field may be, as
+  combo rows: ranks, skills, statuses, trainings, roles, nets, tiles, traits,
+  variables, sides, squads, platoons, arsenals, orders of battle, and the ACRE
+  / MR / LR channel plans read off the **live** `ghostFR_radio_*` globals.
+  TFAR is eight numbered slots rather than an open list, because that is what
+  the radio has.
+- `addons/pac/functions/fnc_pickFill.sqf` - **new**. Lays out one field row.
+  Three arrangements: no picker (edit only, as before); one value (the combo IS
+  the field, the edit hidden behind it still carrying the value so SAVE needs
+  no special case); a list (combo left, the picked list right).
+- `addons/pac/functions/fnc_pickApply.sqf` - **new**. A pick replaces, or
+  appends to a list - and picking something already there **removes** it, which
+  is the only way to take one out without typing. Rows are matched on the NAME
+  before any `=`, so picking `isISR=true` finds an existing `isISR=false`
+  instead of adding a second one the mod would apply twice.
+- `addons/pac/functions/fnc_structPick.sqf`, `fnc_managePick.sqf` - **new**.
+  The onLBSelChanged for each row.
+- `addons/pac/ui/idcs.inc.hpp` - `PAC_IDC_ST_C1..C3`, `PAC_IDC_MG_C1..C6`,
+  `PAC_IDC_MG_DEFAULT`, `PAC_IDC_MG_DEFAULT_LBL`.
+- `addons/pac/ui/structure.inc.hpp`, `ui/manage.inc.hpp` - the combos and the
+  live tick. `addons/pac/config.cpp` - `class RscADMPCheckbox;`.
+- `addons/pac/XEH_preInit.sqf` - `GVAR(structPickers)`, `GVAR(mgPickers)`,
+  `GVAR(pickFilling)`. **Filling a combo fires its own `onLBSelChanged`**;
+  without that guard every redraw would write the first row into the field.
+- `addons/pac/functions/fnc_structFields.sqf` - every row is now five wide,
+  `[field, kind, label, hint, picker]`, padded centrally so no reader has to
+  check. `fnc_manageSection.sqf` the same, five wide.
+- `fnc_structSelect.sqf`, `fnc_manageSelect.sqf` - a single-value combo is
+  moved to the row matching what is stored, or it reads as its first item
+  whatever the record says.
+
+#### 4. The orders of battle, and which one is live
+
+- `addons/pac/functions/fnc_manageOpened.sqf` - a new `ORBAT - ORDERS OF
+  BATTLE` screen, first of the ORBAT group.
+- `addons/pac/functions/fnc_manageSection.sqf` - lists every version with
+  `[LIVE]` against the one in use, and shows the tick. NEW and REMOVE are
+  hidden: a version is edited on the other screens.
+- `fnc_manageSelect.sqf` / `fnc_manageSave.sqf` - the tick follows the
+  selection; SAVE sends `currentOrbat` to `FUNC(adminSetting)`. Unticking is
+  refused - one of them has to be live.
+
+#### 5. Custom variables are the unit's own names, and are picked too
+
+The role configs set `draWhitelisted`, `isISR`, `draAccessDrones`,
+`ace_medical_medicClass` and the rest through `customVariables[]`. Those are
+this unit's vocabulary just as much as its traits are.
+
+- `<unit>.traits` items gained **`where`** - `"variable"` (`setVariable`, most
+  of them) or `"trait"` (`setUnitTrait`). They are different things on the man
+  and two different lists on a role, and getting it wrong is silent.
+- `addons/pac/functions/fnc_pickList.sqf` - `"traits"` offers the engine's
+  seven plus the catalogue entries marked `trait`; `"vars"` offers the ones
+  marked `variable`, appending `name=true` (or `name=0` for a number).
+- The catalogue was **seeded from the roles themselves** - twelve names, with
+  `kind` inferred from the values seen, so `ace_medical_medicClass` is a number
+  and not a checkbox.
+
+**Checked:** `hemtt check` clean - DIVINER 1073 SQF, DIVINER_alive 1176, ghost
+1335, all three ported and verified. **None of it has run in Arma.** One bug
+caught by reading: the first draft of the variable picker matched whole rows,
+so picking a variable whose value differed would have added a second copy.
+
+**Missions:** `Task_Force_Roomba_dev.Tanoa`'s `CfgGFA_PAC` is cut to `class
+settings`. It had carried the whole of ranks, promotion, trainings, skills,
+awards, statuses and the role gates - every one of them a document that
+overwrites it at boot - **and an `#include "opords\op_ironveil.hpp"` pointing
+under the deleted `config\` folder, so the mission would not have loaded.** The
+three missions' welcome screens are now `<unit>.welcome.<name>` documents, each
+named by its own `currentWelcome`.
+
 ### `currentArsenal` - which common arsenal a mission uses
 **Sync:** `yes` - rewrite `ghostD_` to `ghost_`. Opt-in: unset behaves exactly
 as before.

@@ -6,7 +6,7 @@ Description:
     Merges every Dynamic_Roles class into structure.roles - the WHOLE role,
     every property the group system reads (ghostD_groups_fnc_roleFields:
     name, description, icon, nets, tiles, traits, customVariables,
-    defaultLoadout, groupArsenal, the four arsenal arrays) plus PAC's own
+    defaultLoadout, the four arsenal arrays) plus PAC's own
     (minRank, requiredSkills, uids, arsenalWhitelist, defaultSkills,
     slotTag) - so a role in the database and a role in a mission file are
     the same record, and the group menu reads either through
