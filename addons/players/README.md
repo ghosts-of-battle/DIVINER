@@ -4,6 +4,20 @@
 
 The two-argument INFO/WARNING/ERROR/LOG the Roomba scripts were written against, plus the notification colours and the logistics shorthand. Included AFTER ghost's macros so the #undef in there lands on the right definitions.
 
+## Base-game voice (VON)
+
+Added 2026-10-20. When neither TFAR nor ACRE is loaded (`ghostD_common_von`,
+decided once in common's preInit), the radio plan's `vonNets` become custom
+radio channels: `vonApply` (server) makes or relabels one channel per net,
+`vonSync` (server) reconciles who is on each from the players' squad names -
+raised by the clients at spawn, respawn, squad change and JIP, after a
+disconnect, and every 10 s - and `vonClient` (each client) sets which engine
+channels may carry voice (`vonSide`, `vonCommand`, `vonGlobalAdminsOnly`;
+Group, Vehicle, Direct on). `vonState` is the radio readout's answer: the
+squad's team net (`vonTeamNets`, else the squad name) on the Group channel.
+With no `vonNets` the plan is one C2 net of every squad leader and the engine
+channels are left alone. With TFAR or ACRE loaded the postInit returns at once.
+
 <!-- generated below this line by tools/gen_addon_readmes.py - do not edit -->
 
 ## Requires

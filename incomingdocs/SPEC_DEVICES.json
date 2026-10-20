@@ -1,7 +1,7 @@
 {
   "spec": "TAC//APP devices",
-  "version": "0.2.0",
-  "date": "2026-10-19",
+  "version": "0.2.1",
+  "date": "2026-10-20",
   "parent": "SPEC_TACNET.json",
   "status": "handoff - reference frame images attached separately",
   "ui_modes": {
@@ -12,7 +12,7 @@
     },
     "tablet_mode_side_effects": [
       "existing on-screen HUD tiles default OFF, player can re-enable",
-      "game/mod/TFAR upper-right notifications suppressed and re-rendered on the phone notification row",
+      "game/mod/TFAR notifications stay as upper-right popups on the player screen in every mode (user, 2026-10-18); the phone notification row mirrors them, it does not replace them",
       "vanilla GPS mini-map stays available (not hidden)"
     ]
   },
@@ -137,9 +137,9 @@
       {
         "row": "notifications",
         "style": "scrolling line, small font",
-        "source": "all notifications that normally pop upper-right in game: mod notifications and TFAR notifications",
+        "source": "mirror of the upper-right popups: mod notifications and TFAR notifications",
         "log": "every notification kept in a scrollable log the player can open and read back",
-        "note": "upper-right popups are suppressed in tablet mode"
+        "note": "upper-right popups are NOT suppressed in any mode - the row is a second copy plus the log (user, 2026-10-18)"
       },
       {
         "row": "map",
@@ -154,14 +154,14 @@
         "row": "nets",
         "style": "rounded rectangles, one per net the player can access",
         "cell": {
-          "text": "<N> <name>",
+          "text": "<name> + ear tag (no numbers)",
           "max_chars": 12,
           "number": 1,
           "name_max": 10,
           "outline_ok": "green",
           "outline_issue": "red"
         },
-        "behaviour": "numpad N selects that net (TFAR numpad channel behaviour, kept); frequencies never shown"
+        "behaviour": "only nets you are on are shown (VEH in a vehicle, CALL when live); numpad 0 / . move the active net left / right; red outline = on the net but no route; ear tag L/B/R per net; frequencies never shown"
       }
     ],
     "squad_radar": {
@@ -182,40 +182,18 @@
         "who is talking and when"
       ],
       "hides": [
-        "TFAR frequencies",
-        "TFAR notifications",
-        "TFAR dialogs"
+        "frequencies",
+        "voice-system notifications and dialogs"
       ],
       "rule": "all radio information goes through the phone UI"
     },
-    "fonts": "needs small-font work; phone is wide enough for two top rows",
-    "walking_view": {
-      "placement": "bottom centre; frame 610 x 274 at 1080p, screen 515 x 220; frame widened by repeating its middle band, never stretched",
-      "map": [
-        "zoomed in so the player icon reads clearly; player icon large, everything else small",
-        "no compass tape on the phone or side devices"
-      ],
-      "net_row": "short: about 36 px at 2x design units (18 px in game), cells 28 px"
-    },
-    "member_numbers": {
-      "source": "ghostD_bft_fnc_memberNumber - the ONLY source of a member's number",
-      "rule": "number = place in the group's own unit order, 1-based; the leader is 1. Same on every machine, nothing broadcast",
-      "used_by": [
-        "BFT member marks on the map (drawMembers: '<N> <name>')",
-        "phone squad list",
-        "phone map dots",
-        "side / side2",
-        "TAC//APP"
-      ],
-      "colours": "ACE3 / vanilla fire team colours from assignedTeam: MAIN white, RED, GREEN, BLUE, YELLOW",
-      "other_groups": "drawn as the BFT's own NATO group marker + callsign, small; not numbered",
-      "changes": "renumbers when the group changes; every surface reads it each draw so they move together"
-    }
+    "fonts": "needs small-font work; phone is wide enough for two top rows"
   },
   "tfar_override": {
     "base": "TFAR standalone unmodified (DLL, relay, SQF, items)",
     "layer": "gfa_voice_tfrs: nets -> hidden frequencies from the signal plan, channels programmed from the fill, TFAR UI/hints/keybinds suppressed and replaced, state rendered on our devices, rf link quality -> TFAR per-unit multipliers",
-    "spec": "SPEC_TACNET.json"
+    "spec": "SPEC_TACNET.json",
+    "status": "optional adapter only (D14)"
   },
   "ace_interactions": {
     "large": "self -> open tablet",
@@ -223,7 +201,7 @@
     "phone_side": "self -> settings (fullscreen); side devices: choose left/right"
   },
   "defaults_assumed": [
-    "notifications also render on large and vehicle tablets",
+    "notifications also mirror on large and vehicle tablets; the upper-right popups stay regardless",
     "phone walking view is display-only with keybinds; fullscreen only for settings",
     "vehicle tablet is dialog only",
     "side left/right chosen each time it is brought up"
@@ -233,5 +211,40 @@
     "vehicle-specific tiles",
     "DUI repo link",
     "side2 frame image"
-  ]
+  ],
+  "voice": {
+    "base": "game voice (VON) through the voice adapter; TFAR standalone optional",
+    "spec": "SPEC_TACNET.json voice_adapter",
+    "doc": "DESIGN_VOICE.md"
+  },
+  "keys": {
+    "numpad": {
+      "1-4": "device F1-F4",
+      "0 / .": "device arrows: active net (walking) / cursor (apps)",
+      "5": "open/close tablet",
+      "6": "radio app on carried device",
+      "7 / 8": "prev / next tab (small devices)",
+      "9": "TROOPS IN CONTACT"
+    },
+    "walking_view_F": {
+      "F1": "accept call",
+      "F2": "ear for active net; during a call: quick add",
+      "F3": "mute active net",
+      "F4": "decline / hang up"
+    }
+  },
+  "radio_app_small": {
+    "devices": [
+      "phone",
+      "side",
+      "side2"
+    ],
+    "open": "numpad 6, full screen; mouse works",
+    "tabs": {
+      "NETS": "F1 MUTE · F2 EAR · F3 SET ACTIVE · F4 BACK",
+      "CALLS": "F1 ADD · F2 CALL · F3 GROUP + · F4 HANG UP",
+      "MANAGE": "F1 ADD · F2 REMOVE · F3 REKEY · F4 BACK"
+    },
+    "doc": "DESIGN_VOICE.md"
+  }
 }

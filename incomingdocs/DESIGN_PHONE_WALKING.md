@@ -6,21 +6,21 @@ Related: [DESIGN_BFT_MEMBERS.md](DESIGN_BFT_MEMBERS.md) (member icons), [DESIGN_
 
 ## What it is
 
-The phone's always-on view. Display only, no mouse. Shown while walking around, toggled by a key. Replaces the DUI squad radar and all TFAR on-screen info. Fullscreen only for settings (separate doc).
+The phone's always-on view. Display only, no mouse. Shown while walking around, toggled by a key. Replaces the DUI squad radar and the voice system's on-screen info. Fullscreen only for settings (separate doc).
 
 ## Images
 
 In game, 1080p:
 
-![in game](images/phone_ingame.png)
+![in game](../art/images/phone_ingame.png)
 
 On the device:
 
-![device](images/phone_device.png)
+![device](../art/images/phone_device.png)
 
 Screen only (2x design units):
 
-![screen](images/phone_screen.png)
+![screen](../art/images/phone_screen.png)
 
 Canvas: TAC//APP Phone (artifact 5gFo1QBBxnchSCmcXKofWw).
 
@@ -92,7 +92,8 @@ Order: NET, MESH, JAM, GPS, DRONES, FIRES, MSG, BATT. Icon + short value, mono 2
 - Outline green = net OK, red = problem (no reach, jammed, no fill).
 - Active net: light fill, dark text.
 - Small grey `R` = receive only.
-- Numpad N selects net N (TFAR numpad behaviour kept). Frequencies never shown.
+- Only nets you are on are shown: VEH appears in a vehicle, CALL when a call is live or ringing. Cells show name + ear tag (L/B/R), no numbers.
+- Numpad 0 / . move the active net left / right. Numpad 1-4 are the device keys F1-F4 (F1 accept call, F2 ear / quick add, F3 mute, F4 decline / hang up). See [DESIGN_VOICE.md](DESIGN_VOICE.md). Frequencies never shown.
 
 ## Colours
 

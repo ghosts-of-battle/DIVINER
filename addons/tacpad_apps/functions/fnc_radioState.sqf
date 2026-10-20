@@ -16,7 +16,7 @@
  * None
  *
  * Return Value:
- * Channel, "" when there is no radio mod or no radio in hand <STRING>
+ * Channel, "" when there is no radio mod (and no VON plan) or no radio in hand <STRING>
  *
  * Example:
  * private _ch = [] call ghostD_tacpad_apps_fnc_radioState
@@ -55,6 +55,13 @@ if (!isNil "TFAR_fnc_activeSwRadio") exitWith {
 
     if (_freq != "") exitWith {format ["CH %1 - %2", _channel + 1, _freq]};
     format ["CH %1", _channel + 1]
+};
+
+// BASE-GAME VOICE, when neither radio mod is loaded (EGVAR(common,von)): the
+// engine channel you are on, and on the Group channel your squad's TEAM net
+// name - see ghostD_players_fnc_vonState.
+if (missionNamespace getVariable [QEGVAR(common,von), false] && {!isNil QEFUNC(players,vonState)}) exitWith {
+    [] call EFUNC(players,vonState)
 };
 
 ""

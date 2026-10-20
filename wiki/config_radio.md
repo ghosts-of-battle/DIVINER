@@ -158,6 +158,45 @@ ghost_radio_tfarLrFallback = 0;
 
 ---
 
+## Base-game voice (VON) — no TFAR, no ACRE
+
+Used **only when neither TFAR (`task_force_radio` / `tfar_core`) nor ACRE
+(`acre_main`) is loaded** — decided once at preInit (`ghostD_common_von`). With
+either mod loaded these keys are ignored and nothing below happens.
+
+```sqf
+// [squad, team net name] - the label of the squad's Group channel. No row, or
+// a blank name, is the squad's own name.
+ghost_radio_vonTeamNets = [["BANSHEE 1-1", "BANSHEE TEAM"]];
+
+// [net name, "c2" | "a2g", [squad, ...]] - one custom radio channel each, ten at most
+ghost_radio_vonNets = [
+    ["PLATOON 1", "c2", ["BANSHEE 1-1", "BANSHEE 1-2"]],
+    ["AIR", "a2g", ["BANSHEE 1-1", "REAPER"]]
+];
+
+ghost_radio_vonSide = false;             // Side voice for everyone
+ghost_radio_vonCommand = false;          // Command voice for everyone
+ghost_radio_vonGlobalAdminsOnly = true;  // Global voice for admins only
+```
+
+- The **server** makes one custom channel per `vonNets` row, named for the net
+  and coloured for the ORBAT's side, and puts on it every player of that side
+  whose squad the row lists — on spawn, respawn, squad change and JIP, and takes
+  him off when he leaves (a reconcile every 10 s catches anything else).
+- Each **client** turns **voice** (not text chat) off on Side and Command unless
+  `vonSide` / `vonCommand`, limits Global voice to admins when
+  `vonGlobalAdminsOnly`, and keeps Group, Vehicle and Direct on.
+- The radio readout (HUD radio widget, TAC RADIO, the squad table's RADIO
+  column) shows the **team net** name while you are on the Group channel, and
+  the net's name on a custom channel.
+- **No `vonNets` at all:** one `C2` net holding every squad leader, and the
+  engine channels are left exactly as the mission set them.
+- The booleans may be written `true`/`false`, `"true"`/`"false"` or `1`/`0`.
+  Missing means `false` / `false` / `true`.
+
+---
+
 ## After any channel change
 
 ```

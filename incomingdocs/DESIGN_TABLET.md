@@ -13,15 +13,15 @@ The native DIVINER map screen (tacpad) ported into a device. Same panels, same t
 
 In game, 1080p:
 
-![tablet in game](images/tablet_ingame.png)
+![tablet in game](../art/images/tablet_ingame.png)
 
 Screen (1364 x 1000 design px):
 
-![tablet screen](images/tablet_screen.png)
+![tablet screen](../art/images/tablet_screen.png)
 
 Vehicle tablet in game:
 
-![vehicle in game](images/vehicle_ingame.png)
+![vehicle in game](../art/images/vehicle_ingame.png)
 
 Messaging (TAC//MSG reader, compose, templates) is left out of this design.
 
@@ -46,7 +46,7 @@ Messaging (TAC//MSG reader, compose, templates) is left out of this design.
 | Notification line | 30 | count, newest line, time. Click opens the log |
 | Live tiles | 96 + 3 rule | 8 tiles: NET, MESH, EW, DRONES, FIRES, HACK, TIMER, PAC |
 | Map area | rest (~789) | map control with floating panels |
-| Net row | 48 | one cell per net, numpad N selects |
+| Net row | 48 | nets you are on, name + ear tag; numpad 0 / . move the active net |
 
 ### Map area
 
@@ -93,7 +93,7 @@ Status colours (all schemes): good `#2f8a3c`, weak `#d99427`, poor/hostile `#c62
 
 ## Keys on the frame
 
-F1-F4 and arrows on the frame are labels for the same CBA keybinds: F1 2nd PTT, F2 ear, F3 volume, F4 hang up / close app. Arrows switch app tabs.
+F1-F4 and the arrows printed on the frame are mouse buttons over the art (user, 2026-10-19). F1-F4 each open an app the player picks in the settings ("F1 key on the tablet opens" ...); clicking again closes it. The arrows step through the apps, and the keyboard's arrow keys do the same. The keyboard's F1-F4 are not taken - they keep selecting units.
 
 ## Build notes
 

@@ -59,6 +59,7 @@ private _none = _mine == "";
 private _source = switch (true) do {
     case (!isNil "acre_api_fnc_getCurrentRadio"): {"ACRE"};
     case (!isNil "TFAR_fnc_activeSwRadio"): {"TFAR"};
+    case (missionNamespace getVariable [QEGVAR(common,von), false]): {"VON"};
     default {"NO RADIO MOD"};
 };
 

@@ -300,3 +300,13 @@ if (EGVAR(patches,usesTFAR)) then {
         [ghostFR_radio_tfarActiveRadio] call EFUNC(players,setActiveRadio);
     }, [_squadNames,_deadline]] call CBA_fnc_waitUntilAndExecute;
 };
+
+// BASE-GAME VOICE (no TFAR, no ACRE - EGVAR(common,von)): the server puts this
+// man on the custom-channel nets his new squad is on and takes him off the old
+// squad's (ghostD_players_fnc_vonSync reads the server's own group names, so
+// there is no replication to wait for), and this machine sets which engine
+// channels he may talk on.
+if (EGVAR(common,von)) then {
+    [QEGVAR(players,vonSync), []] call CBA_fnc_serverEvent;
+    [] call EFUNC(players,vonClient);
+};

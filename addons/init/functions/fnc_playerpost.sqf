@@ -76,3 +76,12 @@ if (EGVAR(patches,usesTFAR) && GVAR(isPlayer)) then {
         [ghostFR_radio_tfarActiveRadio] call EFUNC(players,setActiveRadio);
     }, []] call CBA_fnc_waitUntilAndExecute;
 };
+
+//and with neither mod (EGVAR(common,von)): the base-game voice nets. A joining or JIP player asks
+//the server to put him on his squad's custom channels, and sets which engine channels he may talk on.
+if (EGVAR(common,von) && GVAR(isPlayer)) then {
+    [{!isNull player}, {
+        [QEGVAR(players,vonSync), []] call CBA_fnc_serverEvent;
+        [] call EFUNC(players,vonClient);
+    }, []] call CBA_fnc_waitUntilAndExecute;
+};

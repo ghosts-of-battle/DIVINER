@@ -58,4 +58,13 @@ if (_changed && _hasPlan && {!isNil "ghostD_gear_fnc_setupRadios"} && {!isNil "g
     INFO("radio plan from the structure applied - presets re-programmed");
 };
 
+// THE BASE-GAME VOICE NETS (no TFAR, no ACRE) are made from the same globals:
+// the server relabels and refills its custom channels, a client re-sets which
+// engine channels it may talk on. Both do nothing with a radio mod loaded, and
+// before the players addon's postInit has run (which applies them itself).
+if (_changed && {missionNamespace getVariable ["ghostD_common_von", false]}) then {
+    if (isServer && {!isNil "ghostD_players_fnc_vonApply"}) then {[] call ghostD_players_fnc_vonApply};
+    if (hasInterface && {!isNil "ghostD_players_fnc_vonClient"}) then {[] call ghostD_players_fnc_vonClient};
+};
+
 _changed

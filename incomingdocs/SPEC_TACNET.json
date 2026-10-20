@@ -1,19 +1,21 @@
 {
   "spec": "TAC//NET",
-  "version": "0.4.0",
-  "date": "2026-10-19",
+  "version": "0.5.0",
+  "date": "2026-10-20",
   "status": "draft - strike what is wrong before code",
   "summary": "Net-based radio, mesh, EW, drones, data and device suite for Arma 3. One RF base mod; everything else is a consumer. Voice phase 1: TFAR standalone as shipped (DLL + relay untouched) with our override layer - nets over its frequencies, its UI hidden, our tablet shows state, jamming/mesh per unit via its multipliers. Phase 2: trim the DLL for per-pair hearing, relay audio, voice notes. Nets, not frequencies.",
   "decisions": [
     {
       "id": "D1",
       "decision": "Voice phase 1 = TFAR standalone unmodified (DLL, relay, SQF, radio items) plus our override layer gfa_voice_tfrs: nets mapped to hidden frequencies, TFAR UI/hints/keybinds suppressed and replaced, state shown on our devices, RF link quality fed to TFAR's per-unit multipliers. No C++.",
-      "why": "everything VON lacks (unlimited nets, two radios, static/fade, speaking indicators, our PTT) for SQF only; relay already proven"
+      "why": "everything VON lacks (unlimited nets, two radios, static/fade, speaking indicators, our PTT) for SQF only; relay already proven",
+      "status": "superseded by D14"
     },
     {
       "id": "D1b",
       "decision": "Voice phase 2 = trim the standalone DLL: delete State/TFAR parser, add FEED contract (per-sender quality/position/effect), RECORD/NOTE for voice notes. Same relay. Alternative transport LiveKit if browser participants wanted. EOS hosted backup. No TeamSpeak, Mumble, Vivox, Agora, Gryt, VON.",
-      "why": "per-pair hearing and relay-direction audio need the DLL; it is a trim not a port (applyAudibility already takes the list)"
+      "why": "per-pair hearing and relay-direction audio need the DLL; it is a trim not a port (applyAudibility already takes the list)",
+      "status": "superseded by D14"
     },
     {
       "id": "D11",
@@ -74,6 +76,31 @@
       "id": "D13",
       "date": "2026-10-19",
       "text": "EW in the RF mod grouped as EA / EP / ES. New: spot/sweep jamming, GPS spoofing, decoys, EMCON levels, sector nulls, anti-spoof GPS, ES classification and threat warning, AI tasking from fixes. EW is both ways: AI uses the same EA/EP/ES rules against players (skill 0..3)."
+    },
+    {
+      "id": "D14",
+      "date": "2026-10-20",
+      "decision": "Voice base = Arma 3 VON through one voice adapter interface (join, leave, quality, talking). VON adapter first; TFAR standalone adapter optional for real ear split; Enfusion VoN adapter for Arma 4. LiveKit dropped.",
+      "why": "no install, no hosting, closest to Arma 4; RF, UI and rules carry over unchanged",
+      "doc": "DESIGN_VOICE.md"
+    },
+    {
+      "id": "D15",
+      "date": "2026-10-20",
+      "decision": "EW is its own mod gfa_ew on top of gfa_rf. RF keeps physics, keys, EMCON fields, noise-source hook and basic exposure. EW owns jammers, spoof, decoys, DF fusion, classification, threat warning, INSPECT/EXPLOIT, AI EW and comms gate, hardware power/heat/damage, RF app ES/EA/EP tabs. Separate EW app dropped.",
+      "doc": "DESIGN_EW.md"
+    },
+    {
+      "id": "D16",
+      "date": "2026-10-20",
+      "decision": "Numpad: 1-4 device F1-F4, 0 / . device arrows (active net / cursor), 5 tablet, 6 radio app on carried device, 7/8 prev/next tab on small devices, 9 TIC. Nets are no longer picked by numpad number.",
+      "doc": "DESIGN_VOICE.md"
+    },
+    {
+      "id": "D17",
+      "date": "2026-10-20",
+      "decision": "AI EW skill per side 0-3, default 1 BASIC. Players use the DIVINER ISR trait for advanced EW. Comms gate the AI over RF links. Captured radios via INSPECT/EXPLOIT with zeroize chance. Faction radio tiers A/B/C, default B.",
+      "doc": "DESIGN_EW.md"
     }
   ],
   "mods": {
@@ -190,6 +217,45 @@
         "per-unit multipliers from rf link quality",
         "speaking state from IS_SPEAKING_BULK",
         "typed missed-call notes"
+      ],
+      "phase": 1,
+      "status": "optional adapter (real ear split); not the default"
+    },
+    "ew": {
+      "prefix": "gfa_ew",
+      "deps": [
+        "cba",
+        "rf"
+      ],
+      "optional": [
+        "ace",
+        "tacapp"
+      ],
+      "owns": [
+        "jammers",
+        "spoof",
+        "decoys",
+        "DF fusion",
+        "classification",
+        "threat warning",
+        "INSPECT / EXPLOIT",
+        "AI EW",
+        "comms gate",
+        "EW hardware power/heat/damage",
+        "RF app ES/EA/EP tabs"
+      ]
+    },
+    "voice_von": {
+      "prefix": "gfa_voice_von",
+      "deps": [
+        "cba",
+        "rf"
+      ],
+      "owns": [
+        "VON adapter: Group=TEAM, Custom1=C2, Custom2=A2G, Custom3-10=CALL 1-8, Vehicle=intercom, Direct untouched, Side/Command off, Global admin-only",
+        "per-listener speaker volume from mesh quality (setPlayerVoNVolume)",
+        "calls, conference, callback",
+        "radio and call sounds"
       ],
       "phase": 1
     }
@@ -692,8 +758,134 @@
           "player_counter": "players who run EMCON 3, move after transmitting or use sector antennas give AI less to fix"
         },
         "player_feedback": "every AI EW act is visible to players only through their own ES and effects: noise rise, GPS SUSPECT, DF ON YOU, drone link lost"
+      },
+      "comms_gate": "AI shares sightings, calls support and gets orders only over RF links; 2 s per hop; loss = 1-quality; <50 m voice always; isolated groups keep orders, try PACE, SMART seek high ground, fall back after timeout; LAMBS hook to check",
+      "inspect": {
+        "action": "ACE INSPECT on body / dropped radio / wreck / relay / jammer",
+        "time_s": {
+          "body": 15,
+          "vehicle_relay": 30,
+          "isr": "half"
+        },
+        "finds": [
+          "net names",
+          "key (if not zeroized)",
+          "fill date",
+          "PACE plan",
+          "BFT snapshot",
+          "recent contacts"
+        ],
+        "zeroize_chance": {
+          "BASIC": 0.2,
+          "ACTIVE": 0.5,
+          "SMART": 0.8
+        },
+        "exploit": "EXPLOIT entry shared with group, side over DATA",
+        "load_key": "leader or ISR listens until rekey"
+      },
+      "isr_trait": {
+        "source": "ghostD_common_fnc_isISR",
+        "everyone": [
+          "scan",
+          "threat warning",
+          "EMCON",
+          "barrage jam",
+          "ZEROIZE"
+        ],
+        "isr": [
+          "DF one class better",
+          "classify",
+          "spot jam",
+          "spoof",
+          "decoys",
+          "INSPECT half time",
+          "LOAD KEY"
+        ]
+      },
+      "hardware": {
+        "power": "pack; generator refills; solar slows drain; vehicles charge",
+        "noise": "generator heard by AI 200 m, fans +50 m",
+        "thermal": "generators and hot jammers on thermal",
+        "heat": "throttle >90%, burnout at 100%",
+        "damage": "rifle rounds or a grenade wreck it; antennas can be shot off"
       }
-    }
+    },
+    "profiles": {
+      "handheld": {
+        "bands": "VHF/UHF",
+        "tx_w": 5,
+        "rx_dbm": -112,
+        "gain_dbi": 2,
+        "hops": 4,
+        "spread_db": 20,
+        "battery_wh": 38
+      },
+      "manpack": {
+        "bands": "VHF/UHF",
+        "tx_w": 20,
+        "rx_dbm": -115,
+        "gain_dbi": 3,
+        "hops": 6,
+        "spread_db": 20,
+        "battery_wh": 90
+      },
+      "vehicle": {
+        "bands": "VHF/UHF/SAT",
+        "tx_w": 50,
+        "rx_dbm": -118,
+        "gain_dbi": 6,
+        "hops": 8,
+        "spread_db": 25,
+        "battery_wh": "vehicle"
+      },
+      "ground_relay": {
+        "bands": "VHF/UHF",
+        "tx_w": 20,
+        "rx_dbm": -118,
+        "gain_dbi": 6,
+        "hops": 8,
+        "spread_db": 25,
+        "battery_wh": 200
+      },
+      "drone_link": {
+        "bands": "VIDEO",
+        "tx_w": 1,
+        "rx_dbm": -95,
+        "gain_dbi": 3,
+        "hops": 0,
+        "spread_db": 10
+      },
+      "legacy": {
+        "bands": "VHF",
+        "tx_w": 5,
+        "rx_dbm": -110,
+        "gain_dbi": 2,
+        "hops": 0,
+        "spread_db": 0,
+        "battery_wh": 30
+      },
+      "sat": {
+        "bands": "SAT",
+        "tx_w": 10,
+        "rx_dbm": -120,
+        "gain_dbi": 12,
+        "hops": 0,
+        "spread_db": 10,
+        "battery_wh": 60
+      },
+      "faction_tiers": {
+        "A": "same as players",
+        "B": "legacy + some manpacks, 10 dB (default)",
+        "C": "commercial radios and phones, 0 dB"
+      }
+    },
+    "later_2040": [
+      "adaptive set (barrage costs half; spot still works; tier A)",
+      "LPD profile (near noise floor; -30% range)",
+      "optical link (point to point laser; LOS; weather breaks it)",
+      "fibre-optic drone (no jam/DF; 5-10 km tether)",
+      "GPS backups (CRPA + INS on tier A)"
+    ]
   },
   "voice": {
     "base": "ltsammy/task-force-radio-standalone",
@@ -778,14 +970,15 @@
         "cons": [
           "libwebrtc in the DLL, Rust toolchain",
           "heavier server"
-        ]
+        ],
+        "status": "dropped (D14)"
       },
       "eos": {
         "note": "hosted backup; AudioBeforeRender callback allows DSP; Epic terms to read"
       }
     },
     "notes": {
-      "what": "voice note: record while unreachable or on missed call; delivered when a path exists; played from the MSG thread",
+      "what": "voice note: DLL path only (not on VON); callback replaces it on VON (D14)",
       "dll": {
         "RECORD": "start|stop - buffer mic Opus frames",
         "NOTE send <id>": "ship buffered frames",
@@ -1200,7 +1393,7 @@
     {
       "n": 0,
       "name": "toolchain",
-      "done": "HEMTT builds rf; TFAR standalone installed; relay in Docker; test server with two clients"
+      "done": "HEMTT builds rf and voice_von; test server with two clients; VON tests (per-listener volume, listen-only, getPlayerChannel, channel add/remove delay, Vehicle crew-only) pass"
     },
     {
       "n": 1,
@@ -1210,12 +1403,12 @@
     {
       "n": 2,
       "name": "voice override",
-      "done": "nets over freqs, fill programmed, TFAR UI hidden, our PTT keys, multipliers from rf: relay keeps valley talking, kill relay fades it, jam silences it"
+      "done": "nets on VON channels, fill programmed, our PTT keys, volume from rf: relay keeps valley talking, kill relay fades it, jam silences it"
     },
     {
       "n": 3,
       "name": "radio on net",
-      "done": "MPU5 item classes wrapping TFAR radios, fill TEAM+C2+A2G, active/monitor, speaking dots"
+      "done": "MPU5 item classes, fill TEAM+C2+A2G, active net, speaking dots from adapter talking()"
     },
     {
       "n": 4,
@@ -1270,8 +1463,14 @@
     "Teams = Arma groups? (assumed yes)",
     "C2 membership: everyone or leaders+specialists",
     "A2G: who is air",
-    "calls: open to all on side, or signal-plan restricted (assumed open)",
-    "vanilla UAV terminal: keep gated or remove"
+    "vanilla UAV terminal: keep gated or remove",
+    "mesh: handhelds relay by default?",
+    "mesh: hop limits 4/6/8 ok?",
+    "mesh: AI radios relay for players? (proposed no)",
+    "group add: ring or join directly",
+    "callback: ring both or B first",
+    "MANAGE on small devices: leaders only?",
+    "quality threshold 6 dB (spec) vs 3 dB (mockups)"
   ],
   "nets": {
     "plan": [
@@ -1367,7 +1566,7 @@
       "rate": "1 s; stale marker after 10 s"
     },
     "gps": "own fix requires GPS domain clear; without it the map self-icon and grid readout go, BFT of others still shows if DATA is up",
-    "notes": "typed note phase 1, voice note phase 2; both store-and-forward on DATA, same thread model"
+    "notes": "typed note phase 1, voice note only on a DLL adapter (VON uses callback); both store-and-forward on DATA, same thread model"
   },
   "drones": {
     "control": "own drones via DRONES app; vanilla UAV terminal link gated by rf (control + video = node pair on VIDEO/DATA)",
@@ -1379,8 +1578,8 @@
     ]
   },
   "voice_tfrs": {
-    "nets_over_freqs": "each net in the signal plan is assigned a frequency string TFAR uses internally and never displays; radio channels programmed from the fill at spawn and on rekey; player sees net names only",
-    "radios": "TFAR standalone's own radio items for now (SR handheld = team, LR = leaders/RTO); MPU5 model and our classes replace them in radios mod",
+    "nets_over_freqs": "VON: each net is a custom channel (Group for TEAM); player sees net names only. TFAR adapter: each net in the signal plan is assigned a frequency string TFAR uses internally and never displays; radio channels programmed from the fill at spawn and on rekey; player sees net names only",
+    "radios": "own item classes on VON; with the TFAR adapter: TFAR standalone's own radio items for now (SR handheld = team, LR = leaders/RTO); MPU5 model and our classes replace them in radios mod",
     "ui_suppression": [
       "TFAR radio dialogs",
       "hints and notifications",
@@ -1407,5 +1606,86 @@
       "TFAR's own range/terrain model under the multipliers"
     ],
     "notes_phase1": "missed call -> typed note in the MSG thread, delivered store-and-forward via rf_reach"
+  },
+  "voice_adapter": {
+    "interface": {
+      "join": "(unit, net)",
+      "leave": "(unit, net)",
+      "quality": "(unit, net, q 0..1)",
+      "talking": "-> [unit, net] list"
+    },
+    "adapters": {
+      "von": "default, Arma 3",
+      "tfar_standalone": "optional, Arma 3",
+      "enfusion_von": "Arma 4"
+    },
+    "von": {
+      "channels": {
+        "0 Global": "admin broadcast",
+        "1 Side": "disabled",
+        "2 Command": "disabled",
+        "3 Group": "TEAM net",
+        "4 Vehicle": "crew intercom",
+        "5 Direct": "local 3D, untouched",
+        "6 Custom1": "C2",
+        "7 Custom2": "A2G",
+        "8-15 Custom3-10": "CALL 1-8"
+      },
+      "mesh": "membership changes only for keys/fills/calls; mesh quality sets each listener's volume per speaker; 3 s grace before mute",
+      "limits": [
+        "no ear split for voice (beeps panned instead)",
+        "no per-net volume",
+        "no real distortion (static overlay)",
+        "max 8 calls",
+        "Direct range fixed"
+      ],
+      "tests": [
+        "setPlayerVoNVolume per listener per speaker",
+        "enableChannel voice off still hears",
+        "getPlayerChannel speed",
+        "custom channel add/remove delay",
+        "Vehicle channel crew-only"
+      ]
+    },
+    "calls": {
+      "size_max": 8,
+      "add": [
+        "+ADD per contact",
+        "group add (team, SLs, RTOs, medics, HQ)",
+        "search",
+        "recent",
+        "map / squad list",
+        "F2 quick add"
+      ],
+      "priority": "FLASH bumps oldest ROUTINE when full",
+      "callback": {
+        "offer": "no route, busy, no answer 20 s",
+        "ring": "both when reachable and a slot is free",
+        "expire_min": 15,
+        "per_pair": 1,
+        "per_player": 3
+      },
+      "voice_notes": "not on VON; DLL phase only"
+    },
+    "sounds": [
+      "TX chirp",
+      "roger beep",
+      "squelch open/tail",
+      "static by quality",
+      "cut tone",
+      "net switch click",
+      "blocked tone",
+      "dial/ringback",
+      "ring",
+      "busy",
+      "connect/hang-up",
+      "join chime",
+      "priority warning"
+    ],
+    "sounds_rules": {
+      "pitch_per_net": "C2 low, TEAM mid, A2G high, CALL two-tone",
+      "ear": "beeps panned per net L/B/R",
+      "assets": "own sound files"
+    }
   }
 }

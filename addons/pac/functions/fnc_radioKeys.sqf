@@ -64,5 +64,19 @@ Author:
     ["tfarLrFreqs", []],
     ["tfarNets", []],
     ["tfarSwFallback", 0],
-    ["tfarLrFallback", 0]
+    ["tfarLrFallback", 0],
+    // BASE-GAME VOICE (VON), 2026-10-20 - read only when neither TFAR nor ACRE
+    // is loaded (ghostD_common_von); see ghostD_players_fnc_vonApply.
+    //   vonTeamNets [[squadName, teamNetName], ...] - the label of a squad's
+    //               Group channel; blank (or no row) is the squad's own name
+    //   vonNets     [[netName, "c2" | "a2g", [squadName, ...]], ...] - one
+    //               custom radio channel each, ten at most. Empty is the
+    //               fallback: one C2 net holding every squad leader
+    //   vonSide / vonCommand - may anyone talk on Side / Command
+    //   vonGlobalAdminsOnly  - Global voice for admins only
+    ["vonTeamNets", []],
+    ["vonNets", []],
+    ["vonSide", false],
+    ["vonCommand", false],
+    ["vonGlobalAdminsOnly", true]
 ]

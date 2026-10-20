@@ -24,9 +24,11 @@ Description:
     And the two that write the RADIO section rather than the ORBAT, because
     that is where the mod reads a channel from:
 
-        squadRadio    key = the squad's name; record {acre, tfarSw, tfarLr}.
-                      An empty value drops the squad's row, which puts it back
-                      on the plan's fallback.
+        squadRadio    key = the squad's name; record {acre, tfarSw, tfarLr,
+                      vonTeam}. An empty value drops the squad's row, which
+                      puts it back on the plan's fallback. vonTeam (the VON
+                      team net, vonTeamNets) is only touched when the record
+                      has it.
         platoonRadio  key = the platoon id; record {lr} - its long range
                       channel, empty for the plan default.
         radio         key = a ghostFR_radio_* key (FUNC(radioKeys)); record
@@ -267,10 +269,13 @@ switch (_kind) do {
         private _value = _rec getOrDefault ["value", _default];
         // the default's type, or nothing: a channel table is an array, a radio a string, a power a number
         if (_default isEqualType 0 && _value isEqualType "") then {_value = parseNumber _value};
-        if !(_value isEqualType _default) exitWith {[format ["%1 takes %2.", _key, switch (true) do {case (_default isEqualType []): {"a list"}; case (_default isEqualType 0): {"a number"}; default {"text"}}], true] call _fnc_tell; _ok = false};
+        // a switch (the VON keys, 2026-10-20): true / false, or "true" / "false" / 1 / 0 from a form
+        if (_default isEqualType true && _value isEqualType 0) then {_value = _value != 0};
+        if (_default isEqualType true && _value isEqualType "" && {(toLower trim _value) in ["true", "1", "false", "0"]}) then {_value = (toLower trim _value) in ["true", "1"]};
+        if !(_value isEqualType _default) exitWith {[format ["%1 takes %2.", _key, switch (true) do {case (_default isEqualType []): {"a list"}; case (_default isEqualType 0): {"a number"}; case (_default isEqualType true): {"true or false"}; default {"text"}}], true] call _fnc_tell; _ok = false};
         _radio set [_key, _value];
         GVAR(structure) set ["radio", _radio];
-        if (!isNil QFUNC(radioApply)) then {[] call FUNC(radioApply)};
+        if (!isNil QFUNC(radioApply)) then {[_radio] call FUNC(radioApply)};
         ["radio"] call FUNC(structurePersist);
         _detail = format ["radio %1 written", _key];
         [getPlayerUID _caller, name _caller, "orbat", _key, _detail] call FUNC(logAction);
@@ -314,6 +319,17 @@ switch (_kind) do {
             };
             ["tfarNets", _key, _tf] call _fnc_row;
             _detail = format ["%1 channels: ACRE %2, TFAR %3/%4", _key, _acre, _sw, _lr];
+
+            // THE VON TEAM NET (2026-10-20): the label of the squad's Group
+            // channel under the base-game voice plan. Only touched when the
+            // record carries it, so a caller that knows nothing of VON does
+            // not drop the row; a blank name, or the squad's own, drops it -
+            // no row means the squad's name.
+            if ("vonTeam" in _rec) then {
+                private _team = ["vonTeam"] call _fnc_text;
+                ["vonTeamNets", _key, [[], [_team]] select (_team isNotEqualTo "" && {toUpper _team isNotEqualTo toUpper _key})] call _fnc_row;
+                _detail = _detail + format [", VON team net %1", [_team, "(the squad's name)"] select (_team isEqualTo "")];
+            };
         } else {
             if (_key isEqualTo "") exitWith {["Pick a platoon first.", true] call _fnc_tell; _ok = false};
             private _lrCh = ["lr"] call _fnc_text;
@@ -327,7 +343,7 @@ switch (_kind) do {
         // The globals the gear and player code read are written from the
         // section, so a channel changed in game takes effect without a
         // restart - the same call the boot makes.
-        if (!isNil QFUNC(radioApply)) then {[] call FUNC(radioApply)};
+        if (!isNil QFUNC(radioApply)) then {[_radio] call FUNC(radioApply)};
         ["radio"] call FUNC(structurePersist);
         [getPlayerUID _caller, name _caller, "orbat", _key, _detail] call FUNC(logAction);
         INFO_2("%1 edited the radio plan: %2",name _caller,_detail);

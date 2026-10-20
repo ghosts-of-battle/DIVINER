@@ -12,15 +12,15 @@ Same job as the phone walking view, upright. Side and side2 are two different bo
 
 In game, 1080p (both shown; a player has one):
 
-![in game](images/side_ingame.png)
+![in game](../art/images/side_ingame.png)
 
 Side (keys on the side) and side2 (keys on the bottom):
 
-![side](images/side_device.png) ![side2](images/side2_device.png)
+![side](../art/images/side_device.png) ![side2](../art/images/side2_device.png)
 
 Shared screen (2x design units):
 
-![screen](images/side_screen.png)
+![screen](../art/images/side_screen.png)
 
 Canvas: TAC//APP Side Devices (artifact NaUeVyz9NDuCpGo9QrEpNP).
 
@@ -58,11 +58,11 @@ Differences from the phone:
 - Map is taller than wide, so it shows more ground ahead and behind. Same 50 m radius across the width.
 - Squad list moves below the map, 2 columns. Same `<N> <NAME>` and flags.
 - Who is talking chip: top left of the map.
-- Nets in a 2 x 3 grid. Numpad N still selects net N.
+- Nets in a 2-column grid, only nets you are on. Numpad 0 / . move the active net.
 
 ## Keys on the body
 
-F1-F4 and left/right arrows are printed on both bodies. Walking view takes no input, so they are labels only for now. They map to the same CBA keybinds the radio page uses (F1 2nd PTT, F2 ear, F3 vol, F4 close) when the fullscreen pages exist.
+F1-F4 and left/right arrows are printed on both bodies. Numpad 1-4 are F1-F4 and numpad 0 / . are the arrows (see DESIGN_VOICE.md). Walking view: F1 accept call, F2 ear / quick add, F3 mute, F4 decline / hang up. Numpad 6 opens the RADIO app full screen. Old mapping was (F1 2nd PTT, F2 ear, F3 vol, F4 close) when the fullscreen pages exist.
 
 ## Build notes
 

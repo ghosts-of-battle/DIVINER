@@ -18,6 +18,11 @@ GVAR(aceTagging) = IS_MOD_LOADED(ace_tagging);
 GVAR(aceThrowing) = IS_MOD_LOADED(ace_advanced_throwing);
 GVAR(aceTowing) = IS_MOD_LOADED(ace_towing);
 GVAR(acre) = IS_MOD_LOADED(acre_main);
+// TFAR, either generation (0.9 task_force_radio, 1.0 tfar_core). And VON: the
+// base-game voice plan (ghostD_players_fnc_vonApply) runs ONLY when neither
+// radio mod is loaded - decided here, once, and read everywhere else.
+GVAR(tfar) = IS_MOD_LOADED(task_force_radio) || {IS_MOD_LOADED(tfar_core)};
+GVAR(von) = !GVAR(acre) && {!GVAR(tfar)};
 
 GVAR(playerMarkerIdx) = 0;
 

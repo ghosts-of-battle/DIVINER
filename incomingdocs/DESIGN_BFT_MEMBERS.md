@@ -19,11 +19,11 @@ Same icon on the map, the tablet, the phone and the side devices. One draw funct
 
 What it should look like (from the user):
 
-![reference](images/bft_member_reference.png)
+![reference](../art/images/bft_member_reference.png)
 
 Built from the textures below, all five teams, three voice states:
 
-![preview](images/bft_member_preview.png)
+![preview](../art/images/bft_member_preview.png)
 
 ## The icon
 
@@ -59,7 +59,7 @@ Unknown team falls back to MAIN.
 - **Magenta** = he is speaking in direct (local) voice.
 - None = silent.
 - Radio wins if both are true.
-- Source: TFAR's speaking state per unit (`TFAR_fnc_isSpeaking` / the TFAR speaking and transmitting events). Read it in the existing slow pass (`FUNC(draw)`) into a hashmap `unit -> 0/1/2`, so the per-frame draw only looks it up.
+- Source: the voice adapter's `talking` list (VON: `getPlayerChannel`; TFAR adapter: its speaking events). Read it in the existing slow pass (`FUNC(draw)`) into a hashmap `unit -> 0/1/2`, so the per-frame draw only looks it up.
 - **Confirm with user:** which ring colour means radio and which means direct. This doc assumes red = radio, magenta = direct.
 
 ## States worth showing (keep it small)
@@ -90,7 +90,7 @@ Paths in code: `QPATHTOF(data\member_body_ca.paa)` etc.
 
 `fnc_draw.sqf`:
 
-- Build `GVAR(memberVoice)` (hashmap unit -> 0 none / 1 direct / 2 radio) in the same pass that builds `GVAR(memberUnits)`. No TFAR loaded = all 0.
+- Build `GVAR(memberVoice)` (hashmap unit -> 0 none / 1 direct / 2 radio) in the same pass that builds `GVAR(memberUnits)`. No voice adapter = all 0.
 
 Per-frame cost: up to 4 `drawIcon` calls per member, own squad by default. Fine.
 

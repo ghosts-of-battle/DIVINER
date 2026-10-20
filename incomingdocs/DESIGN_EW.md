@@ -1,6 +1,6 @@
 # EW - design
 
-Mods: `gfa_rf` (base) and `gfa_ew` (needs `gfa_rf`). Rules in [SPEC_TACNET.json](SPEC_TACNET.json) rf.ew.
+Addons in jmsb-custom-mod: `addons/rf` (`jmfsb_rf`, base) and `addons/ew` (`jmfsb_ew`, needs rf). Rules in [SPEC_TACNET.json](SPEC_TACNET.json) rf.ew.
 UI: RF app on the tablet, see [DESIGN_TABLET_APPS.md](DESIGN_TABLET_APPS.md).
 Status: design, for code. Date 2026-10-19.
 
@@ -24,11 +24,11 @@ Status: design, for code. Date 2026-10-19.
 
 | Mod | Owns |
 |---|---|
-| `gfa_rf` | registry, link budget, mesh, keys, noise-source hook, EMCON fields (they change the link budget), raw "who hears whom", basic exposure. No EW behaviour. |
-| `gfa_ew` | jammers, spoofers, decoys, DF fusion, classification, threat warning, INSPECT / EXPLOIT, AI EW and the comms gate, hardware power / heat / damage, the ES / EA / EP tabs of the RF app |
+| `jmfsb_rf` | registry, link budget, mesh, keys, noise-source hook, EMCON fields (they change the link budget), raw "who hears whom", basic exposure. No EW behaviour. |
+| `jmfsb_ew` | jammers, spoofers, decoys, DF fusion, classification, threat warning, INSPECT / EXPLOIT, AI EW and the comms gate, hardware power / heat / damage, the ES / EA / EP tabs of the RF app |
 
 - RF exposes a hook for EW to add noise sources and listen to transmissions. RF never knows what EW is.
-- Without `gfa_ew`, the RF app shows OVERVIEW, NETS and MESH only. Basic "who can hear you" stays in RF, so exposure still shows.
+- Without `jmfsb_ew`, the RF app shows OVERVIEW, NETS and MESH only. Basic "who can hear you" stays in RF, so exposure still shows.
 - The separate EW app is dropped. The EW tile opens the RF app on the EA tab.
 
 ## ES - listening and locating
@@ -176,12 +176,12 @@ Our own rules and numbers. Reference only: the EWDJ mod.
 
 | Profile | Bands | TX | RX sens | Gain | Hops | Spread | Battery | Range (flat, clear) |
 |---|---|---|---|---|---|---|---|---|
-| Handheld (MPU5) | VHF/UHF | 5 W | −112 dBm | 2 dBi | 4 | 20 dB | 38 Wh | ~3 km |
-| Manpack | VHF/UHF | 20 W | −115 dBm | 3 dBi | 6 | 20 dB | 90 Wh | ~8 km |
-| Vehicle set | VHF/UHF/SAT | 50 W | −118 dBm | 6 dBi mast | 8 | 25 dB | vehicle | ~15 km |
-| Ground relay | VHF/UHF | 20 W | −118 dBm | 6 dBi | 8 | 25 dB | 200 Wh | ~10 km |
-| Drone link | VIDEO | 1 W | −95 dBm | 3 dBi | 0 | 10 dB | drone | ~4 km |
-| Legacy / commercial | VHF | 5 W | −110 dBm | 2 dBi | 0 | 0 dB | 30 Wh | ~3 km |
+| Handheld (MPU5) | VHF/UHF | 25 mW | −112 dBm | 2 dBi | 4 | 20 dB | 38 Wh | ~0.5 km |
+| Manpack | VHF/UHF | 20 W | −115 dBm | 3 dBi | 6 | 20 dB | 90 Wh | ~2.7 km |
+| Vehicle set | VHF/UHF/SAT | 50 W | −118 dBm | 6 dBi mast | 8 | 25 dB | vehicle | ~5 km |
+| Ground relay | VHF/UHF | 20 W | −118 dBm | 6 dBi | 8 | 25 dB | 200 Wh | ~3.3 km |
+| Drone link | VIDEO | 2 W | −95 dBm | 3 dBi | 0 | 10 dB | drone | ~1.8 km |
+| Legacy / commercial | VHF | 5 W | −110 dBm | 2 dBi | 0 | 0 dB | 30 Wh | ~1 km |
 | SAT terminal | SAT | 10 W | −120 dBm | 12 dBi | 0 | 10 dB | 60 Wh | sky view |
 
 **Faction tiers**, set in the faction builder:
@@ -241,10 +241,22 @@ Our own rules and numbers. Reference only: the EWDJ mod.
 - EW team: an ISR team with a vehicle set has the best DF and the most jamming power.
 - Shielding: inside a vehicle or building you get 6–18 dB of protection, already in the link budget.
 
+## Later: 2040 kit and EW
+
+| Item | EW effect |
+|---|---|
+| Adaptive sets | barrage jamming hurts them half as much; spot jamming (needs an ES track) is the answer |
+| LPD sets | ES detects them only at short range, and DF needs more time. Pushes EW teams closer to the target |
+| Optical links | outside EW: no jam, no intercept. Counter: smoke, weather, physically breaking line of sight, killing a terminal |
+| Fibre-optic drones | outside EW: the drone jammer does nothing. Counter: shoot the drone, follow and cut the cable |
+| GPS backups | anti-jam antenna arrays and inertial navigation on tier A sets and drones: GPS denial degrades them slowly instead of cutting them |
+
+Rule of thumb for 2040: jamming wins up close with power, so the fight is finding the jammer (ES) and killing it.
+
 ## Open
 
 - Check the LAMBS hook for the comms gate.
 - Put numbers on spoof radius and drift, decoy battery, heat rates and generator fuel.
 - Write the INSPECT finding chances per item.
 - Write the rules for the EW team role.
-- Spec update: write this into SPEC_TACNET.json 0.5.0, with `gfa_ew` as its own mod.
+- Spec update: write this into SPEC_TACNET.json 0.5.0, with `jmfsb_ew` as its own mod.

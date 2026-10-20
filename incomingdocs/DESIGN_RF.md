@@ -1,8 +1,8 @@
 # RF mod - design
 
-Mod: `gfa_rf`. Deps: CBA only. Rules: [SPEC_TACNET.json](SPEC_TACNET.json) `rf`.
+Addon: `addons/rf` (`jmfsb_rf`) in jmsb-custom-mod (user, 2026-10-19). Deps: CBA only - no other jmfsb addon; adapters and consumers depend on it, never the reverse. Rules: [SPEC_TACNET.json](SPEC_TACNET.json) `rf`.
 EW on top of it: [DESIGN_EW.md](DESIGN_EW.md). UI: RF app on the tablet, [DESIGN_TABLET_APPS.md](DESIGN_TABLET_APPS.md).
-Status: design, for code. Date 2026-10-19.
+Status: design, for code. Date 2026-10-20.
 
 ## What it is
 
@@ -46,10 +46,10 @@ quality = clamp((snr - 6) / 20, 0, 1)
 
 | Band | Exponent | Ref at 1 m | Noise floor |
 |---|---|---|---|
-| VHF | 2.6 | 32 dB | −110 dBm |
-| UHF | 2.9 | 40 dB | −105 dBm |
+| VHF | 4.22 | 9 dB | −110 dBm |
+| UHF | 4.22 | 4 dB | −105 dBm |
 | SAT | 2.0 | 45 dB | −115 dBm |
-| VIDEO | 3.2 | 48 dB | −95 dBm |
+| VIDEO | 2.46 | 48 dB | −95 dBm |
 
 **Obstacles:**
 - Terrain: 3 samples along the path (`terrainIntersectASL`); each blocked sample costs 12 dB.
@@ -60,7 +60,7 @@ quality = clamp((snr - 6) / 20, 0, 1)
 - Detection: rx minus spread gain.
 - Jamming noise: jammer minus spread gain.
 
-**Tuning targets:** 5 W VHF ~5 km open and ~1 km in town; 0.5 W handheld ~1.5 km open.
+**Tuning targets (user, 2026-10-19): one third of the original table.** Handheld ~1 km, manpack ~2.7 km, vehicle set ~5 km, relay ~3.3 km, drone link ~1.3 km, flat and clear. MESH RADIOS ARE SUB-WATT AND RELAY (user, 2026-10-19): the MPU5 handheld transmits 25 mW and reaches ~0.5 km per hop (user, 2026-10-19: "get that down to .5 km"; it was 0.5 W / ~1 km); range beyond that is carried by relaying through other MPU5s (relay-capable, up to 4 hops), manpacks, vehicles and ground relays. VHF / UHF are fitted to those targets with the handheld anchored (exponent 4.22, close to ground-level two-ray falloff; the loss-at-1-m term is a fitting constant, not physics). Fitted result per hop: handheld 0.48 km, manpack 2.6 km, vehicle 4.5 km, relay 3.6 km, legacy 5 W 1.7 km (no relay), drone 1.3 km.
 
 ## Mesh
 
@@ -78,7 +78,7 @@ quality = clamp((snr - 6) / 20, 0, 1)
 
 | Domain | Quality → effect |
 |---|---|
-| Voice | TFAR per-unit distance multipliers from quality; static as it falls; cut below threshold |
+| Voice | voice adapter: VON sets each listener's volume per speaker from quality, static overlay as it falls, muted at 0 (TFAR adapter: per-unit multipliers). See DESIGN_VOICE.md |
 | Data | delivery and delay; messages queue below threshold, send when the link returns |
 | BFT | update rate falls with quality; stale marker when no path |
 | Drones | control and feed need the VIDEO link; below 0.2 control is lost and the drone RTBs |
@@ -101,12 +101,13 @@ Fill: rifleman and leader get TEAM, C2, A2G. PACE and gateways are added when ne
 
 | Profile | Bands | TX | RX sens | Gain | Hops | Spread | Battery | Range (flat, clear) |
 |---|---|---|---|---|---|---|---|---|
-| Handheld (MPU5) | VHF/UHF | 5 W | −112 dBm | 2 dBi | 4 | 20 dB | 38 Wh | ~3 km |
-| Manpack | VHF/UHF | 20 W | −115 dBm | 3 dBi | 6 | 20 dB | 90 Wh | ~8 km |
-| Vehicle set | VHF/UHF/SAT | 50 W | −118 dBm | 6 dBi mast | 8 | 25 dB | vehicle | ~15 km |
-| Ground relay | VHF/UHF | 20 W | −118 dBm | 6 dBi | 8 | 25 dB | 200 Wh | ~10 km |
-| Drone link | VIDEO | 1 W | −95 dBm | 3 dBi | 0 | 10 dB | drone | ~4 km |
-| Legacy / commercial | VHF | 5 W | −110 dBm | 2 dBi | 0 | 0 dB | 30 Wh | ~3 km |
+| Handheld (MPU5) | VHF/UHF | 25 mW | −112 dBm | 2 dBi | 4 | 20 dB | 38 Wh | ~0.5 km |
+| Manpack | VHF/UHF | 20 W | −115 dBm | 3 dBi | 6 | 20 dB | 90 Wh | ~2.7 km |
+| Vehicle set | VHF/UHF/SAT | 50 W | −118 dBm | 6 dBi mast | 8 | 25 dB | vehicle | ~5 km |
+| Ground relay | VHF/UHF | 20 W | −118 dBm | 6 dBi | 8 | 25 dB | 200 Wh | ~3.3 km |
+| Drone link | VIDEO | 2 W | −95 dBm | 3 dBi | 0 | 10 dB | drone | ~1.8 km |
+| Drone relay | VHF/UHF | 2 W | −112 dBm | 3 dBi | 4 | 20 dB | drone | ~1.5 km |
+| Legacy / commercial | VHF | 5 W | −110 dBm | 2 dBi | 0 | 0 dB | 30 Wh | ~1 km |
 | SAT terminal | SAT | 10 W | −120 dBm | 12 dBi | 0 | 10 dB | 60 Wh | sky view |
 
 **Faction tiers**, set in the faction builder:
@@ -124,8 +125,8 @@ Fill: rifleman and leader get TEAM, C2, A2G. PACE and gateways are added when ne
 ## What players do with RF
 
 - **Everyone with a set:**
-  - Pick the active net (numpad), monitor a second net, use the 2nd PTT.
-  - Call another node, leave a voice note.
+  - Pick the active net (numpad 0 / .), hear every net they are on, mute or set the ear per net.
+  - Call another node, add people to a call, request a callback.
   - Set power, relay on/off, and antenna (omni / sector + heading).
   - See their own link quality, hops, battery and exposure.
 - **RTO, leaders, crews:**
@@ -154,7 +155,7 @@ Fill: rifleman and leader get TEAM, C2, A2G. PACE and gateways are added when ne
 | `rf_netSet`, `rf_rekey` | server / admin |
 | `rf_emcon` | server |
 | `rf_gpsState` | client slice |
-| EW calls (`rf_jam`, `rf_spoof`, `rf_decoy`, `rf_threats`) | provided when `gfa_ew` is loaded, through RF's noise-source and listener hook |
+| EW calls (`rf_jam`, `rf_spoof`, `rf_decoy`, `rf_threats`) | provided when `jmfsb_ew` is loaded, through RF's noise-source and listener hook |
 
 **Events:** `rf_linkChanged`, `rf_netCut`, `rf_rekeyed`, `rf_emconChanged`, `rf_exposureHigh`. With EW: `rf_trackNew`, `rf_trackLost`, `rf_jamOn`, `rf_spoofDetected`, `rf_dfOnYou`.
 
@@ -178,6 +179,17 @@ The RF app on the tablet (and vehicle tablet):
 ![overview](images/app_rf.png)
 ![nets](images/app_rfnets.png)
 ![mesh](images/app_rfmesh.png)
+
+## Later: 2040 radio kit
+
+Where spread spectrum is heading, as game features. Spread gain is assumed in 2040; the edge comes from adaptive behaviour, low detectability, directional antennas and not using radio at all.
+
+| Item | What it does | Cost / counter |
+|---|---|---|
+| Adaptive set | profile flag `adaptive`: senses jamming and dodges it; barrage jamming costs it about half as much | spot jamming still works; dearer kit, faction tier A only |
+| LPD profile | profile flag `lpd`: signal near the noise floor; ES must be closer to detect it, DF cuts take longer | shorter range (about −30%), lower data rate |
+| Optical link | fixed point-to-point laser between two placed terminals; cannot be jammed or intercepted | needs clear line of sight; broken by smoke, fog and rain; setup time |
+| Fibre-optic drone | drone on a tether; immune to jamming and DF | tether length limit (5-10 km); the cable can be cut; slower to deploy |
 
 ## Open
 

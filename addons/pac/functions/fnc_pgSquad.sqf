@@ -163,16 +163,18 @@ switch (_s) do {
         };
         private _acre = ["srSquadChannel"] call _fnc_row;
         private _tf = ["tfarNets"] call _fnc_row;
-        [[
+        private _von = ["vonTeamNets"] call _fnc_row;
+        private _formEnd = [[
             ["acre", "ACRE short range channel  (blank = none)", "t", [str (_acre param [1, ""]), ""] select (_acre isEqualTo [])],
             ["tfarSw", "TFAR short range  (0-8, blank = none)", "t", [str (_tf param [1, ""]), ""] select (_tf isEqualTo [])],
-            ["tfarLr", "TFAR long range  (0-8)", "t", [str (_tf param [2, ""]), ""] select (_tf isEqualTo [])]
+            ["tfarLr", "TFAR long range  (0-8)", "t", [str (_tf param [2, ""]), ""] select (_tf isEqualTo [])],
+            ["vonTeam", "Base-game VON team net  (blank = the squad's name)", "t", _von param [1, ""]]
         ], PAC_UI_TOP] call FUNC(uiForm);
-        ["Written to " + _unit + ".radio - srSquadChannel and tfarNets, keyed by the squad's name.", PAC_UI_TOP + 0.12, 0.05, "", PAC_UI_X, PAC_UI_W, true] call FUNC(uiText);
+        ["Written to " + _unit + ".radio - srSquadChannel, tfarNets and vonTeamNets, keyed by the squad's name.", _formEnd, 0.05, "", PAC_UI_X, PAC_UI_W, true] call FUNC(uiText);
         if !(["radio"] call FUNC(fileFed)) then {
             _btns pushBack ["SAVE CHANNELS", {
                 private _f = [] call FUNC(uiFormRead);
-                [player, "squadRadio", "set", GVAR(uiArgs) get "name", createHashMapFromArray [["acre", trim (_f getOrDefault ["acre", ""])], ["tfarSw", trim (_f getOrDefault ["tfarSw", ""])], ["tfarLr", trim (_f getOrDefault ["tfarLr", ""])]]] remoteExec [QFUNC(adminOrbat), 2];
+                [player, "squadRadio", "set", GVAR(uiArgs) get "name", createHashMapFromArray [["acre", trim (_f getOrDefault ["acre", ""])], ["tfarSw", trim (_f getOrDefault ["tfarSw", ""])], ["tfarLr", trim (_f getOrDefault ["tfarLr", ""])], ["vonTeam", trim (_f getOrDefault ["vonTeam", ""])]]] remoteExec [QFUNC(adminOrbat), 2];
                 ["Saved.", false] call FUNC(uiHint);
             }];
         };

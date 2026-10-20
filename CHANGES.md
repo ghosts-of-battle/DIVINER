@@ -18,6 +18,97 @@ contract and are spelled the same in both repos. Never rewrite them.
 
 ## Unreleased
 
+### Base-game voice (VON) nets when neither TFAR nor ACRE is loaded
+**Sync:** `yes` - rewrite `ghostD_` to `ghost_`. `ghostFR_radio_von*` are
+mission/mod contract keys and keep their spelling. Applied to jmsb-custom-mod's
+pac net plan (`jmfsbFR_radio_von*`) the same day.
+
+Asked 2026-10-20: "also need to add a base game voip option to diviner and the
+diviner web" and "our in game VoIP setup should only run if there is no TFAR
+or ACRE".
+
+**Why:** with no radio mod loaded the mod did nothing about comms at all - every
+radio path exits on `!usesACRE && !usesTFAR`, the radio readout said "NO SET IN
+HAND", and the whole server talked on the engine's Side/Global channels.
+
+**Files:**
+- `addons/common/XEH_preInit.sqf` - new `GVAR(tfar)` (`task_force_radio` or
+  `tfar_core` in CfgPatches) and `GVAR(von)` = `!GVAR(acre) && !GVAR(tfar)`,
+  next to `GVAR(acre)`. Decided once; every VON path reads `ghostD_common_von`.
+- `addons/pac/functions/fnc_radioKeys.sqf` - five new keys: `vonTeamNets`
+  `[[squad, teamNet]]` (default `[]`), `vonNets` `[[net, "c2"|"a2g",
+  [squad, ...]]]` (`[]`), `vonSide` (`false`), `vonCommand` (`false`),
+  `vonGlobalAdminsOnly` (`true`). They load from `<unit>.radio` `items` like
+  every other key - `FUNC(radioApply)` writes `ghostFR_radio_<key>`.
+- `addons/pac/functions/fnc_radioApply.sqf` - when a global changed and
+  `ghostD_common_von`: server calls `ghostD_players_fnc_vonApply`, a client
+  `ghostD_players_fnc_vonClient`. The ACRE preset re-programming is unchanged.
+- `addons/pac/functions/fnc_radioFromMission.sqf` - a mission with only a
+  `vonNets` plan counts as having a plan (seeds the database).
+- `addons/pac/functions/fnc_adminOrbat.sqf` - `case "squadRadio"`: optional
+  record field `vonTeam` writes/drops the squad's `vonTeamNets` row (only when
+  the record has the field; blank or equal to the squad name drops it).
+  `case "radio"`: a boolean key accepts `true`/`false`, `"true"`/`"false"`,
+  `1`/`0`. **Bug fix in both cases:** `[] call FUNC(radioApply)` became
+  `[_radio] call FUNC(radioApply)` - with no argument it wrote every
+  `ghostFR_radio_*` global back to its DEFAULT after any in-game radio edit,
+  so the server lost its plan until the next boot.
+- `addons/pac/functions/fnc_pgSquad.sqf` - `case "radio"`: fourth form field
+  "Base-game VON team net", sent as `vonTeam`; the note under the form sits
+  at the form's returned y.
+- `addons/players/` - new `XEH_postInit.sqf` (wired in `CfgEventHandlers.hpp`
+  `Extended_PostInit_EventHandlers`), new macros in `script_component.hpp`
+  (`VON_*`), six new functions:
+  - `fnc_vonNets` - the effective plan `[[net, kind, [SQUAD]], fallback]`; no
+    `vonNets` = `[["C2", "c2", []]]` with fallback `true`; more than 10 cut.
+  - `fnc_vonTeamNet` - a squad's team net name, else the squad name.
+  - `fnc_vonApply` (server) - `radioChannelCreate` one channel per net
+    (label = net name, colour `BIS_fnc_sideColor` of the ORBAT side via
+    `ghostD_groups_fnc_orbat` / `ghostD_common_fnc_sideFromText`), reusing and
+    relabelling (`radioChannelSetLabel`) ids in `GVAR(vonPool)` on a plan
+    change; unused ones are emptied and labelled `-`. Publishes
+    `ghostD_players_vonLabels` `[[id, net, kind]]`.
+  - `fnc_vonSync` (server) - reconciles `GVAR(vonMembers)` with
+    `radioChannelAdd` / `radioChannelRemove`: a planned net holds every alive
+    player of the ORBAT side whose `groupId` its row lists; the fallback C2
+    holds every group leader of an ORBAT squad.
+  - `fnc_vonClient` (client) - `enableChannel` voice only (chat left as it
+    was): Global = admin (`ghostD_adminpanel_fnc_isAdmin`, else
+    `ghostD_common_isAdmin`) or not `vonGlobalAdminsOnly`; Side = `vonSide`;
+    Command = `vonCommand`; Group/Vehicle/Direct on. In fallback it restores
+    the channels as first seen (`GVAR(vonBaseline)`). Applies only on change.
+  - `fnc_vonState` - the readout: Group channel = team net name; custom
+    channel = its net's name; else GLOBAL/SIDE/COMMAND/VEHICLE/DIRECT.
+  - postInit: server registers CBA event `ghostD_players_vonSync`, a
+    `PlayerDisconnected` handler (reconcile 1 s later), runs `vonApply` and a
+    10 s `vonSync` sweep; clients run `vonClient` every 5 s (admin login).
+- `addons/groups/functions/fnc_setupPlayer.sqf` - after the TFAR block: with
+  `ghostD_common_von`, raise `ghostD_players_vonSync` and call
+  `ghostD_players_fnc_vonClient` (spawn, respawn, squad change).
+- `addons/init/functions/fnc_playerpost.sqf` - after the TFAR login block: the
+  same, once `player` exists (connect / JIP).
+- `addons/tacpad_apps/functions/fnc_radioState.sqf` - VON branch after TFAR,
+  returns `ghostD_players_fnc_vonState` - so the HUD radio widget, TAC RADIO
+  and the squad table's RADIO column show the team net.
+- `addons/tacpad_apps/functions/fnc_appRadio.sqf` - `SOURCE VON`.
+- `addons/players/README.md`, `wiki/config_radio.md` - the VON section.
+
+**Contract:** five new `<unit>.radio` keys / `ghostFR_radio_*` globals (above).
+New public variable `ghostD_players_vonLabels`, new CBA server event
+`ghostD_players_vonSync`. With TFAR or ACRE loaded nothing new runs: the
+players postInit exits, `radioState`/`appRadio` reach the VON branch only
+after the ACRE and TFAR ones, and the setupPlayer/playerpost branches are
+gated on `ghostD_common_von`.
+
+**Ghost notes:** `ghost` has the same `common` preInit and `players` addon;
+the port is mechanical apart from the prefix. The `radioApply` argument fix
+in `adminOrbat` applies to `ghost` too.
+
+**Checked:** `hemtt check` - 1124 sqf compiled, no new warnings in any
+touched file. DIVINER's `tools/` has no validators beyond HEMTT. **Not run in
+game** - `radioChannelCreate` / `radioChannelAdd` / `radioChannelSetLabel` /
+`enableChannel` behaviour is unverified.
+
 ### Applications: a "skills" question - what do you want to be - and the standard set in game
 **Sync:** `yes` - rewrite `ghostD_` to `ghost_`. Applied to jmsb-custom-mod
 (`jmfsb_`) the same day.

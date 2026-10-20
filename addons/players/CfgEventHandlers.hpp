@@ -11,3 +11,10 @@ class Extended_PreInit_EventHandlers {
         init = QUOTE(call COMPILE_FILE(XEH_preInit));
     };
 };
+
+// The base-game voice nets (2026-10-20) - see XEH_postInit.sqf.
+class Extended_PostInit_EventHandlers {
+    class ADDON {
+        init = QUOTE(call COMPILE_FILE(XEH_postInit));
+    };
+};
