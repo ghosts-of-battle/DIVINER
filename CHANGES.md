@@ -18,6 +18,59 @@ contract and are spelled the same in both repos. Never rewrite them.
 
 ## Unreleased
 
+### VON nets by role and skill, one net of each kind a man
+**Sync:** `yes` - rewrite `ghostD_` to `ghost_`. `ghostFR_radio_vonNets` is the
+mission/mod contract key and keeps its spelling; the row gains two columns.
+Matches jmsb-custom-mod's VON plan the same day.
+
+Asked 2026-10-21: "add c2 to all tl's and atl's and all of the hcc, a2g to all
+with the jfo skill" and "for the skill based comms you need to also update
+diviner and diviner web".
+
+**Why:** a `vonNets` row could only list squads, so a C2 net for every team
+lead and assistant team lead meant listing their whole squads (riflemen
+included), and an A2G net for whoever holds the JFO skill could not be said at
+all. A man whose squad two c2 rows listed was also put on both channels.
+
+**Contract change (`ghostFR_radio_vonNets`):** a row is now
+`[netName, "c2" | "a2g", [squadName, ...], [roleId, ...], [skillId, ...]]`.
+The last two are optional - a three-column row reads as before. Role ids are
+the structure's role ids, compared lower case; a role's testing copy
+(`<id>_t`, suffix `VON_ROLE_TEST_SUFFIX`) counts as its base id. Skill ids are
+PAC skill ids (`jfo`, `cls`, ...), lower case.
+
+**Behaviour change:** a player is on the FIRST net of each kind (in plan
+order) whose squads, roles or skills match him - one C2 and one A2G net at
+most. With a plan written, nobody gets C2 just for existing (unchanged: the
+no-plan fallback is still one C2 net of every squad leader).
+
+Files:
+- `addons/players/script_component.hpp` - new `VON_ROLE_TEST_SUFFIX "_t"`,
+  `VON_ROLE_VAR "YMF_role"`, `VON_SKILLS_VAR "ghostD_pac_skillIds"`.
+- `addons/players/functions/fnc_vonNets.sqf` - parses columns 4 and 5 (roles,
+  skills; strings only, trimmed, lower case, blanks dropped); returns 5-column
+  rows; the fallback row is `[VON_FALLBACK_NET, VON_FALLBACK_KIND, [], [], []]`.
+- `addons/players/functions/fnc_vonApply.sqf` - `GVAR(vonChannels)` entries are
+  now `[id, name, kind, squads, fallback, roles, skills]`; logs a net's roles
+  and skills when it has any. `GVAR(vonLabels)` unchanged.
+- `addons/players/functions/fnc_vonSync.sqf` - new local `_fnc_matches` (squad
+  OR `YMF_role` base id OR any of `ghostD_pac_skillIds`); a first pass builds
+  `[uid, kind] -> channel id` for the first matching planned net of each kind;
+  each planned channel's wanted members are the players mapped to it.
+- `addons/pac/functions/fnc_applySkills.sqf` - also broadcasts
+  `ghostD_pac_skillIds` (`QGVAR(skillIds)`, the skill id strings it applied) on
+  the unit, so the server can match skills. Not cleared separately: every
+  apply overwrites it.
+- `addons/pac/functions/fnc_radioKeys.sqf` - the `vonNets` comment states the
+  5-column row.
+- `wiki/config_radio.md`, `addons/players/README.md` - the new row and rule.
+
+There is no in-game editor for `vonNets` rows in DIVINER (only `vonTeamNets`
+per squad, `fnc_pgSquad.sqf`); the rows, roles and skills are edited on the
+website (DIVINER_Web ORBAT > radio > VON).
+
+**Checked:** `hemtt check`. Not run in game.
+
 ### Base-game voice (VON) nets when neither TFAR nor ACRE is loaded
 **Sync:** `yes` - rewrite `ghostD_` to `ghost_`. `ghostFR_radio_von*` are
 mission/mod contract keys and keep their spelling. Applied to jmsb-custom-mod's

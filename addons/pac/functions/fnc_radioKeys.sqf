@@ -69,9 +69,12 @@ Author:
     // is loaded (ghostD_common_von); see ghostD_players_fnc_vonApply.
     //   vonTeamNets [[squadName, teamNetName], ...] - the label of a squad's
     //               Group channel; blank (or no row) is the squad's own name
-    //   vonNets     [[netName, "c2" | "a2g", [squadName, ...]], ...] - one
-    //               custom radio channel each, ten at most. Empty is the
-    //               fallback: one C2 net holding every squad leader
+    //   vonNets     [[netName, "c2" | "a2g", [squadName, ...], [roleId, ...],
+    //               [skillId, ...]], ...] - one custom radio channel each, ten
+    //               at most; a man is on the first net of each kind that lists
+    //               his squad, his role or a skill of his (2026-10-21; three-
+    //               column rows still read). Empty is the fallback: one C2 net
+    //               holding every squad leader
     //   vonSide / vonCommand - may anyone talk on Side / Command
     //   vonGlobalAdminsOnly  - Global voice for admins only
     ["vonTeamNets", []],

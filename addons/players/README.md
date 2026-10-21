@@ -9,7 +9,8 @@ The two-argument INFO/WARNING/ERROR/LOG the Roomba scripts were written against,
 Added 2026-10-20. When neither TFAR nor ACRE is loaded (`ghostD_common_von`,
 decided once in common's preInit), the radio plan's `vonNets` become custom
 radio channels: `vonApply` (server) makes or relabels one channel per net,
-`vonSync` (server) reconciles who is on each from the players' squad names -
+`vonSync` (server) reconciles who is on each from the players' squad names,
+roles and PAC skills (first matching net of each kind; 2026-10-21) -
 raised by the clients at spawn, respawn, squad change and JIP, after a
 disconnect, and every 10 s - and `vonClient` (each client) sets which engine
 channels may carry voice (`vonSide`, `vonCommand`, `vonGlobalAdminsOnly`;

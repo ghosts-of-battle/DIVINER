@@ -19,6 +19,12 @@
 #define VON_KINDS ["c2", "a2g"]
 #define VON_CALLSIGN "%UNIT_NAME"
 #define VON_UNUSED_LABEL "-"
+// A role id's testing copy ("teamleadGhost_t") answers for its base id in a plan row.
+#define VON_ROLE_TEST_SUFFIX "_t"
+// The unit variables a plan row's roles and skills are matched against: the role
+// ghostD_groups_fnc_setupPlayer gave him, the PAC skill ids ghostD_pac_fnc_applySkills put on.
+#define VON_ROLE_VAR "YMF_role"
+#define VON_SKILLS_VAR "ghostD_pac_skillIds"
 // Seconds between the server's membership reconcile and the client's channel check.
 #define VON_SYNC_INTERVAL 10
 #define VON_CLIENT_INTERVAL 5

@@ -169,10 +169,11 @@ either mod loaded these keys are ignored and nothing below happens.
 // a blank name, is the squad's own name.
 ghost_radio_vonTeamNets = [["BANSHEE 1-1", "BANSHEE TEAM"]];
 
-// [net name, "c2" | "a2g", [squad, ...]] - one custom radio channel each, ten at most
+// [net name, "c2" | "a2g", [squad, ...], [role id, ...], [skill id, ...]] - one
+// custom radio channel each, ten at most. Roles and skills are optional.
 ghost_radio_vonNets = [
-    ["PLATOON 1", "c2", ["BANSHEE 1-1", "BANSHEE 1-2"]],
-    ["AIR", "a2g", ["BANSHEE 1-1", "REAPER"]]
+    ["PLATOON 1", "c2", ["HQ"], ["teamleadGhost", "atlGhost"], []],
+    ["AIR", "a2g", ["REAPER"], [], ["jfo"]]
 ];
 
 ghost_radio_vonSide = false;             // Side voice for everyone
@@ -182,7 +183,9 @@ ghost_radio_vonGlobalAdminsOnly = true;  // Global voice for admins only
 
 - The **server** makes one custom channel per `vonNets` row, named for the net
   and coloured for the ORBAT's side, and puts on it every player of that side
-  whose squad the row lists — on spawn, respawn, squad change and JIP, and takes
+  whose squad, role (`YMF_role`; a `_t` testing copy counts as its base id) or
+  PAC skill (`ghostD_pac_skillIds`) the row lists - only the first row of each
+  kind that matches him, so one C2 net and one A2G net a man — on spawn, respawn, squad change and JIP, and takes
   him off when he leaves (a reconcile every 10 s catches anything else).
 - Each **client** turns **voice** (not text chat) off on Side and Command unless
   `vonSide` / `vonCommand`, limits Global voice to admins when

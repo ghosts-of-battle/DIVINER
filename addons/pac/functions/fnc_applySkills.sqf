@@ -137,6 +137,9 @@ private _fnc_effect = {
 } forEach (_unit getVariable [QGVAR(tempEffects), []]);
 
 _unit setVariable [QGVAR(setVars), _setVars];
+// THE SKILL IDS, broadcast, so the server can put a man on the voice nets his
+// skills earn (ghostD_players_fnc_vonSync, a vonNets row's skills; 2026-10-21).
+_unit setVariable [QGVAR(skillIds), _skillIds select {_x isEqualType ""}, true];
 
 TRACE_3("skills applied",name _unit,count _skillIds,_applied);
 

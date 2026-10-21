@@ -54,7 +54,7 @@ if (isNil QGVAR(vonMembers)) then {GVAR(vonMembers) = createHashMap};
 
 private _channels = [];
 {
-    _x params ["_name", "_kind", "_squads"];
+    _x params ["_name", "_kind", "_squads", "_roles", "_skills"];
     private _id = GVAR(vonPool) param [_forEachIndex, 0];
     if (_id > 0) then {
         _id radioChannelSetLabel _name;
@@ -66,8 +66,11 @@ private _channels = [];
         };
         GVAR(vonPool) pushBack _id;
     };
-    _channels pushBack [_id, _name, _kind, _squads, _fallback];
+    _channels pushBack [_id, _name, _kind, _squads, _fallback, _roles, _skills];
     INFO_4("VON","net '%1' (%2) on custom channel %3, squads %4",_name,_kind,_id,_squads);
+    if (_roles isNotEqualTo [] || {_skills isNotEqualTo []}) then {
+        INFO_3("VON","net '%1' also takes roles %2 and skills %3",_name,_roles,_skills);
+    };
 } forEach _nets;
 
 // a channel the plan no longer uses: nobody on it, and no name
