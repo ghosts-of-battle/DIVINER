@@ -65,3 +65,7 @@
 
 // The admin page addresses its controls by these.
 #include "ui\idcs.inc.hpp"
+
+// The engine's own unit traits (setUnitTrait), lower case: a skill's
+// "trait:<name>" naming one of these sets the trait, anything else a variable.
+#define ENGINE_TRAITS ["uavhacker", "medic", "engineer", "explosivespecialist", "audiblecoef", "camouflagecoef", "loadcoef"]

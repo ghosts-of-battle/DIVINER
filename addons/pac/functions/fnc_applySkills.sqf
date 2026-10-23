@@ -53,6 +53,9 @@ if (isNull _unit || {!local _unit}) exitWith {0};
 {
     _unit setVariable [_x, nil, true];
 } forEach (_unit getVariable [QGVAR(setVars), []]);
+{
+    _unit setUnitTrait [_x, false];
+} forEach (_unit getVariable [QGVAR(setTraits), []]);
 
 _unit setVariable ["ace_medical_medicClass", 0, true];
 _unit setVariable ["ACE_IsEngineer", 0, true];
@@ -62,6 +65,7 @@ _unit setUnitTrait ["Engineer", false];
 _unit setUnitTrait ["ExplosiveSpecialist", false];
 
 private _setVars = [];
+private _setTraits = [];
 private _applied = 0;
 private _skills = GVAR(structure) getOrDefault ["skills", createHashMap];
 
@@ -90,9 +94,18 @@ private _fnc_effect = {
             _unit setVariable ["ACE_isEOD", _on, true];
             _unit setUnitTrait ["ExplosiveSpecialist", _on];
         };
+        // An engine trait (UAVHacker - the UAV operator skill) is a unit trait,
+        // set with setUnitTrait; anything else (isJFO, isISR) is a variable.
+        // As a variable, UAVHacker was never seen by the engine or by drone
+        // control (getUnitTrait) - JMSB, 2026-10-21.
         case "trait": {
-            _unit setVariable [_val, true, true];
-            _setVars pushBackUnique _val;
+            if ((toLower _val) in ENGINE_TRAITS) then {
+                _unit setUnitTrait [_val, true];
+                _setTraits pushBackUnique _val;
+            } else {
+                _unit setVariable [_val, true, true];
+                _setVars pushBackUnique _val;
+            };
         };
         case "var": {
             private _kv = _val splitString "=";
@@ -137,6 +150,7 @@ private _fnc_effect = {
 } forEach (_unit getVariable [QGVAR(tempEffects), []]);
 
 _unit setVariable [QGVAR(setVars), _setVars];
+_unit setVariable [QGVAR(setTraits), _setTraits];
 // THE SKILL IDS, broadcast, so the server can put a man on the voice nets his
 // skills earn (ghostD_players_fnc_vonSync, a vonNets row's skills; 2026-10-21).
 _unit setVariable [QGVAR(skillIds), _skillIds select {_x isEqualType ""}, true];
